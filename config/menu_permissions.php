@@ -10,6 +10,7 @@ return [
         'schedules' => 'Jadvallar',
         'employees' => 'Xodimlar',
         'sync' => 'Sinxronizatsiya',
+        'reports' => 'Hisobotlar',
         'users' => 'Foydalanuvchilar',
         'roles' => 'Rollar',
         'permissions' => 'Ruxsatlar',

@@ -68,8 +68,6 @@ class DatabaseSeeder extends Seeder
         );
         $testUser->syncRoles(['user']);
 
-        $this->call(DeviceSeeder::class);
-
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

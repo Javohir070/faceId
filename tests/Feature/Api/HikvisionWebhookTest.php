@@ -42,7 +42,23 @@ class HikvisionWebhookTest extends TestCase
         ])->assertUnauthorized();
     }
 
-    public function test_webhook_requires_configured_secret(): void
+    public function test_webhook_accepts_trusted_device_ip_without_secret_when_secret_not_configured(): void
+    {
+        config([
+            'hikvision.webhook_secret' => '',
+            'hikvision.webhook_trust_device_ip' => true,
+        ]);
+        $this->registerTrustedDevice('192.168.100.115');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.168.100.115'])
+            ->postJson('/api/webhooks/hikvision/events', [
+                'event_log' => json_encode($this->sampleEvent()),
+            ])
+            ->assertOk()
+            ->assertJson(['status' => 'success']);
+    }
+
+    public function test_webhook_requires_configured_secret_for_untrusted_ip(): void
     {
         config(['hikvision.webhook_secret' => '']);
 

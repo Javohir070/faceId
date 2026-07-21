@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AccessControllerEvent;
 use App\Models\Device;
-use Carbon\Carbon;
+use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +12,10 @@ use SimpleXMLElement;
 
 class WebhookController extends Controller
 {
+    public function __construct(
+        private readonly ReportService $reportService,
+    ) {}
+
     public function hikvision(Request $request): JsonResponse
     {
         $this->assertWebhookSecret($request);
@@ -42,22 +45,7 @@ class WebhookController extends Controller
                 $picturePath = $request->file('Picture')->store('hikvision', 'public');
             }
 
-            $eventTime = data_get($event, 'dateTime');
-
-            AccessControllerEvent::create([
-                'employee_no' => data_get($event, 'AccessControllerEvent.employeeNoString'),
-                'card_no' => data_get($event, 'AccessControllerEvent.cardNo'),
-                'full_name' => data_get($event, 'AccessControllerEvent.name'),
-                'major_event_type' => data_get($event, 'AccessControllerEvent.majorEventType'),
-                'sub_event_type' => data_get($event, 'AccessControllerEvent.subEventType'),
-                'verify_mode' => data_get($event, 'AccessControllerEvent.currentVerifyMode'),
-                'user_type' => data_get($event, 'AccessControllerEvent.userType'),
-                'attendance_status' => data_get($event, 'AccessControllerEvent.attendanceStatus'),
-                'event_time' => $eventTime ? Carbon::parse($eventTime)->format('Y-m-d H:i:s') : null,
-                'device_ip' => data_get($event, 'ipAddress'),
-                'picture' => $picturePath,
-                'payload' => $event,
-            ]);
+            $this->reportService->createFromWebhookPayload($event, $picturePath);
 
             return response()->json([
                 'status' => 'success',
@@ -111,6 +99,28 @@ class WebhookController extends Controller
             }
         }
 
+        $rawBody = trim($request->getContent());
+
+        if ($rawBody === '') {
+            return null;
+        }
+
+        if (str_starts_with($rawBody, '{') || str_starts_with($rawBody, '[')) {
+            $decoded = json_decode($rawBody, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                if (isset($decoded['event_log']) || isset($decoded['AccessControllerEvent'])) {
+                    return null;
+                }
+
+                return $this->normalizeEventPayload($decoded, $request);
+            }
+        }
+
+        if (str_starts_with($rawBody, '<')) {
+            return $this->parseXmlEvent($rawBody, $request);
+        }
+
         return null;
     }
 
@@ -141,8 +151,10 @@ class WebhookController extends Controller
     private function looksLikeAccessControllerEvent(array $event): bool
     {
         return isset($event['employeeNoString'])
+            || isset($event['employeeNo'])
             || isset($event['cardNo'])
-            || isset($event['majorEventType']);
+            || isset($event['majorEventType'])
+            || isset($event['major']);
     }
 
     /**
@@ -171,15 +183,26 @@ class WebhookController extends Controller
             $root = $root['EventNotificationAlert'];
         }
 
+        if (isset($root['AccessControllerEvent']) && is_array($root['AccessControllerEvent'])) {
+            return $this->normalizeEventPayload($root, $request);
+        }
+
         return $this->normalizeEventPayload($root, $request);
     }
 
     private function assertWebhookSecret(Request $request): void
     {
+        if ($this->isTrustedDevice($request)) {
+            return;
+        }
+
         $secret = (string) config('hikvision.webhook_secret');
 
         if ($secret === '') {
-            Log::error('Hikvision webhook: HIKVISION_WEBHOOK_SECRET .env da sozlanmagan.');
+            Log::warning('Hikvision webhook: secret sozlanmagan va so‘rov ishonchli qurilma IP dan emas.', [
+                'ip' => $request->ip(),
+                'trusted_device_ips' => Device::trustedIpAddresses(),
+            ]);
 
             abort(503, 'Webhook secret sozlanmagan.');
         }
@@ -192,10 +215,6 @@ class WebhookController extends Controller
         );
 
         if ($provided !== '' && hash_equals($secret, $provided)) {
-            return;
-        }
-
-        if ($this->isTrustedDevice($request)) {
             return;
         }
 

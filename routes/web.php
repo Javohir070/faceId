@@ -9,6 +9,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SyncController;
@@ -77,6 +78,9 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/{employee}/remove-devices', [EmployeeController::class, 'removeDevices'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.remove-devices');
+        Route::get('reports', [ReportController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['reports'])
+            ->name('reports.index');
         Route::resource('users', UserController::class)
             ->middleware('permission:'.$menuPermissions['users']);
         Route::resource('roles', RoleController::class)

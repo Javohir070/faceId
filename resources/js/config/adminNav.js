@@ -3,6 +3,7 @@ import {
     BankOutlined,
     CalendarOutlined,
     ClusterOutlined,
+    FileTextOutlined,
     HomeOutlined,
     IdcardOutlined,
     KeyOutlined,
@@ -19,26 +20,13 @@ export const adminNavGroups = [
         title: null,
         items: [
             { key: 'home', href: '/dashboard', label: 'Bosh sahifa', icon: HomeOutlined },
-            {
-                key: 'devices-group',
-                label: 'Qurilmalar',
-                icon: ClusterOutlined,
-                children: [
-                    { key: 'categories', href: '/admin/categories', label: 'Kategoriyalar', icon: AppstoreOutlined },
-                    { key: 'devices', href: '/admin/devices', label: 'Qurilmalar', icon: ClusterOutlined },
-                    { key: 'sync', href: '/admin/sync', label: 'Sinxronizatsiya', icon: SyncOutlined },
-                ],
-            },
-            {
-                key: 'organization-group',
-                label: 'Tashkilot',
-                icon: BankOutlined,
-                children: [
-                    { key: 'departments', href: '/admin/departments', label: "Bo'limlar", icon: BankOutlined },
-                    { key: 'schedules', href: '/admin/schedules', label: 'Jadvallar', icon: CalendarOutlined },
-                    { key: 'employees', href: '/admin/employees', label: 'Xodimlar', icon: IdcardOutlined },
-                ],
-            },
+            { key: 'categories', href: '/admin/categories', label: 'Kategoriyalar', icon: AppstoreOutlined },
+            { key: 'devices', href: '/admin/devices', label: 'Qurilmalar', icon: ClusterOutlined },
+            { key: 'sync', href: '/admin/sync', label: 'Sinxronizatsiya', icon: SyncOutlined },
+            { key: 'departments', href: '/admin/departments', label: "Bo'limlar", icon: BankOutlined },
+            { key: 'schedules', href: '/admin/schedules', label: 'Jadvallar', icon: CalendarOutlined },
+            { key: 'employees', href: '/admin/employees', label: 'Xodimlar', icon: IdcardOutlined },
+            { key: 'reports', href: '/admin/reports', label: 'Hisobotlar', icon: FileTextOutlined },
             {
                 key: 'settings',
                 label: 'Sozlamalar',

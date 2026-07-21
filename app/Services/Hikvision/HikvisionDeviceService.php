@@ -6,7 +6,6 @@ use App\Exceptions\HikvisionConnectionException;
 use App\Models\Device;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 
 class HikvisionDeviceService
 {
@@ -159,19 +158,7 @@ class HikvisionDeviceService
 
     public function setupWebhook(Device $device): bool
     {
-        $webhookUrl = (string) (config('hikvision.webhook_url') ?: URL::to(config('hikvision.webhook_path')));
-        $parsed = parse_url($webhookUrl);
-
-        if (! is_array($parsed) || empty($parsed['host'])) {
-            throw new \RuntimeException('Webhook URL noto‘g‘ri sozlangan.');
-        }
-
-        $serverPort = isset($parsed['port']) ? (int) $parsed['port'] : ($parsed['scheme'] === 'https' ? 443 : 80);
-        $path = $parsed['path'] ?? config('hikvision.webhook_path');
-
-        if (! empty($parsed['query'])) {
-            $path .= '?'.$parsed['query'];
-        }
+        [$webhookUrl, $host, $serverPort, $path] = $this->resolveWebhookTarget();
 
         try {
             $response = $this->client->request(
@@ -186,7 +173,7 @@ class HikvisionDeviceService
                         'protocolType' => 'HTTP',
                         'parameterFormatType' => 'JSON',
                         'addressingFormatType' => 'ipaddress',
-                        'ipAddress' => $parsed['host'],
+                        'ipAddress' => $host,
                         'portNo' => $serverPort,
                         'httpAuthenticationMethod' => 'none',
                         'httpMethod' => 'POST',
@@ -213,6 +200,46 @@ class HikvisionDeviceService
         ]);
 
         return true;
+    }
+
+    /**
+     * @return array{0:string,1:string,2:int,3:string}
+     */
+    private function resolveWebhookTarget(): array
+    {
+        $configuredUrl = (string) (config('hikvision.webhook_url') ?: '');
+
+        if ($configuredUrl !== '') {
+            $parsed = parse_url($configuredUrl);
+
+            if (! is_array($parsed) || empty($parsed['host'])) {
+                throw new \RuntimeException('Webhook URL noto‘g‘ri sozlangan.');
+            }
+
+            $serverPort = isset($parsed['port']) ? (int) $parsed['port'] : ($parsed['scheme'] === 'https' ? 443 : 80);
+            $path = $parsed['path'] ?? config('hikvision.webhook_path');
+
+            if (! empty($parsed['query'])) {
+                $path .= '?'.$parsed['query'];
+            }
+
+            return [$configuredUrl, $parsed['host'], $serverPort, $path];
+        }
+
+        $appUrl = parse_url((string) config('app.url'));
+        $scheme = $appUrl['scheme'] ?? 'http';
+        $host = (string) (config('hikvision.webhook_host') ?: ($appUrl['host'] ?? '127.0.0.1'));
+        $serverPort = (int) (config('hikvision.webhook_port') ?: ($appUrl['port'] ?? ($scheme === 'https' ? 443 : 80)));
+        $path = (string) config('hikvision.webhook_path');
+        $secret = (string) config('hikvision.webhook_secret');
+
+        if ($secret !== '') {
+            $path = rtrim($path, '/').'/'.rawurlencode($secret);
+        }
+
+        $webhookUrl = sprintf('%s://%s:%d%s', $scheme, $host, $serverPort, $path);
+
+        return [$webhookUrl, $host, $serverPort, $path];
     }
 
     public function openDoor(Device $device): bool

@@ -29,6 +29,14 @@ return [
 
     'webhook_url' => env('HIKVISION_WEBHOOK_URL'),
 
+    'webhook_host' => env('HIKVISION_WEBHOOK_HOST'),
+
+    'webhook_port' => env('HIKVISION_WEBHOOK_PORT'),
+
+    'events_pull_enabled' => env('HIKVISION_EVENTS_PULL_ENABLED', true),
+
+    'events_pull_interval_minutes' => max((int) env('HIKVISION_EVENTS_PULL_INTERVAL', 1), 1),
+
     /*
     |--------------------------------------------------------------------------
     | ISAPI defaults

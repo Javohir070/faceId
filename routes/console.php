@@ -13,3 +13,9 @@ Schedule::command('devices:ping')
     ->when(fn (): bool => (bool) config('hikvision.ping_enabled', true))
     ->withoutOverlapping()
     ->runInBackground();
+
+Schedule::command('devices:pull-events')
+    ->cron('*/'.max((int) config('hikvision.events_pull_interval_minutes', 1), 1).' * * * *')
+    ->when(fn (): bool => (bool) config('hikvision.events_pull_enabled', true))
+    ->withoutOverlapping()
+    ->runInBackground();
