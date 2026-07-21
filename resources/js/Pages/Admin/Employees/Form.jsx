@@ -1,0 +1,135 @@
+import { useForm } from '@inertiajs/react';
+import { Input, Select } from 'antd';
+import AdminLayout from '../../../Layouts/AdminLayout';
+import FaceCaptureField from '../../../Components/FaceCaptureField';
+import FormCard from '../../../Components/FormCard';
+import FormField from '../../../Components/FormField';
+
+export default function Form({ employee, departments = [], schedules = [] }) {
+    const isEdit = !!employee;
+
+    const { data, setData, post, processing, errors } = useForm({
+        name: employee?.name || '',
+        card: employee?.card || '',
+        department_id: employee?.department_id || null,
+        schedule_id: employee?.schedule_id || null,
+        valid_from_dt: employee?.valid_from_dt || '',
+        valid_to_dt: employee?.valid_to_dt || '',
+        face: null,
+        remove_face: false,
+        _method: isEdit ? 'put' : undefined,
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+        if (isEdit) {
+            post(`/admin/employees/${employee.id}`, { forceFormData: true });
+        } else {
+            post('/admin/employees', { forceFormData: true });
+        }
+    };
+
+    return (
+        <AdminLayout title={isEdit ? 'Xodimni tahrirlash' : "Xodim qo'shish"}>
+            <FormCard
+                title={isEdit ? 'Xodimni tahrirlash' : 'Yangi xodim'}
+                subtitle="Chapda ma'lumotlar, o'ngda yuz rasmi — ochiq va qulay."
+                backHref="/admin/employees"
+                onSubmit={submit}
+                processing={processing}
+                cancelHref="/admin/employees"
+                width="full"
+            >
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
+                    <div className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField label="F.I.Sh." error={errors.name} required>
+                                <Input
+                                    size="large"
+                                    value={data.name}
+                                    status={errors.name ? 'error' : undefined}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Karta" error={errors.card} required>
+                                <Input
+                                    size="large"
+                                    value={data.card}
+                                    status={errors.card ? 'error' : undefined}
+                                    onChange={(e) => setData('card', e.target.value)}
+                                />
+                            </FormField>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField label="Bo'lim" error={errors.department_id} required>
+                                <Select
+                                    className="w-full"
+                                    size="large"
+                                    placeholder="Bo'lim tanlang"
+                                    value={data.department_id}
+                                    status={errors.department_id ? 'error' : undefined}
+                                    options={departments.map((department) => ({
+                                        value: department.id,
+                                        label: department.name,
+                                    }))}
+                                    onChange={(value) => setData('department_id', value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Jadval" error={errors.schedule_id} required>
+                                <Select
+                                    className="w-full"
+                                    size="large"
+                                    placeholder="Jadval tanlang"
+                                    value={data.schedule_id}
+                                    status={errors.schedule_id ? 'error' : undefined}
+                                    options={schedules.map((schedule) => ({
+                                        value: schedule.id,
+                                        label: schedule.name,
+                                    }))}
+                                    onChange={(value) => setData('schedule_id', value)}
+                                />
+                            </FormField>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField label="Amal qilish boshlanishi" error={errors.valid_from_dt} required>
+                                <Input
+                                    size="large"
+                                    type="datetime-local"
+                                    value={data.valid_from_dt}
+                                    status={errors.valid_from_dt ? 'error' : undefined}
+                                    onChange={(e) => setData('valid_from_dt', e.target.value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Amal qilish tugashi" error={errors.valid_to_dt} required>
+                                <Input
+                                    size="large"
+                                    type="datetime-local"
+                                    value={data.valid_to_dt}
+                                    status={errors.valid_to_dt ? 'error' : undefined}
+                                    onChange={(e) => setData('valid_to_dt', e.target.value)}
+                                />
+                            </FormField>
+                        </div>
+                    </div>
+
+                    <aside className="rounded-2xl border border-line bg-surface-muted/50 p-5 xl:sticky xl:top-4">
+                        <FaceCaptureField
+                            value={data.face}
+                            existingPreview={employee?.face_preview || null}
+                            removeFace={data.remove_face}
+                            required={!isEdit}
+                            error={errors.face}
+                            onChange={(file) => setData('face', file)}
+                            onRemoveChange={(remove) => setData('remove_face', remove)}
+                        />
+                    </aside>
+                </div>
+            </FormCard>
+        </AdminLayout>
+    );
+}

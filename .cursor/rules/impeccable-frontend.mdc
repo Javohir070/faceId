@@ -1,0 +1,17 @@
+---
+description: olim.uz Inertia React interfeysini mavjud Tailwind dizayn tizimiga muvofiq rivojlantirish
+globs: resources/js/**/*.{js,jsx,ts,tsx},resources/css/**/*.{css,scss},resources/views/**/*.blade.php,tailwind.config.js
+alwaysApply: false
+---
+
+# olim.uz frontend qoidalari
+
+Frontend ustida ishlaganda:
+
+1. Avval `.cursor/skills/impeccable/SKILL.md` Setup qadamlarini bajaring va product registerini yuklang.
+2. Stack: Laravel + Inertia React, JSX, Tailwind CSS, Ant Design 6 va Tiptap. Eski Phoenix/Bootstrap, Feather, Lucide yoki Summernote patternlarini qaytarmang.
+3. Tokenlar uchun `tailwind.config.js`, umumiy komponentlar uchun `resources/css/app.css` va `resources/js/Components` manba hisoblanadi.
+4. Layout va responsive joylashuvda Tailwind, interaktiv UI (button, input, select, upload, switch, tabs, pagination, modal, alert, dropdown) uchun Ant Design komponentlaridan foydalaning.
+5. Inertia navigatsiyasi va formalarida `Link`, `router` hamda `useForm` ishlating; ichki yo'nalishlarda oddiy `<a>` yoki qo'lda `fetch` yozmang.
+6. Kontrast WCAG AA darajasida bo'lsin, fokus holati ko'rinsin, mobile sidebar/table ishlasin va harakatlar `prefers-reduced-motion`ni hurmat qilsin.
+7. Nested card, gradient text, glassmorphism, dekorativ animatsiya, tasodifiy z-index, inline style va generated `public/build` fayllarini qo'lda tahrirlashdan saqlaning.

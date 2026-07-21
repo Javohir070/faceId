@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T10:45:00.000Z",
+  "title": "Design System: olim.uz CMS",
+  "extensions": {
+    "stack": {
+      "backend": "Laravel",
+      "bridge": "Inertia React",
+      "ui": "React 19 + JSX",
+      "styling": "Tailwind CSS + Ant Design 6",
+      "icons": "Ant Design Icons",
+      "editor": "Tiptap"
+    },
+    "colorMeta": {
+      "brand": {
+        "role": "primary",
+        "displayName": "Institutional Blue",
+        "canonical": "#3874ff",
+        "tonalRamp": [
+          "#eef3ff",
+          "#dce7ff",
+          "#bfd1ff",
+          "#96b3ff",
+          "#6b91ff",
+          "#4e7cff",
+          "#3874ff",
+          "#2d5ecc",
+          "#294fa5",
+          "#284684",
+          "#182951"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Work Canvas",
+        "canonical": "#f5f7fa"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Slate Ink",
+        "canonical": "#31374a",
+        "muted": "#596579",
+        "subtle": "#6e7891"
+      },
+      "semantic": {
+        "positive": "#25b003",
+        "negative": "#dc2f18",
+        "caution": "#c96808"
+      }
+    },
+    "typographyMeta": {
+      "family": {
+        "displayName": "Nunito Sans",
+        "value": "\"Nunito Sans\", ui-sans-serif, system-ui, sans-serif",
+        "purpose": "Sarlavha, matn, label va boshqaruv elementlari uchun yagona product UI oilasi."
+      },
+      "pageTitle": {
+        "size": "1.5rem",
+        "weight": 800,
+        "lineHeight": 1.25
+      },
+      "body": {
+        "size": "0.875rem",
+        "weight": 400,
+        "lineHeight": 1.5
+      },
+      "label": {
+        "size": "0.875rem",
+        "weight": 700,
+        "lineHeight": 1.25
+      }
+    },
+    "surfaces": {
+      "canvas": "#f5f7fa",
+      "surface": "#ffffff",
+      "surfaceMuted": "#eff2f6",
+      "line": "#e3e6ed",
+      "lineStrong": "#cbd0dd"
+    },
+    "shadows": [
+      {
+        "name": "ambient",
+        "value": "0 2px 8px -3px rgba(36, 40, 46, 0.14)",
+        "purpose": "Card, table shell va auth panel."
+      },
+      {
+        "name": "floating",
+        "value": "0 12px 32px -12px rgba(36, 40, 46, 0.28)",
+        "purpose": "Dropdown va dialog."
+      }
+    ],
+    "motion": [
+      {
+        "name": "productive",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "duration": "150–200ms",
+        "purpose": "Hover, ochilish va holat almashishlari."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ],
+    "zIndex": {
+      "content": 0,
+      "header": 20,
+      "overlay": 30,
+      "sidebar": 40,
+      "dialog": 50
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "Button[type=primary]",
+      "description": "Yaratish va saqlash kabi asosiy harakat.",
+      "source": "antd"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "Button",
+      "description": "Bekor qilish va ikkilamchi harakat.",
+      "source": "antd"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "Button[type=text]",
+      "description": "Ant Design ikonali ko'rish, tahrirlash va o'chirish amallari.",
+      "source": "antd"
+    },
+    {
+      "name": "Default Input",
+      "kind": "input",
+      "refersTo": "Input",
+      "description": "Ko'rinadigan fokus va xato matniga ega forma maydoni.",
+      "source": "antd"
+    },
+    {
+      "name": "Table Shell",
+      "kind": "table",
+      "refersTo": "table-shell",
+      "description": "Responsive overflow va tekis qator ajratgichlariga ega CRUD jadvali.",
+      "source": "resources/css/app.css"
+    },
+    {
+      "name": "Page Header",
+      "kind": "header",
+      "refersTo": "PageHeader",
+      "description": "Sahifa sarlavhasi, izoh va bitta asosiy CTA.",
+      "source": "resources/js/Components/PageHeader.jsx"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "status",
+      "refersTo": "StatusBadge",
+      "description": "Aktiv va nofaol holatni rang, nuqta va matn bilan ko'rsatadi.",
+      "source": "resources/js/Components/PageHeader.jsx"
+    },
+    {
+      "name": "Language Tabs",
+      "kind": "tabs",
+      "refersTo": "LangTabs",
+      "description": "UZ, RU va EN maydonlari uchun xato holatini ko'rsatuvchi tablar.",
+      "source": "resources/js/Components/LangTabs.jsx"
+    },
+    {
+      "name": "Rich Text Editor",
+      "kind": "editor",
+      "refersTo": "RichTextEditor",
+      "description": "Tiptap asosidagi ko'p tilli matn muharriri.",
+      "source": "resources/js/Components/RichTextEditor.jsx"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Institutional Workbench",
+    "overview": "olim.uz CMS Laravel va Inertia orqali React interfeysida ishlaydi. Tailwind layout va responsive utilitylar uchun, Ant Design interaktiv komponentlar uchun yagona tizim beradi. Eski Phoenix/Bootstrap, Feather, Lucide va Summernote olib tashlangan.",
+    "keyCharacteristics": [
+      "Product register: vazifaga yo'naltirilgan CMS",
+      "Inertia React sahifalari va umumiy JSX komponentlari",
+      "Tailwind layout utilitylari va markaziy tokenlar",
+      "Ant Design 6 komponentlari va ikonkalari",
+      "Tiptap rich text editor",
+      "O'zbekcha asosiy interfeys va UZ/RU/EN kontent maydonlari",
+      "Responsive sidebar, jadvallar va auth layout"
+    ],
+    "rules": [
+      {
+        "name": "One System Rule",
+        "body": "Admin va auth bir xil brand, ink, canvas, radius, focus va motion tokenlaridan foydalanadi.",
+        "section": "system"
+      },
+      {
+        "name": "One Blue Rule",
+        "body": "Brand ko'k asosiy CTA, aktiv navigatsiya, fokus va tanlangan holatlarga ajratiladi.",
+        "section": "colors"
+      },
+      {
+        "name": "Flat Data Rule",
+        "body": "Jadval qatorlari soya yoki nested cardsiz, line tokenlari bilan ajratiladi.",
+        "section": "elevation"
+      },
+      {
+        "name": "Shared Component Rule",
+        "body": "Yangi CRUD sahifalari mavjud layout, header, action, status, pagination va forma komponentlarini qayta ishlatadi.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Layout uchun Tailwind, interaktiv UI uchun Ant Design ishlating",
+      "Ichki navigatsiya uchun Inertia Link, mutationlar uchun router yoki useForm ishlating",
+      "Ant Design Icons to'plamidan izchil foydalaning",
+      "Empty, loading, error, disabled va processing holatlarini yozing",
+      "O'zbekcha matn va mobile kengliklarda overflow holatini tekshiring"
+    ],
+    "donts": [
+      "Phoenix/Bootstrap, Feather, Lucide yoki Summernote patternlarini qaytarmang",
+      "public/build ichidagi generated assetlarni qo'lda tahrirlamang",
+      "Inline style, !important, gradient text, glassmorphism yoki nested card ishlatmang",
+      "Oddiy ichki anchor yoki qo'lda fetch bilan Inertia oqimini chetlab o'tmang",
+      "Past kontrastli ink-subtle rangini asosiy body matni sifatida ishlatmang"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "detector": {
+    "designSystem": {
+      "enabled": true
+    },
+    "ignoreFiles": [
+      "public/build/**",
+      "storage/framework/views/**"
+    ],
+    "extensions": [
+      { "ext": ".blade.php", "engine": "html" }
+    ]
+  }
+}
