@@ -3,6 +3,9 @@
 namespace Tests\Feature\Api;
 
 use App\Models\AccessControllerEvent;
+use App\Models\Category;
+use App\Models\Device;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -101,10 +104,8 @@ class HikvisionWebhookTest extends TestCase
 
     public function test_webhook_accepts_trusted_device_ip_without_secret(): void
     {
-        config([
-            'hikvision.base_uri' => 'http://192.168.100.115/',
-            'hikvision.webhook_trust_device_ip' => true,
-        ]);
+        config(['hikvision.webhook_trust_device_ip' => true]);
+        $this->registerTrustedDevice('192.168.100.115');
 
         $this->withServerVariables(['REMOTE_ADDR' => '192.168.100.115'])
             ->postJson('/api/webhooks/hikvision/events', [
@@ -116,10 +117,8 @@ class HikvisionWebhookTest extends TestCase
 
     public function test_webhook_accepts_access_controller_event_field_from_device(): void
     {
-        config([
-            'hikvision.base_uri' => 'http://192.168.100.115/',
-            'hikvision.webhook_trust_device_ip' => true,
-        ]);
+        config(['hikvision.webhook_trust_device_ip' => true]);
+        $this->registerTrustedDevice('192.168.100.115');
 
         $this->withServerVariables(['REMOTE_ADDR' => '192.168.100.115'])
             ->post('/api/webhooks/hikvision/events', [
@@ -138,10 +137,8 @@ class HikvisionWebhookTest extends TestCase
 
     public function test_webhook_accepts_inner_access_controller_event_object(): void
     {
-        config([
-            'hikvision.base_uri' => 'http://192.168.100.115/',
-            'hikvision.webhook_trust_device_ip' => true,
-        ]);
+        config(['hikvision.webhook_trust_device_ip' => true]);
+        $this->registerTrustedDevice('192.168.100.115');
 
         $this->withServerVariables(['REMOTE_ADDR' => '192.168.100.115'])
             ->post('/api/webhooks/hikvision/events', [
@@ -215,5 +212,20 @@ class HikvisionWebhookTest extends TestCase
                 'attendanceStatus' => 'checkIn',
             ],
         ], $overrides);
+    }
+
+    private function registerTrustedDevice(string $ipAddress): Device
+    {
+        $owner = User::factory()->create();
+        $category = Category::factory()->create();
+
+        return Device::factory()->create([
+            'user_id' => $owner->id,
+            'category_id' => $category->id,
+            'ip_address' => $ipAddress,
+            'port' => 8000,
+            'user' => 'admin',
+            'password' => 'secret',
+        ]);
     }
 }

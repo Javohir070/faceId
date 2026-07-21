@@ -1,0 +1,60 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP timeouts (barcha qurilmalar uchun)
+    |--------------------------------------------------------------------------
+    |
+    | IP, port, login va parol — admin panel → Qurilmalar (`devices` jadvali).
+    |
+    */
+
+    'connect_timeout' => (int) env('HIKVISION_CONNECT_TIMEOUT', 5),
+
+    'timeout' => (int) env('HIKVISION_TIMEOUT', 10),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Webhook
+    |--------------------------------------------------------------------------
+    */
+
+    'webhook_secret' => env('HIKVISION_WEBHOOK_SECRET', ''),
+
+    'webhook_trust_device_ip' => env('HIKVISION_WEBHOOK_TRUST_DEVICE_IP', true),
+
+    'webhook_path' => '/api/webhooks/hikvision/events',
+
+    'webhook_url' => env('HIKVISION_WEBHOOK_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | ISAPI defaults
+    |--------------------------------------------------------------------------
+    */
+
+    'face_lib_type' => 'blackFD',
+
+    'face_lib_id' => '1',
+
+    'door_no' => 1,
+
+    'plan_template_no' => '1',
+
+    'max_face_image_bytes' => 512 * 1024,
+
+    'verify_ssl' => env('HIKVISION_VERIFY_SSL', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Qurilma ping (fon tekshiruv)
+    |--------------------------------------------------------------------------
+    */
+
+    'ping_enabled' => env('HIKVISION_PING_ENABLED', true),
+
+    'ping_interval_minutes' => max((int) env('HIKVISION_PING_INTERVAL', 1), 1),
+
+];

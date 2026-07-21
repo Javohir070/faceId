@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RemoveEmployeeDevicesRequest;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
 use App\Services\EmployeeService;
+use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,6 +17,7 @@ class EmployeeController extends Controller
 {
     public function __construct(
         private readonly EmployeeService $employeeService,
+        private readonly EmployeeSyncService $employeeSyncService,
     ) {}
 
     public function index(): Response
@@ -68,8 +72,36 @@ class EmployeeController extends Controller
                 'department' => $employee->department?->only(['id', 'name']),
                 'schedule' => $employee->schedule?->only(['id', 'name']),
                 'face_preview' => $this->facePreviewUrl($employee->face?->face),
+                'devices' => $employee->devices
+                    ->sortBy('name')
+                    ->values()
+                    ->map(fn ($device): array => [
+                        'id' => $device->id,
+                        'name' => $device->name,
+                        'ip_address' => $device->ip_address,
+                        'is_synced' => filled($device->pivot->synced_at),
+                        'synced_at' => filled($device->pivot->synced_at)
+                            ? Carbon::parse($device->pivot->synced_at)->format('Y-m-d H:i')
+                            : null,
+                    ]),
             ],
         ]);
+    }
+
+    public function removeDevices(RemoveEmployeeDevicesRequest $request, Employee $employee): RedirectResponse
+    {
+        $result = $this->employeeSyncService->removeFromDevices(
+            $employee,
+            $request->validated('device_ids'),
+        );
+
+        return redirect()
+            ->route('admin.employees.show', $employee)
+            ->with('success', sprintf(
+                'Qurilmalardan o‘chirildi: %d muvaffaqiyatli, %d xatolik.',
+                $result['success'],
+                $result['failed'],
+            ));
     }
 
     public function edit(Employee $employee): Response

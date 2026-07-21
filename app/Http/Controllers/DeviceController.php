@@ -6,6 +6,7 @@ use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
 use App\Services\DeviceService;
+use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +15,7 @@ class DeviceController extends Controller
 {
     public function __construct(
         private readonly DeviceService $deviceService,
+        private readonly HikvisionDeviceService $hikvisionDeviceService,
     ) {}
 
     public function index(): Response
@@ -26,8 +28,16 @@ class DeviceController extends Controller
             'description' => $device->description,
             'ip_address' => $device->ip_address,
             'port' => $device->port,
+            'user' => $device->user,
+            'password' => $device->password,
             'type' => $device->type,
+            'type_label' => $this->deviceService->typeLabel($device),
+            'is_connected' => $device->is_online,
             'autoconnect' => $device->autoconnect,
+            'is_online' => $device->is_online,
+            'webhook_configured' => $device->webhook_configured,
+            'last_connected_at' => $device->last_connected_at?->format('Y-m-d H:i'),
+            'last_ping_at' => $device->last_ping_at?->format('Y-m-d H:i'),
             'category' => $device->category?->only(['id', 'name']),
             'owner' => $device->owner?->only(['id', 'name']),
         ]);
@@ -49,8 +59,13 @@ class DeviceController extends Controller
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         $data['autoconnect'] = $request->boolean('autoconnect');
+        $data['use_https'] = $request->boolean('use_https');
 
-        $this->deviceService->create($data);
+        $device = $this->deviceService->create($data);
+
+        if ($device->autoconnect) {
+            return $this->redirectAfterAutoconnect($device, 'Qurilma muvaffaqiyatli yaratildi.');
+        }
 
         return redirect()
             ->route('admin.devices.index')
@@ -68,6 +83,7 @@ class DeviceController extends Controller
                 'description' => $device->description,
                 'ip_address' => $device->ip_address,
                 'port' => $device->port,
+                'use_https' => $device->use_https,
                 'user' => $device->user,
                 'type' => $device->type,
                 'autoconnect' => $device->autoconnect,
@@ -90,6 +106,7 @@ class DeviceController extends Controller
                 'description' => $device->description,
                 'ip_address' => $device->ip_address,
                 'port' => $device->port,
+                'use_https' => $device->use_https,
                 'user' => $device->user,
                 'type' => $device->type,
                 'autoconnect' => $device->autoconnect,
@@ -102,12 +119,32 @@ class DeviceController extends Controller
     {
         $data = $request->validated();
         $data['autoconnect'] = $request->boolean('autoconnect');
+        $data['use_https'] = $request->boolean('use_https');
 
-        $this->deviceService->update($device, $data);
+        $device = $this->deviceService->update($device, $data);
+
+        if ($device->autoconnect) {
+            return $this->redirectAfterAutoconnect($device, 'Qurilma muvaffaqiyatli yangilandi.');
+        }
 
         return redirect()
             ->route('admin.devices.index')
             ->with('success', 'Qurilma muvaffaqiyatli yangilandi.');
+    }
+
+    private function redirectAfterAutoconnect(Device $device, string $baseMessage): RedirectResponse
+    {
+        try {
+            $this->hikvisionDeviceService->connect($device);
+
+            return redirect()
+                ->route('admin.devices.index')
+                ->with('success', $baseMessage.' Qurilma ulandi (Ulangan).');
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('admin.devices.index')
+                ->with('error', $baseMessage.' Lekin ulanmadi: '.$exception->getMessage());
+        }
     }
 
     public function destroy(Device $device): RedirectResponse

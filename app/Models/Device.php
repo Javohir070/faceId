@@ -2,14 +2,21 @@
 
 namespace App\Models;
 
+use Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Device extends Model
 {
-    /** @use HasFactory<\Database\Factories\DeviceFactory> */
+    /** @use HasFactory<DeviceFactory> */
     use HasFactory;
+
+    /**
+     * Hikvision Face ID ulanish ma'lumotlari shu modelda saqlanadi.
+     * Bir nechta qurilma: har biri uchun alohida ip_address, port, user, password.
+     */
 
     /**
      * @var list<string>
@@ -21,10 +28,15 @@ class Device extends Model
         'description',
         'ip_address',
         'port',
+        'use_https',
         'user',
         'password',
         'type',
         'autoconnect',
+        'is_online',
+        'last_connected_at',
+        'last_ping_at',
+        'webhook_configured',
     ];
 
     /**
@@ -41,8 +53,13 @@ class Device extends Model
     {
         return [
             'port' => 'integer',
+            'use_https' => 'boolean',
             'type' => 'integer',
             'autoconnect' => 'boolean',
+            'is_online' => 'boolean',
+            'webhook_configured' => 'boolean',
+            'last_connected_at' => 'datetime',
+            'last_ping_at' => 'datetime',
             'password' => 'encrypted',
         ];
     }
@@ -55,5 +72,65 @@ class Device extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(Employee::class)
+            ->withPivot(['synced_at', 'sync_error'])
+            ->withTimestamps();
+    }
+
+    public function isapiBaseUrl(): string
+    {
+        $scheme = $this->use_https ? 'https' : 'http';
+        $port = (int) $this->port;
+
+        if (($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443)) {
+            return sprintf('%s://%s', $scheme, $this->ip_address);
+        }
+
+        return sprintf('%s://%s:%d', $scheme, $this->ip_address, $port);
+    }
+
+    /**
+     * @return array{use_https: bool, port: int}
+     */
+    public function isapiConnectionSettings(): array
+    {
+        return [
+            'use_https' => (bool) $this->use_https,
+            'port' => (int) $this->port,
+        ];
+    }
+
+    public function applyIsapiConnectionSettings(bool $useHttps, int $port): void
+    {
+        $this->forceFill([
+            'use_https' => $useHttps,
+            'port' => $port,
+        ]);
+    }
+
+    public function hasIsapiCredentials(): bool
+    {
+        return $this->ip_address !== ''
+            && $this->port > 0
+            && $this->user !== ''
+            && $this->password !== '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function trustedIpAddresses(): array
+    {
+        return static::query()
+            ->whereNotNull('ip_address')
+            ->where('ip_address', '!=', '')
+            ->pluck('ip_address')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

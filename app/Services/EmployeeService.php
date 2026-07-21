@@ -7,6 +7,7 @@ use App\Interfaces\EmployeeRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
 use App\Models\Employee;
 use App\Models\Face;
+use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -18,6 +19,7 @@ class EmployeeService
         private readonly EmployeeRepositoryInterface $employeeRepository,
         private readonly DepartmentRepositoryInterface $departmentRepository,
         private readonly ScheduleRepositoryInterface $scheduleRepository,
+        private readonly EmployeeSyncService $employeeSyncService,
     ) {}
 
     public function paginate(int $perPage = 12): LengthAwarePaginator
@@ -47,7 +49,10 @@ class EmployeeService
                 $this->syncFace($employee, $faceFile);
             }
 
-            return $employee->load('face');
+            $employee->load('face');
+            $this->employeeSyncService->syncEmployee($employee);
+
+            return $employee;
         });
     }
 
@@ -62,24 +67,29 @@ class EmployeeService
 
             if ($removeFace) {
                 $employee->face()?->delete();
+                $this->employeeSyncService->removeFace($employee);
             } elseif ($faceFile instanceof UploadedFile) {
                 $this->syncFace($employee, $faceFile);
             }
 
-            return $employee->load('face');
+            $employee->load('face');
+            $this->employeeSyncService->syncEmployee($employee);
+
+            return $employee;
         });
     }
 
     public function delete(Employee $employee): void
     {
         DB::transaction(function () use ($employee): void {
+            $this->employeeSyncService->removeEmployee($employee);
             $this->employeeRepository->delete($employee);
         });
     }
 
     public function loadForShow(Employee $employee): Employee
     {
-        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face']);
+        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face', 'devices']);
     }
 
     public function loadForEdit(Employee $employee): Employee

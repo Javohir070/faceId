@@ -9,6 +9,7 @@ return [
         'departments' => "Bo'limlar",
         'schedules' => 'Jadvallar',
         'employees' => 'Xodimlar',
+        'sync' => 'Sinxronizatsiya',
         'users' => 'Foydalanuvchilar',
         'roles' => 'Rollar',
         'permissions' => 'Ruxsatlar',

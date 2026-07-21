@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\EmployeeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
-    /** @use HasFactory<\Database\Factories\EmployeeFactory> */
+    /** @use HasFactory<EmployeeFactory> */
     use HasFactory;
 
     /**
@@ -48,5 +50,12 @@ class Employee extends Model
     public function face(): HasOne
     {
         return $this->hasOne(Face::class);
+    }
+
+    public function devices(): BelongsToMany
+    {
+        return $this->belongsToMany(Device::class)
+            ->withPivot(['synced_at', 'sync_error'])
+            ->withTimestamps();
     }
 }

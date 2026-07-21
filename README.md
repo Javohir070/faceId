@@ -12,7 +12,16 @@ Ko‘rsatiladigan ilova nomi `.env` dagi `APP_NAME` orqali sozlanadi (default: *
 | Frontend | Inertia.js + React 19 (JSX) |
 | UI | Tailwind CSS 3 + Ant Design 6 |
 | Ruxsatlar | Spatie Laravel Permission |
-| Biometric | Hikvision webhook (`/api/webhooks/hikvision/events`) |
+| Biometric | Hikvision ISAPI + webhook (`/api/webhooks/hikvision/events`) |
+
+## Hikvision integratsiya
+
+Batafsil qo'llanma: [`docs/hikvision-integration.md`](docs/hikvision-integration.md)
+
+- Admin → **Qurilmalar** — ISAPI ulanish, webhook, eshik ochish, sync
+- Admin → **Xodimlar** — yaratish/yangilash/o'chirish avtomatik qurilmalarga sync qilinadi
+- `.env` da `HIKVISION_WEBHOOK_SECRET` va `APP_URL` ni sozlang
+- Har bir qurilmaning IP, login, parol ma'lumotlari **Admin → Qurilmalar** da saqlanadi (`.env` emas)
 
 ## Modullar
 

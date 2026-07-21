@@ -8,6 +8,7 @@ import {
     KeyOutlined,
     SafetyCertificateOutlined,
     SettingOutlined,
+    SyncOutlined,
     TeamOutlined,
 } from '@ant-design/icons';
 
@@ -25,6 +26,7 @@ export const adminNavGroups = [
                 children: [
                     { key: 'categories', href: '/admin/categories', label: 'Kategoriyalar', icon: AppstoreOutlined },
                     { key: 'devices', href: '/admin/devices', label: 'Qurilmalar', icon: ClusterOutlined },
+                    { key: 'sync', href: '/admin/sync', label: 'Sinxronizatsiya', icon: SyncOutlined },
                 ],
             },
             {

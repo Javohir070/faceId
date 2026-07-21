@@ -12,6 +12,7 @@ export default function Form({ device, categories = [] }) {
         description: device?.description || '',
         ip_address: device?.ip_address || '',
         port: device?.port ?? 80,
+        use_https: device?.use_https ?? false,
         user: device?.user || '',
         password: '',
         type: device?.type ?? 0,
@@ -94,8 +95,20 @@ export default function Form({ device, categories = [] }) {
                             status={errors.port ? 'error' : undefined}
                             onChange={(value) => setData('port', value ?? 80)}
                         />
+                        <p className="mt-1.5 text-xs text-ink-muted">
+                            ISAPI odatda 80 (HTTP) yoki 443 (HTTPS). 8000 ba&apos;zan noto&apos;g&apos;ri port.
+                        </p>
                     </FormField>
                 </div>
+
+                <FormField label="Ulanish protokoli" error={errors.use_https}>
+                    <Checkbox
+                        checked={data.use_https}
+                        onChange={(e) => setData('use_https', e.target.checked)}
+                    >
+                        HTTPS (qurilma xavfsiz ulanish talab qilsa)
+                    </Checkbox>
+                </FormField>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <FormField label="Login" error={errors.user} required>

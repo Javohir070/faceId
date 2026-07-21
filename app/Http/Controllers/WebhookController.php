@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccessControllerEvent;
+use App\Models\Device;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -203,7 +204,7 @@ class WebhookController extends Controller
             'has_query_secret' => $request->has('secret'),
             'has_path_secret' => $request->route('secret') !== null,
             'ip' => $request->ip(),
-            'trusted_device_ip' => $this->deviceHost(),
+            'trusted_device_ips' => Device::trustedIpAddresses(),
         ], $this->webhookRequestDiagnostics($request)));
 
         abort(401, 'Unauthorized webhook.');
@@ -261,15 +262,14 @@ class WebhookController extends Controller
             return false;
         }
 
-        $deviceHost = $this->deviceHost();
+        $requestIp = $request->ip();
 
-        return $deviceHost !== null && $request->ip() === $deviceHost;
-    }
+        if ($requestIp === null) {
+            return false;
+        }
 
-    private function deviceHost(): ?string
-    {
-        $host = parse_url((string) config('hikvision.base_uri'), PHP_URL_HOST);
+        $trustedHosts = Device::trustedIpAddresses();
 
-        return is_string($host) && $host !== '' ? $host : null;
+        return in_array($requestIp, $trustedHosts, true);
     }
 }

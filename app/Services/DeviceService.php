@@ -56,4 +56,19 @@ class DeviceService
     {
         return $this->deviceRepository->loadRelations($device, ['category']);
     }
+
+    public function typeLabel(Device $device): string
+    {
+        $category = mb_strtolower($device->category?->name ?? '');
+
+        if (str_contains($category, 'chiqish') || str_contains($category, 'выход')) {
+            return 'Chiqish';
+        }
+
+        if (str_contains($category, 'kirish') || str_contains($category, 'вход')) {
+            return 'Kirish';
+        }
+
+        return (int) $device->type === 1 ? 'Chiqish' : 'Kirish';
+    }
 }

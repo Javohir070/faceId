@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Category;
 use App\Models\Department;
+use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Face;
 use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\InteractsWithPermissions;
@@ -92,6 +95,49 @@ class EmployeeAdminTest extends TestCase
             ->assertRedirect(route('admin.employees.index'));
 
         $this->assertDatabaseMissing('employees', ['id' => $employee->id]);
+    }
+
+    public function test_employee_show_lists_devices_and_can_remove_from_device(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $category = Category::factory()->create();
+        $department = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $category->id,
+        ]);
+
+        $employee = Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+        ]);
+
+        $employee->devices()->attach($device->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.employees.show', $employee))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Show')
+                ->has('employee.devices', 1));
+
+        $this->actingAs($admin)
+            ->post(route('admin.employees.remove-devices', $employee), [
+                'device_ids' => [$device->id],
+            ])
+            ->assertRedirect(route('admin.employees.show', $employee))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
     }
 
     public function test_unauthorized_user_cannot_access_employees(): void

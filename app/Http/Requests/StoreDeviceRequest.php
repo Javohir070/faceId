@@ -23,6 +23,7 @@ class StoreDeviceRequest extends FormRequest
             'description' => ['required', 'string', 'max:255'],
             'ip_address' => ['required', 'ip'],
             'port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'use_https' => ['sometimes', 'boolean'],
             'user' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
             'type' => ['required', 'integer', 'min:0', 'max:255'],
