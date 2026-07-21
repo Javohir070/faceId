@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-15T10:45:00.000Z",
-  "title": "Design System: olim.uz CMS",
+  "generatedAt": "2026-07-21T10:00:00.000Z",
+  "title": "Design System: Biocontrol",
   "extensions": {
     "stack": {
       "backend": "Laravel",
@@ -9,43 +9,44 @@
       "ui": "React 19 + JSX",
       "styling": "Tailwind CSS + Ant Design 6",
       "icons": "Ant Design Icons",
-      "editor": "Tiptap"
+      "theme": "AdminThemeProvider (light/dark)"
     },
     "colorMeta": {
       "brand": {
         "role": "primary",
-        "displayName": "Institutional Blue",
-        "canonical": "#3874ff",
+        "displayName": "Operations Green",
+        "canonical": "#228f5c",
         "tonalRamp": [
-          "#eef3ff",
-          "#dce7ff",
-          "#bfd1ff",
-          "#96b3ff",
-          "#6b91ff",
-          "#4e7cff",
-          "#3874ff",
-          "#2d5ecc",
-          "#294fa5",
-          "#284684",
-          "#182951"
+          "#eefaf3",
+          "#d8f3e4",
+          "#b3e6c9",
+          "#7fd3a8",
+          "#4aba82",
+          "#2f9e6b",
+          "#228f5c",
+          "#1b734b",
+          "#185c3e",
+          "#144b34",
+          "#0a2a1c"
         ]
       },
       "canvas": {
         "role": "neutral",
         "displayName": "Work Canvas",
-        "canonical": "#f5f7fa"
+        "canonical": "#f3f4f6",
+        "dark": "#0b1220"
       },
       "ink": {
         "role": "neutral",
         "displayName": "Slate Ink",
-        "canonical": "#31374a",
-        "muted": "#596579",
-        "subtle": "#6e7891"
+        "canonical": "#1f2937",
+        "muted": "#4b5563",
+        "subtle": "#6b7280"
       },
       "semantic": {
-        "positive": "#25b003",
-        "negative": "#dc2f18",
-        "caution": "#c96808"
+        "positive": "#228f5c",
+        "negative": "#dc2626",
+        "caution": "#ea580c"
       }
     },
     "typographyMeta": {
@@ -71,21 +72,21 @@
       }
     },
     "surfaces": {
-      "canvas": "#f5f7fa",
+      "canvas": "#f3f4f6",
       "surface": "#ffffff",
-      "surfaceMuted": "#eff2f6",
-      "line": "#e3e6ed",
-      "lineStrong": "#cbd0dd"
+      "surfaceMuted": "#f9fafb",
+      "line": "#e5e7eb",
+      "lineStrong": "#d1d5db"
     },
     "shadows": [
       {
         "name": "ambient",
-        "value": "0 2px 8px -3px rgba(36, 40, 46, 0.14)",
+        "value": "0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06)",
         "purpose": "Card, table shell va auth panel."
       },
       {
         "name": "floating",
-        "value": "0 12px 32px -12px rgba(36, 40, 46, 0.28)",
+        "value": "0 10px 28px -12px rgba(15, 23, 42, 0.22)",
         "purpose": "Dropdown va dialog."
       }
     ],
@@ -141,6 +142,20 @@
       "source": "antd"
     },
     {
+      "name": "Form Field",
+      "kind": "input",
+      "refersTo": "FormField",
+      "description": "Label, hint va InputError bilan o'ralgan forma maydoni.",
+      "source": "resources/js/Components/FormField.jsx"
+    },
+    {
+      "name": "Face Capture Field",
+      "kind": "input",
+      "refersTo": "FaceCaptureField",
+      "description": "Xodim yuz rasmini yuklash yoki kamera orqali olish.",
+      "source": "resources/js/Components/FaceCaptureField.jsx"
+    },
+    {
       "name": "Table Shell",
       "kind": "table",
       "refersTo": "table-shell",
@@ -155,38 +170,32 @@
       "source": "resources/js/Components/PageHeader.jsx"
     },
     {
-      "name": "Status Badge",
+      "name": "Role Badge",
       "kind": "status",
-      "refersTo": "StatusBadge",
-      "description": "Aktiv va nofaol holatni rang, nuqta va matn bilan ko'rsatadi.",
+      "refersTo": "RoleBadge",
+      "description": "Foydalanuvchi rolini rang va matn bilan ko'rsatadi.",
       "source": "resources/js/Components/PageHeader.jsx"
     },
     {
-      "name": "Language Tabs",
-      "kind": "tabs",
-      "refersTo": "LangTabs",
-      "description": "UZ, RU va EN maydonlari uchun xato holatini ko'rsatuvchi tablar.",
-      "source": "resources/js/Components/LangTabs.jsx"
-    },
-    {
-      "name": "Rich Text Editor",
-      "kind": "editor",
-      "refersTo": "RichTextEditor",
-      "description": "Tiptap asosidagi ko'p tilli matn muharriri.",
-      "source": "resources/js/Components/RichTextEditor.jsx"
+      "name": "Admin Theme Provider",
+      "kind": "theme",
+      "refersTo": "AdminThemeProvider",
+      "description": "Light/dark rejim va Ant Design token sinxronizatsiyasi.",
+      "source": "resources/js/Components/AdminThemeProvider.jsx"
     }
   ],
   "narrative": {
-    "northStar": "The Institutional Workbench",
-    "overview": "olim.uz CMS Laravel va Inertia orqali React interfeysida ishlaydi. Tailwind layout va responsive utilitylar uchun, Ant Design interaktiv komponentlar uchun yagona tizim beradi. Eski Phoenix/Bootstrap, Feather, Lucide va Summernote olib tashlangan.",
+    "northStar": "The Operations Console",
+    "overview": "Biocontrol Laravel va Inertia orqali React interfeysida ishlaydi. Tailwind layout va CSS variable tokenlar uchun, Ant Design interaktiv komponentlar uchun yagona tizim beradi. Light/dark tema AdminThemeProvider va app.css orqali boshqariladi.",
     "keyCharacteristics": [
-      "Product register: vazifaga yo'naltirilgan CMS",
+      "Product register: vazifaga yo'naltirilgan biometric davomat paneli",
       "Inertia React sahifalari va umumiy JSX komponentlari",
-      "Tailwind layout utilitylari va markaziy tokenlar",
+      "Tailwind layout utilitylari va markaziy CSS tokenlar",
       "Ant Design 6 komponentlari va ikonkalari",
-      "Tiptap rich text editor",
-      "O'zbekcha asosiy interfeys va UZ/RU/EN kontent maydonlari",
-      "Responsive sidebar, jadvallar va auth layout"
+      "FaceCaptureField biometric yuz ma'lumotlari uchun",
+      "Hikvision webhook integratsiyasi",
+      "O'zbekcha asosiy interfeys",
+      "Responsive sidebar, jadvallar, light/dark tema"
     ],
     "rules": [
       {
@@ -195,9 +204,14 @@
         "section": "system"
       },
       {
-        "name": "One Blue Rule",
-        "body": "Brand ko'k asosiy CTA, aktiv navigatsiya, fokus va tanlangan holatlarga ajratiladi.",
+        "name": "One Green Rule",
+        "body": "Brand yashil asosiy CTA, aktiv navigatsiya, fokus va tanlangan holatlarga ajratiladi.",
         "section": "colors"
+      },
+      {
+        "name": "Theme Sync Rule",
+        "body": "Light/dark tokenlar app.css va AdminThemeProvider orqali sinxron saqlanadi.",
+        "section": "theme"
       },
       {
         "name": "Flat Data Rule",
@@ -206,7 +220,7 @@
       },
       {
         "name": "Shared Component Rule",
-        "body": "Yangi CRUD sahifalari mavjud layout, header, action, status, pagination va forma komponentlarini qayta ishlatadi.",
+        "body": "Yangi CRUD sahifalari mavjud layout, header, action, pagination va forma komponentlarini qayta ishlatadi.",
         "section": "components"
       }
     ],
@@ -215,14 +229,16 @@
       "Ichki navigatsiya uchun Inertia Link, mutationlar uchun router yoki useForm ishlating",
       "Ant Design Icons to'plamidan izchil foydalaning",
       "Empty, loading, error, disabled va processing holatlarini yozing",
+      "Light va dark rejimlarda kontrastni tekshiring",
       "O'zbekcha matn va mobile kengliklarda overflow holatini tekshiring"
     ],
     "donts": [
-      "Phoenix/Bootstrap, Feather, Lucide yoki Summernote patternlarini qaytarmang",
+      "Feather, Lucide yoki uchinchi tomon UI kutubxonalarini qo'shmang",
       "public/build ichidagi generated assetlarni qo'lda tahrirlamang",
       "Inline style, !important, gradient text, glassmorphism yoki nested card ishlatmang",
       "Oddiy ichki anchor yoki qo'lda fetch bilan Inertia oqimini chetlab o'tmang",
-      "Past kontrastli ink-subtle rangini asosiy body matni sifatida ishlatmang"
+      "Past kontrastli ink-subtle rangini asosiy body matni sifatida ishlatmang",
+      "Theme tokenlarini faqat bitta qatlamda qoldirmang"
     ]
   }
 }

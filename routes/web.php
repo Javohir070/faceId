@@ -29,8 +29,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/biocontrol', [BiocontrolController::class, 'biocontrol'])->name('site.biocontrol');
-    Route::get('/http-host', [BiocontrolController::class, 'getHttpHost'])->name('site.http-host');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         $menuPermissions = config('menu_permissions.resources');

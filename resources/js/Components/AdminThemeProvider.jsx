@@ -8,7 +8,7 @@ import {
     useState,
 } from 'react';
 
-const STORAGE_KEY = 'olim.admin.theme';
+const STORAGE_KEY = 'biocontrol.admin.theme';
 const AdminThemeContext = createContext(null);
 
 function isAdminPath(pathname) {

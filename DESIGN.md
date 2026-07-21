@@ -1,23 +1,23 @@
 ---
-name: olim.uz CMS
-description: Laravel, Inertia React, Tailwind va Ant Design asosidagi institut kontent boshqaruv tizimi
+name: Biocontrol
+description: Laravel, Inertia React, Tailwind va Ant Design asosidagi biometric davomat va kirish nazorati boshqaruv tizimi
 colors:
-  brand-50: "#eef3ff"
-  brand-100: "#dce7ff"
-  brand-600: "#3874ff"
-  brand-700: "#2d5ecc"
-  brand-950: "#182951"
-  positive: "#25b003"
-  negative: "#dc2f18"
-  caution: "#c96808"
-  ink: "#31374a"
-  ink-muted: "#596579"
-  ink-subtle: "#6e7891"
+  brand-50: "#eefaf3"
+  brand-100: "#d8f3e4"
+  brand-600: "#228f5c"
+  brand-700: "#1b734b"
+  brand-950: "#0a2a1c"
+  positive: "#228f5c"
+  negative: "#dc2626"
+  caution: "#ea580c"
+  ink: "#1f2937"
+  ink-muted: "#4b5563"
+  ink-subtle: "#6b7280"
   surface: "#ffffff"
-  surface-muted: "#eff2f6"
-  canvas: "#f5f7fa"
-  line: "#e3e6ed"
-  line-strong: "#cbd0dd"
+  surface-muted: "#f9fafb"
+  canvas: "#f3f4f6"
+  line: "#e5e7eb"
+  line-strong: "#d1d5db"
 typography:
   page-title:
     fontFamily: '"Nunito Sans", ui-sans-serif, system-ui, sans-serif'
@@ -54,17 +54,17 @@ components:
     source: "antd:Button[type=primary]"
     backgroundColor: "{colors.brand-600}"
     textColor: "{colors.surface}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
   button-secondary:
     source: "antd:Button"
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
   input:
     source: "antd:Input"
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
   card:
     source: "resources/css/app.css:.card"
     backgroundColor: "{colors.surface}"
@@ -77,38 +77,39 @@ components:
     rounded: "{rounded.lg}"
 ---
 
-# Design System: olim.uz CMS
+# Design System: Biocontrol
 
 ## Overview
 
-**Creative North Star: “The Institutional Workbench”**
+**Creative North Star: “The Operations Console”**
 
-olim.uz — institut ma’lumotlarini boshqarish uchun task-first CMS. Amaldagi frontend **Laravel + Inertia React + Tailwind CSS + Ant Design 6** asosida qurilgan. Tailwind layout va responsive utilitylar uchun, Ant Design esa interaktiv komponentlar uchun ishlatiladi. UI kodining asosiy manbalari:
+Biocontrol — xodimlar, qurilmalar va jadvallar orqali biometric davomat hamda kirish nazoratini boshqarish uchun task-first admin panel. Amaldagi frontend **Laravel + Inertia React + Tailwind CSS + Ant Design 6** asosida qurilgan. Tailwind layout va responsive utilitylar uchun, Ant Design esa interaktiv komponentlar uchun ishlatiladi. UI kodining asosiy manbalari:
 
-- tokenlar: `tailwind.config.js`;
-- umumiy CSS komponentlar: `resources/css/app.css`;
+- tokenlar: `resources/css/app.css` (CSS variables) va `tailwind.config.js`;
+- tema: `resources/js/Components/AdminThemeProvider.jsx` (light/dark);
 - layoutlar: `resources/js/Layouts/AdminLayout.jsx` va `GuestLayout.jsx`;
 - qayta ishlatiladigan qismlar: `resources/js/Components`;
 - sahifalar: `resources/js/Pages`.
 
-Eski Phoenix/Bootstrap, Feather, Lucide va Summernote tizimi olib tashlangan. Generated `public/build` fayllari qo‘lda tahrirlanmaydi.
+Generated `public/build` fayllari qo‘lda tahrirlanmaydi.
 
 ## Visual language
 
-Interfeys kunduzgi ofis muhitida tez-tez ishlatiladi. Shu sabab light canvas, oq task surfaces, yuqori kontrastli slate matn va cheklangan institutsional ko‘k tanlangan.
+Interfeys xavfsizlik va HR operatorlari tomonidan uzoq vaqt ishlatiladi. Yashil brend biometric operatsiyalar va muvaffaqiyat holatlarini ifodalaydi; light va dark rejimlar `html[data-admin-theme]` orqali boshqariladi.
 
-- **Brand:** `brand-600` faqat primary CTA, aktiv nav, fokus va tanlangan holatlar uchun.
+- **Brand:** `brand-600` primary CTA, aktiv nav, fokus va tanlangan holatlar uchun. Dark rejimda `brand-400`/`brand-600` yorqinroq variant ishlatiladi.
 - **Canvas:** `canvas` sahifa foni; `surface` ish paneli; `surface-muted` toolbar, table header va hover.
 - **Ink:** asosiy matn `ink`, yordamchi matn `ink-muted`; `ink-subtle` faqat metadata va ikkilamchi label uchun.
 - **Semantic:** success `positive`, destructive `negative`, warning `caution`; rang doim matn yoki ikonka bilan birga keladi.
+- **Theme:** default dark; foydalanuvchi header orqali light/dark almashtiradi. Ant Design tokenlari `AdminThemeProvider` orqali sinxronlanadi.
 
 ## Typography
 
-Barcha product UI uchun bitta oila — **Nunito Sans**. Page title `text-2xl font-extrabold`, section title `text-lg font-extrabold`, boshqaruv label va tugmalari `text-sm font-bold`. Fluid display typography ishlatilmaydi. Uzun izohlar 65–75ch bilan cheklanadi.
+Barcha product UI uchun bitta oila — **Nunito Sans**. Page title `text-xl sm:text-2xl font-extrabold`, section title `text-lg font-extrabold`, boshqaruv label va tugmalari `text-sm font-bold`. Fluid display typography ishlatilmaydi. Uzun izohlar 65–75ch bilan cheklanadi.
 
 ## Layout and elevation
 
-- Desktopda 288px sidebar, 72px sticky header va markazda `max-w-[1440px]` content.
+- Desktopda collapsible sidebar, sticky header va to‘liq kenglikdagi content.
 - `lg`dan pastda sidebar overlay sifatida ochiladi; tablelar horizontal scroll oladi.
 - Data rows flat va `line` bilan ajratiladi. Nested cards ishlatilmaydi.
 - `shadow-ambient` card/table/auth panel uchun, `shadow-floating` faqat dropdown va dialog uchun.
@@ -117,30 +118,33 @@ Barcha product UI uchun bitta oila — **Nunito Sans**. Page title `text-2xl fon
 ## Component vocabulary
 
 - **Buttons:** Ant Design `Button`; primary, default, text va danger variantlari.
-- **Forms:** Ant Design `Input`, `InputNumber`, `Select`, `Upload`, `Checkbox`, `Switch`; `InputError`, `LangTabs`, `RichTextEditor`.
-- **CRUD:** `PageHeader`, `ResourceActions`, `FormActions`, `StatusBadge`, `EmptyState`, `Pagination`.
+- **Forms:** Ant Design `Input`, `InputNumber`, `Select`, `Upload`, `Checkbox`, `Switch`; `FormField`, `FormCard`, `InputError`.
+- **Biometric:** `FaceCaptureField` — xodim yuz rasmini yuklash yoki kamera orqali olish.
+- **CRUD:** `PageHeader`, `ResourceActions`, `FormActions`, `RoleBadge`, `EmptyState`, `Pagination`, `TableShell`, `ShowPage`.
 - **Navigation:** Inertia `Link`; mutation va logout uchun `router`; form submit uchun `useForm`.
 - **Icons:** faqat `@ant-design/icons`.
-- **Rich text:** Tiptap; toolbar va editor `RichTextEditor` orqali.
+- **Feedback:** `FlashMessages`; delete tasdiqlash Ant Design `Modal.confirm` orqali.
 
 ## Interaction rules
 
 Har bir interaktiv element default, hover, focus, active, disabled va processing holatiga ega bo‘lsin. Odatdagi transition 150–200ms va `ease-productive`. Motion faqat holatni tushuntiradi. `prefers-reduced-motion` global ravishda qo‘llab-quvvatlanadi.
 
-Delete kabi xavfli amallar native `<dialog>` orqali tasdiqlanadi. Empty state foydalanuvchiga keyingi harakatni ko‘rsatadi; loading uchun skeleton ishlatiladi.
+Empty state foydalanuvchiga keyingi harakatni ko‘rsatadi; loading uchun Ant Design `loading` prop ishlatiladi.
 
 ## Do
 
 - Mavjud token va umumiy komponentlarni qayta ishlating.
 - Ichki linklarda Inertia oqimini saqlang.
 - Admin va auth yuzalarida bir xil rang, radius, fokus va matn tizimini ishlating.
-- O‘zbekcha uzun label, UZ/RU/EN tab xatolari, mobile overflow va keyboard navigatsiyasini tekshiring.
+- Light va dark rejimlarda kontrast va hover holatlarini tekshiring.
+- O‘zbekcha uzun label, mobile overflow va keyboard navigatsiyasini tekshiring.
 - Matn kontrastini WCAG AA darajasida saqlang.
 
 ## Don’t
 
-- Phoenix/Bootstrap classlari, Feather/Lucide ikonkalari yoki Summernote qo‘shmang.
+- Feather/Lucide ikonkalari yoki uchinchi tomon UI kutubxonalarini qo‘shmang.
 - `public/build` ichidagi hashli assetlarni tahrirlamang.
 - Gradient text, glassmorphism, nested card, dekorativ motion yoki tasodifiy katta z-index ishlatmang.
 - Yangi sahifalarda inline style, yangi bir martalik rang yoki takroriy CRUD markup yaratmang.
 - `ink-subtle`ni asosiy body matni sifatida ishlatmang.
+- Theme tokenlarini faqat bitta joyda (CSS yoki JSX) qoldirmang — ikkalasi sinxron bo‘lishi kerak.
