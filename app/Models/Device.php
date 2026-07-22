@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Database\Factories\DeviceFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -124,6 +126,33 @@ class Device extends Model
             && $this->port > 0
             && $this->user !== ''
             && $this->password !== '';
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithIsapiHost($query)
+    {
+        return $query
+            ->whereNotNull('ip_address')
+            ->where('ip_address', '!=', '')
+            ->where('port', '>', 0)
+            ->whereNotNull('user')
+            ->where('user', '!=', '');
+    }
+
+    /**
+     * @return Collection<int, static>
+     */
+    public static function streamableFromDatabase(): Collection
+    {
+        return static::query()
+            ->withIsapiHost()
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (self $device): bool => $device->hasIsapiCredentials())
+            ->values();
     }
 
     /**

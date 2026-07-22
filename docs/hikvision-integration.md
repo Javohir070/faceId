@@ -15,6 +15,7 @@ ISAPI — Hikvision qurilmalari bilan HTTP orqali muloqot qilish uchun standart 
 | Yuz o'chirish | `/ISAPI/Intelligent/FDLib/FDDelete?format=json` | PUT |
 | Qurilma ma'lumoti | `/ISAPI/System/deviceInfo?format=json` | GET |
 | Webhook sozlash | `/ISAPI/Event/notification/httpHosts/1` | PUT |
+| Real-time event stream | `/ISAPI/Event/notification/alertStream` | GET |
 | Eshik ochish | `/ISAPI/AccessControl/RemoteControl/door/{doorNo}` | PUT |
 | Qayta yuklash | `/ISAPI/System/reboot` | PUT |
 
@@ -107,6 +108,55 @@ Qurilma ulanish paytida avtomatik webhook sozlanadi:
 
 Qabul qiluvchi: `app/Http/Controllers/WebhookController.php`
 
+## Real-time alertStream
+
+Face ID yoki eshik ochilishi eventlarini **real vaqtda** olish uchun Hikvision `alertStream` endpointidan foydalaniladi:
+
+```
+GET /ISAPI/Event/notification/alertStream
+```
+
+Bu uzluksiz HTTP stream — qurilma har bir eventni multipart/XML ko‘rinishida yuboradi.
+
+**Qurilmalar `.env` dan emas — `devices` jadvalidan olinadi** (IP, port, login, parol admin panelda saqlangan).
+
+### Yoqish
+
+`.env`:
+
+```env
+HIKVISION_ALERT_STREAM_ENABLED=true
+HIKVISION_EVENTS_PULL_ENABLED=false
+```
+
+`events_pull` ni o‘chirish tavsiya etiladi — eventlar dublikat bo‘lmasligi uchun.
+
+### Ishga tushirish
+
+Scheduler (`php artisan schedule:work`) ishlayotganda manager avtomatik bazadagi barcha qurilmalar uchun worker ochadi.
+
+Qo‘lda:
+
+```bash
+# Bazadagi barcha ISAPI qurilmalar
+php artisan devices:stream-events
+
+# Bitta qurilma (devices.id)
+php artisan devices:stream-events --device=1
+```
+
+Production uchun **Supervisor** yoki systemd orqali doimiy ishlatish kerak:
+
+```ini
+[program:biocontrol-alert-stream]
+command=php /path/to/artisan devices:stream-events
+autostart=true
+autorestart=true
+user=www-data
+```
+
+Kod: `app/Services/Hikvision/HikvisionAlertStreamService.php`
+
 ## Qurilma ping (fon monitoring)
 
 Har `HIKVISION_PING_INTERVAL` daqiqada barcha qurilmalarga ISAPI ping yuboriladi:
@@ -157,6 +207,8 @@ app/Services/Hikvision/
   IsapiClient.php           — HTTP Digest klient
   HikvisionUserService.php  — User CRUD + face
   HikvisionDeviceService.php — ulanish, webhook, reboot, eshik
+  HikvisionAlertStreamService.php — real-time alertStream
+  HikvisionEventParser.php — XML/multipart event parsing
   FaceImageOptimizer.php    — rasm siqish
   EmployeeSyncService.php   — xodim ↔ qurilma sync
 

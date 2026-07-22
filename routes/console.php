@@ -19,3 +19,9 @@ Schedule::command('devices:pull-events')
     ->when(fn (): bool => (bool) config('hikvision.events_pull_enabled', true))
     ->withoutOverlapping()
     ->runInBackground();
+
+Schedule::command('devices:stream-events')
+    ->everyMinute()
+    ->when(fn (): bool => (bool) config('hikvision.alert_stream_enabled', false))
+    ->withoutOverlapping()
+    ->runInBackground();

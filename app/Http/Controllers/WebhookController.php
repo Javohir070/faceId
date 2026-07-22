@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
+use App\Services\Hikvision\HikvisionEventParser;
 use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use SimpleXMLElement;
 
 class WebhookController extends Controller
 {
     public function __construct(
         private readonly ReportService $reportService,
+        private readonly HikvisionEventParser $eventParser,
     ) {}
 
     public function hikvision(Request $request): JsonResponse
@@ -73,29 +74,17 @@ class WebhookController extends Controller
             $raw = $request->input($field);
 
             if (is_array($raw)) {
-                return $this->normalizeEventPayload($raw, $request);
+                return $this->eventParser->normalizePayload($raw, $request->ip());
             }
 
             if (! is_string($raw) || trim($raw) === '') {
                 continue;
             }
 
-            $raw = trim($raw);
+            $parsed = $this->eventParser->parseRaw(trim($raw), $request->ip());
 
-            if (str_starts_with($raw, '{') || str_starts_with($raw, '[')) {
-                $decoded = json_decode($raw, true);
-
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                    return $this->normalizeEventPayload($decoded, $request);
-                }
-            }
-
-            if (str_starts_with($raw, '<')) {
-                $parsed = $this->parseXmlEvent($raw, $request);
-
-                if ($parsed !== null) {
-                    return $parsed;
-                }
+            if ($parsed !== null) {
+                return $parsed;
             }
         }
 
@@ -113,81 +102,11 @@ class WebhookController extends Controller
                     return null;
                 }
 
-                return $this->normalizeEventPayload($decoded, $request);
+                return $this->eventParser->normalizePayload($decoded, $request->ip());
             }
         }
 
-        if (str_starts_with($rawBody, '<')) {
-            return $this->parseXmlEvent($rawBody, $request);
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $event
-     * @return array<string, mixed>
-     */
-    private function normalizeEventPayload(array $event, Request $request): array
-    {
-        if (! isset($event['AccessControllerEvent']) && $this->looksLikeAccessControllerEvent($event)) {
-            $event = [
-                'ipAddress' => $request->ip(),
-                'dateTime' => now()->toIso8601String(),
-                'AccessControllerEvent' => $event,
-            ];
-        }
-
-        if (! isset($event['ipAddress'])) {
-            $event['ipAddress'] = $request->ip();
-        }
-
-        return $event;
-    }
-
-    /**
-     * @param  array<string, mixed>  $event
-     */
-    private function looksLikeAccessControllerEvent(array $event): bool
-    {
-        return isset($event['employeeNoString'])
-            || isset($event['employeeNo'])
-            || isset($event['cardNo'])
-            || isset($event['majorEventType'])
-            || isset($event['major']);
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function parseXmlEvent(string $xml, Request $request): ?array
-    {
-        $previous = libxml_use_internal_errors(true);
-        libxml_clear_errors();
-
-        $document = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NOCDATA);
-
-        libxml_use_internal_errors($previous);
-
-        if ($document === false) {
-            return null;
-        }
-
-        $root = json_decode(json_encode($document), true);
-
-        if (! is_array($root)) {
-            return null;
-        }
-
-        if (isset($root['EventNotificationAlert']) && is_array($root['EventNotificationAlert'])) {
-            $root = $root['EventNotificationAlert'];
-        }
-
-        if (isset($root['AccessControllerEvent']) && is_array($root['AccessControllerEvent'])) {
-            return $this->normalizeEventPayload($root, $request);
-        }
-
-        return $this->normalizeEventPayload($root, $request);
+        return $this->eventParser->parseRaw($rawBody, $request->ip());
     }
 
     private function assertWebhookSecret(Request $request): void

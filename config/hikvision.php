@@ -39,6 +39,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Real-time alertStream (GET /ISAPI/Event/notification/alertStream)
+    |--------------------------------------------------------------------------
+    |
+    | Uzluksiz HTTP stream orqali eshik ochilishi va Face ID eventlarini oladi.
+    | Ishga tushirish: php artisan devices:stream-events
+    |
+    | alertStream yoqilganda events_pull ni o‘chirish tavsiya etiladi (dublikatdan).
+    |
+    */
+
+    'alert_stream_enabled' => env('HIKVISION_ALERT_STREAM_ENABLED', true),
+
+    'alert_stream_timeout' => (int) env('HIKVISION_ALERT_STREAM_TIMEOUT', 0),
+
+    'alert_stream_reconnect_seconds' => max((int) env('HIKVISION_ALERT_STREAM_RECONNECT', 5), 1),
+
+    /*
+    |--------------------------------------------------------------------------
     | ISAPI defaults
     |--------------------------------------------------------------------------
     */
