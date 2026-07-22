@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { Button, Checkbox, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
 
 function PanelTable({
@@ -159,7 +160,7 @@ export default function Index({ devices, employees, categories, departments }) {
 
     const submitTransfer = () => {
         setTransferring(true);
-        router.post('/admin/sync/transfer', {
+        router.post(route('admin.sync.transfer'), {
             device_ids: selectedDeviceIds,
             employee_ids: selectedEmployeeIds,
         }, {

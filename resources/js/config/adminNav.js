@@ -12,6 +12,7 @@ import {
     SyncOutlined,
     TeamOutlined,
 } from '@ant-design/icons';
+import { route } from '../routes';
 
 /** Sidebar guruhlari — tartib muhim */
 export const adminNavGroups = [
@@ -19,22 +20,22 @@ export const adminNavGroups = [
         id: 'main',
         title: null,
         items: [
-            { key: 'home', href: '/dashboard', label: 'Bosh sahifa', icon: HomeOutlined },
-            { key: 'categories', href: '/admin/categories', label: 'Kategoriyalar', icon: AppstoreOutlined },
-            { key: 'devices', href: '/admin/devices', label: 'Qurilmalar', icon: ClusterOutlined },
-            { key: 'sync', href: '/admin/sync', label: 'Sinxronizatsiya', icon: SyncOutlined },
-            { key: 'departments', href: '/admin/departments', label: "Bo'limlar", icon: BankOutlined },
-            { key: 'schedules', href: '/admin/schedules', label: 'Jadvallar', icon: CalendarOutlined },
-            { key: 'employees', href: '/admin/employees', label: 'Xodimlar', icon: IdcardOutlined },
-            { key: 'reports', href: '/admin/reports', label: 'Hisobotlar', icon: FileTextOutlined },
+            { key: 'home', href: route('home.index'), label: 'Bosh sahifa', icon: HomeOutlined },
+            { key: 'categories', href: route('admin.categories.index'), label: 'Kategoriyalar', icon: AppstoreOutlined },
+            { key: 'devices', href: route('admin.devices.index'), label: 'Qurilmalar', icon: ClusterOutlined },
+            { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
+            { key: 'departments', href: route('admin.departments.index'), label: "Bo'limlar", icon: BankOutlined },
+            { key: 'schedules', href: route('admin.schedules.index'), label: 'Jadvallar', icon: CalendarOutlined },
+            { key: 'employees', href: route('admin.employees.index'), label: 'Xodimlar', icon: IdcardOutlined },
+            { key: 'reports', href: route('admin.reports.index'), label: 'Hisobotlar', icon: FileTextOutlined },
             {
                 key: 'settings',
                 label: 'Sozlamalar',
                 icon: SettingOutlined,
                 children: [
-                    { key: 'users', href: '/admin/users', label: 'Foydalanuvchilar', icon: TeamOutlined },
-                    { key: 'roles', href: '/admin/roles', label: 'Rollar', icon: SafetyCertificateOutlined },
-                    { key: 'permissions', href: '/admin/permissions', label: 'Ruxsatlar', icon: KeyOutlined },
+                    { key: 'users', href: route('admin.users.index'), label: 'Foydalanuvchilar', icon: TeamOutlined },
+                    { key: 'roles', href: route('admin.roles.index'), label: 'Rollar', icon: SafetyCertificateOutlined },
+                    { key: 'permissions', href: route('admin.permissions.index'), label: 'Ruxsatlar', icon: KeyOutlined },
                 ],
             },
         ],

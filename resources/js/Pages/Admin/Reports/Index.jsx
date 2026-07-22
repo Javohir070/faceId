@@ -3,6 +3,7 @@ import { Button, DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { EmptyState } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -41,7 +42,7 @@ export default function Index({
             Object.entries(form).filter(([, value]) => value !== null && value !== undefined && value !== ''),
         );
 
-        router.get('/admin/reports', payload, {
+        router.get(route('admin.reports.index'), payload, {
             preserveScroll: true,
             preserveState: true,
         });
@@ -59,7 +60,7 @@ export default function Index({
             date_to: null,
         });
 
-        router.get('/admin/reports', {}, {
+        router.get(route('admin.reports.index'), {}, {
             preserveScroll: true,
             preserveState: true,
         });

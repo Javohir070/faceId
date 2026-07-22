@@ -15,31 +15,32 @@ import {
 } from '@ant-design/icons';
 import { Alert, Button } from 'antd';
 import AdminLayout from '../../Layouts/AdminLayout';
+import { route } from '../../routes';
 
 const quickActions = [
     {
         key: 'employees',
-        href: '/admin/employees/create',
+        href: route('admin.employees.create'),
         label: "Xodim qo'shish",
         icon: IdcardOutlined,
         primary: true,
     },
     {
         key: 'devices',
-        href: '/admin/devices/create',
+        href: route('admin.devices.create'),
         label: "Qurilma qo'shish",
         icon: ClusterOutlined,
         primary: true,
     },
     {
         key: 'sync',
-        href: '/admin/sync',
+        href: route('admin.sync.index'),
         label: 'Sinxronizatsiya',
         icon: SyncOutlined,
     },
     {
         key: 'reports',
-        href: '/admin/reports',
+        href: route('admin.reports.index'),
         label: 'Hisobotlar',
         icon: FileTextOutlined,
     },
@@ -52,28 +53,28 @@ const moduleGroups = [
         items: [
             {
                 key: 'employees',
-                href: '/admin/employees',
+                href: route('admin.employees.index'),
                 label: 'Xodimlar',
                 description: 'Yuz ma’lumotlari va kirish huquqlari',
                 icon: IdcardOutlined,
             },
             {
                 key: 'devices',
-                href: '/admin/devices',
+                href: route('admin.devices.index'),
                 label: 'Qurilmalar',
                 description: 'Hikvision qurilmalarini boshqarish',
                 icon: ClusterOutlined,
             },
             {
                 key: 'sync',
-                href: '/admin/sync',
+                href: route('admin.sync.index'),
                 label: 'Sinxronizatsiya',
                 description: 'Qurilmalar bilan ma’lumot almashinuvi',
                 icon: SyncOutlined,
             },
             {
                 key: 'reports',
-                href: '/admin/reports',
+                href: route('admin.reports.index'),
                 label: 'Hisobotlar',
                 description: 'Kirish va davomat hodisalari',
                 icon: FileTextOutlined,
@@ -86,21 +87,21 @@ const moduleGroups = [
         items: [
             {
                 key: 'departments',
-                href: '/admin/departments',
+                href: route('admin.departments.index'),
                 label: "Bo'limlar",
                 description: 'Tashkiliy tuzilma va bo‘linmalar',
                 icon: BankOutlined,
             },
             {
                 key: 'schedules',
-                href: '/admin/schedules',
+                href: route('admin.schedules.index'),
                 label: 'Jadvallar',
                 description: 'Ish vaqti jadvallarini sozlash',
                 icon: CalendarOutlined,
             },
             {
                 key: 'categories',
-                href: '/admin/categories',
+                href: route('admin.categories.index'),
                 label: 'Kategoriyalar',
                 description: 'Qurilma kategoriyalari',
                 icon: AppstoreOutlined,
@@ -114,21 +115,21 @@ const moduleGroups = [
         items: [
             {
                 key: 'users',
-                href: '/admin/users',
+                href: route('admin.users.index'),
                 label: 'Foydalanuvchilar',
                 description: 'Tizimga kiruvchi hisoblar',
                 icon: TeamOutlined,
             },
             {
                 key: 'roles',
-                href: '/admin/roles',
+                href: route('admin.roles.index'),
                 label: 'Rollar',
                 description: 'Foydalanuvchi rollarini boshqarish',
                 icon: SafetyCertificateOutlined,
             },
             {
                 key: 'permissions',
-                href: '/admin/permissions',
+                href: route('admin.permissions.index'),
                 label: 'Ruxsatlar',
                 description: 'Modul va amal huquqlari',
                 icon: KeyOutlined,
@@ -138,10 +139,10 @@ const moduleGroups = [
 ];
 
 const statLinks = {
-    employees: '/admin/employees',
-    devices: '/admin/devices',
-    departments: '/admin/departments',
-    users: '/admin/users',
+    employees: route('admin.employees.index'),
+    devices: route('admin.devices.index'),
+    departments: route('admin.departments.index'),
+    users: route('admin.users.index'),
 };
 
 function greetingForHour(hour) {
@@ -390,7 +391,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                             size="small"
                             type="link"
                             className="!font-bold"
-                            onClick={() => router.visit('/admin/devices')}
+                            onClick={() => router.visit(route('admin.devices.index'))}
                         >
                             Qurilmalar
                         </Button>
@@ -458,7 +459,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                 </div>
                                 {can.reports ? (
                                     <Link
-                                        href="/admin/reports"
+                                        href={route('admin.reports.index')}
                                         className="shrink-0 text-xs font-bold text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
                                     >
                                         Barchasi
@@ -487,7 +488,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                             <ul className="divide-y divide-line text-sm leading-6 text-ink-muted">
                                 {can.departments ? (
                                     <li className="px-4 py-3.5 sm:px-5">
-                                        <Link href="/admin/departments" className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                                        <Link href={route('admin.departments.index')} className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
                                             Bo‘lim yarating
                                         </Link>
                                         {' '}— xodimlarni tuzilma bo‘yicha guruhlang.
@@ -495,7 +496,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                 ) : null}
                                 {can.employees ? (
                                     <li className="px-4 py-3.5 sm:px-5">
-                                        <Link href="/admin/employees/create" className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                                        <Link href={route('admin.employees.create')} className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
                                             Xodim qo‘shing
                                         </Link>
                                         {' '}— yuz ma’lumotlari va karta bilan.
@@ -503,7 +504,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                 ) : null}
                                 {can.devices ? (
                                     <li className="px-4 py-3.5 sm:px-5">
-                                        <Link href="/admin/devices/create" className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                                        <Link href={route('admin.devices.create')} className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
                                             Qurilma ulang
                                         </Link>
                                         {' '}— keyin sinxronizatsiya qiling.

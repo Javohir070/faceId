@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -9,12 +10,12 @@ export default function Index({ schedules }) {
             <PageHeader
                 title="Jadvallar"
                 subtitle="Kirish va chiqish vaqtlarini boshqaring."
-                createHref="/admin/schedules/create"
+                createHref={route('admin.schedules.create')}
                 createLabel="Jadval qo'shish"
             />
             <TableShell
                 empty={schedules.data.length === 0}
-                createHref="/admin/schedules/create"
+                createHref={route('admin.schedules.create')}
                 createLabel="Jadval qo'shish"
                 footer={schedules.data.length > 0 ? (
                     <Pagination
@@ -43,9 +44,9 @@ export default function Index({ schedules }) {
                                 <td className="font-medium">{schedule.exit_time}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/schedules/${schedule.id}`}
-                                        editHref={`/admin/schedules/${schedule.id}/edit`}
-                                        deleteHref={`/admin/schedules/${schedule.id}`}
+                                        showHref={route('admin.schedules.show', schedule.id)}
+                                        editHref={route('admin.schedules.edit', schedule.id)}
+                                        deleteHref={route('admin.schedules.destroy', schedule.id)}
                                     />
                                 </td>
                             </tr>

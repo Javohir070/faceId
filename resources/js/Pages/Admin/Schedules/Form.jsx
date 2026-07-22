@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
@@ -14,8 +15,8 @@ export default function Form({ schedule }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/schedules/${schedule.id}`);
-        else post('/admin/schedules');
+        if (isEdit) put(route('admin.schedules.update', schedule.id));
+        else post(route('admin.schedules.store'));
     };
 
     return (
@@ -23,10 +24,10 @@ export default function Form({ schedule }) {
             <FormCard
                 title={isEdit ? 'Jadvalni tahrirlash' : 'Yangi jadval'}
                 subtitle="Jadval nomi va kirish/chiqish vaqtlarini kiriting."
-                backHref="/admin/schedules"
+                backHref={route('admin.schedules.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/schedules"
+                cancelHref={route('admin.schedules.index')}
                 width="md"
             >
                 <FormField label="Nomi" error={errors.name} required>

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
+use App\Http\Resources\DeviceResource;
 use App\Models\Device;
 use App\Services\DeviceService;
 use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,32 +20,14 @@ class DeviceController extends Controller
         private readonly HikvisionDeviceService $hikvisionDeviceService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $devices = $this->deviceService->paginate(12);
 
-        $devices->getCollection()->transform(fn (Device $device): array => [
-            'id' => $device->id,
-            'name' => $device->name,
-            'description' => $device->description,
-            'ip_address' => $device->ip_address,
-            'port' => $device->port,
-            'user' => $device->user,
-            'password' => $device->password,
-            'type' => $device->type,
-            'type_label' => $this->deviceService->typeLabel($device),
-            'is_connected' => $device->is_online,
-            'autoconnect' => $device->autoconnect,
-            'is_online' => $device->is_online,
-            'webhook_configured' => $device->webhook_configured,
-            'last_connected_at' => $device->last_connected_at?->format('Y-m-d H:i'),
-            'last_ping_at' => $device->last_ping_at?->format('Y-m-d H:i'),
-            'category' => $device->category?->only(['id', 'name']),
-            'owner' => $device->owner?->only(['id', 'name']),
-        ]);
-
         return Inertia::render('Admin/Devices/Index', [
-            'devices' => $devices,
+            'devices' => $devices->through(
+                fn (Device $device): array => DeviceResource::make($device)->toArray($request),
+            ),
         ]);
     }
 
@@ -72,45 +56,21 @@ class DeviceController extends Controller
             ->with('success', 'Qurilma muvaffaqiyatli yaratildi.');
     }
 
-    public function show(Device $device): Response
+    public function show(Request $request, Device $device): Response
     {
         $device = $this->deviceService->loadForShow($device);
 
         return Inertia::render('Admin/Devices/Show', [
-            'device' => [
-                'id' => $device->id,
-                'name' => $device->name,
-                'description' => $device->description,
-                'ip_address' => $device->ip_address,
-                'port' => $device->port,
-                'use_https' => $device->use_https,
-                'user' => $device->user,
-                'type' => $device->type,
-                'autoconnect' => $device->autoconnect,
-                'created_at' => $device->created_at,
-                'category' => $device->category?->only(['id', 'name']),
-                'owner' => $device->owner?->only(['id', 'name']),
-            ],
+            'device' => DeviceResource::make($device)->toArray($request),
         ]);
     }
 
-    public function edit(Device $device): Response
+    public function edit(Request $request, Device $device): Response
     {
         $device = $this->deviceService->loadForEdit($device);
 
         return Inertia::render('Admin/Devices/Form', [
-            'device' => [
-                'id' => $device->id,
-                'category_id' => $device->category_id,
-                'name' => $device->name,
-                'description' => $device->description,
-                'ip_address' => $device->ip_address,
-                'port' => $device->port,
-                'use_https' => $device->use_https,
-                'user' => $device->user,
-                'type' => $device->type,
-                'autoconnect' => $device->autoconnect,
-            ],
+            'device' => DeviceResource::make($device)->toArray($request),
             'categories' => $this->deviceService->getCategoriesForForm()->map->only(['id', 'name'])->values(),
         ]);
     }

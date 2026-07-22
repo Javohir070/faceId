@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions, RoleBadge } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -17,12 +18,12 @@ export default function Index({ users }) {
             <PageHeader
                 title="Foydalanuvchilar"
                 subtitle="Tizimdagi barcha foydalanuvchilar ro'yxati"
-                createHref="/admin/users/create"
+                createHref={route('admin.users.create')}
                 createLabel="Foydalanuvchi qo'shish"
             />
             <TableShell
                 empty={users.data.length === 0}
-                createHref="/admin/users/create"
+                createHref={route('admin.users.create')}
                 createLabel="Foydalanuvchi qo'shish"
                 footer={users.data.length > 0 ? pagination : null}
             >
@@ -69,8 +70,8 @@ export default function Index({ users }) {
                                     </td>
                                     <td>
                                         <ResourceActions
-                                            editHref={`/admin/users/${user.id}/edit`}
-                                            deleteHref={`/admin/users/${user.id}`}
+                                            editHref={route('admin.users.edit', user.id)}
+                                            deleteHref={route('admin.users.destroy', user.id)}
                                         />
                                     </td>
                                 </tr>

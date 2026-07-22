@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -9,12 +10,12 @@ export default function Index({ categories }) {
             <PageHeader
                 title="Kategoriyalar"
                 subtitle="Qurilmalar uchun kategoriyalarni boshqaring."
-                createHref="/admin/categories/create"
+                createHref={route('admin.categories.create')}
                 createLabel="Kategoriya qo'shish"
             />
             <TableShell
                 empty={categories.data.length === 0}
-                createHref="/admin/categories/create"
+                createHref={route('admin.categories.create')}
                 createLabel="Kategoriya qo'shish"
                 footer={categories.data.length > 0 ? (
                     <Pagination
@@ -41,9 +42,9 @@ export default function Index({ categories }) {
                                 <td className="font-medium">{category.devices_count ?? 0}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/categories/${category.id}`}
-                                        editHref={`/admin/categories/${category.id}/edit`}
-                                        deleteHref={`/admin/categories/${category.id}`}
+                                        showHref={route('admin.categories.show', category.id)}
+                                        editHref={route('admin.categories.edit', category.id)}
+                                        deleteHref={route('admin.categories.destroy', category.id)}
                                     />
                                 </td>
                             </tr>

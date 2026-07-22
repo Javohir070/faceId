@@ -1,5 +1,6 @@
 import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
 
 function DetailRow({ label, children }) {
@@ -15,11 +16,11 @@ export default function Show({ device }) {
     return (
         <AdminLayout title="Qurilma">
             <ShowPage
-                backHref="/admin/devices"
+                backHref={route('admin.devices.index')}
                 title={device.name}
                 subtitle={device.description}
-                editHref={`/admin/devices/${device.id}/edit`}
-                deleteHref={`/admin/devices/${device.id}`}
+                editHref={route('admin.devices.edit', device.id)}
+                deleteHref={route('admin.devices.destroy', device.id)}
                 maxWidth="max-w-2xl"
             >
                 <dl>

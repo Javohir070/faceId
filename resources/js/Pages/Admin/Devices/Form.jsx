@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Checkbox, Input, InputNumber, Select } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
@@ -21,8 +22,8 @@ export default function Form({ device, categories = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/devices/${device.id}`);
-        else post('/admin/devices');
+        if (isEdit) put(route('admin.devices.update', device.id));
+        else post(route('admin.devices.store'));
     };
 
     return (
@@ -30,10 +31,10 @@ export default function Form({ device, categories = [] }) {
             <FormCard
                 title={isEdit ? 'Qurilmani tahrirlash' : 'Yangi qurilma'}
                 subtitle="Ulanish ma'lumotlari va kategoriya ni belgilang."
-                backHref="/admin/devices"
+                backHref={route('admin.devices.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/devices"
+                cancelHref={route('admin.devices.index')}
                 width="lg"
             >
                 <FormField label="Kategoriya" error={errors.category_id} required>

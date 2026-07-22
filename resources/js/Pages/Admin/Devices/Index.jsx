@@ -4,9 +4,10 @@ import {
     CaretUpOutlined,
     MoreOutlined,
 } from '@ant-design/icons';
-import { App as AntApp, Checkbox, Dropdown } from 'antd';
+import { App as AntApp, Checkbox, Dropdown, Tag } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -25,13 +26,13 @@ function SortableHeader({ children }) {
 
 function runDeviceAction(deviceId, action, { modal, onDone }) {
     const routes = {
-        connect: `/admin/devices/${deviceId}/connect`,
-        disconnect: `/admin/devices/${deviceId}/disconnect`,
-        ping: `/admin/devices/${deviceId}/ping`,
-        open: `/admin/devices/${deviceId}/open`,
-        restart: `/admin/devices/${deviceId}/restart`,
-        clear: `/admin/devices/${deviceId}/clear`,
-        sync: `/admin/devices/${deviceId}/sync-employees`,
+        connect: route('admin.devices.connect', deviceId),
+        disconnect: route('admin.devices.disconnect', deviceId),
+        ping: route('admin.devices.ping', deviceId),
+        open: route('admin.devices.open', deviceId),
+        restart: route('admin.devices.restart', deviceId),
+        clear: route('admin.devices.clear', deviceId),
+        sync: route('admin.devices.sync-employees', deviceId),
     };
 
     const url = routes[action];
@@ -161,12 +162,12 @@ export default function Index({ devices }) {
             <PageHeader
                 title="Qurilmalar"
                 subtitle="Hikvision Face ID qurilmalarini ISAPI orqali boshqaring."
-                createHref="/admin/devices/create"
+                createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
             />
             <TableShell
                 empty={devices.data.length === 0}
-                createHref="/admin/devices/create"
+                createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
                 footer={devices.data.length > 0 ? (
                     <div className="flex w-full flex-wrap items-center justify-between gap-3">
@@ -228,7 +229,7 @@ export default function Index({ devices }) {
                                     <button
                                         type="button"
                                         className="font-medium text-brand-600 transition hover:text-brand-700 hover:underline"
-                                        onClick={() => router.visit(`/admin/devices/${device.id}`)}
+                                        onClick={() => router.visit(route('admin.devices.show', device.id))}
                                     >
                                         {device.name}
                                     </button>
@@ -236,7 +237,11 @@ export default function Index({ devices }) {
                                 <td className="font-medium">{device.ip_address}</td>
                                 <td className="font-medium">{device.port}</td>
                                 <td className="font-medium">{device.user}</td>
-                                <td className="font-medium">{device.password || '—'}</td>
+                                <td>
+                                    <Tag color={device.has_password ? 'success' : 'default'}>
+                                        {device.has_password ? 'Sozlangan' : "Yo'q"}
+                                    </Tag>
+                                </td>
                                 <td className="font-medium">{device.type_label}</td>
                                 <td>
                                     <div>

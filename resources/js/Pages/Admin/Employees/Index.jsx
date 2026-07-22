@@ -1,5 +1,6 @@
 import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -10,12 +11,12 @@ export default function Index({ employees }) {
             <PageHeader
                 title="Xodimlar"
                 subtitle="Xodimlar, kartalar, yuz rasmlari va bo'limlarni boshqaring."
-                createHref="/admin/employees/create"
+                createHref={route('admin.employees.create')}
                 createLabel="Xodim qo'shish"
             />
             <TableShell
                 empty={employees.data.length === 0}
-                createHref="/admin/employees/create"
+                createHref={route('admin.employees.create')}
                 createLabel="Xodim qo'shish"
                 footer={employees.data.length > 0 ? (
                     <Pagination
@@ -58,9 +59,9 @@ export default function Index({ employees }) {
                                 </td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/employees/${employee.id}`}
-                                        editHref={`/admin/employees/${employee.id}/edit`}
-                                        deleteHref={`/admin/employees/${employee.id}`}
+                                        showHref={route('admin.employees.show', employee.id)}
+                                        editHref={route('admin.employees.edit', employee.id)}
+                                        deleteHref={route('admin.employees.destroy', employee.id)}
                                     />
                                 </td>
                             </tr>

@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
@@ -12,8 +13,8 @@ export default function Form({ department }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/departments/${department.id}`);
-        else post('/admin/departments');
+        if (isEdit) put(route('admin.departments.update', department.id));
+        else post(route('admin.departments.store'));
     };
 
     return (
@@ -21,10 +22,10 @@ export default function Form({ department }) {
             <FormCard
                 title={isEdit ? "Bo'limni tahrirlash" : "Yangi bo'lim"}
                 subtitle="Bo'lim nomini kiriting."
-                backHref="/admin/departments"
+                backHref={route('admin.departments.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/departments"
+                cancelHref={route('admin.departments.index')}
                 width="sm"
             >
                 <FormField label="Nomi" error={errors.name} required>

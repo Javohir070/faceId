@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
@@ -12,8 +13,8 @@ export default function Form({ permission }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/permissions/${permission.id}`);
-        else post('/admin/permissions');
+        if (isEdit) put(route('admin.permissions.update', permission.id));
+        else post(route('admin.permissions.store'));
     };
 
     return (
@@ -21,10 +22,10 @@ export default function Form({ permission }) {
             <FormCard
                 title={isEdit ? 'Ruxsatni tahrirlash' : "Yangi ruxsat"}
                 subtitle="Ruxsat nomini kiriting (masalan: users.view)."
-                backHref="/admin/permissions"
+                backHref={route('admin.permissions.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/permissions"
+                cancelHref={route('admin.permissions.index')}
                 width="sm"
             >
                 <FormField label="Ruxsat nomi" error={errors.name} required>

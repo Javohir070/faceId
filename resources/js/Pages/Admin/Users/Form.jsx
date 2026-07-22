@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Checkbox, Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
@@ -25,8 +26,8 @@ export default function Form({ user, roles = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/users/${user.id}`);
-        else post('/admin/users');
+        if (isEdit) put(route('admin.users.update', user.id));
+        else post(route('admin.users.store'));
     };
 
     return (
@@ -34,10 +35,10 @@ export default function Form({ user, roles = [] }) {
             <FormCard
                 title={isEdit ? 'Foydalanuvchini tahrirlash' : "Yangi foydalanuvchi"}
                 subtitle="Ism, email, parol va rollarni belgilang."
-                backHref="/admin/users"
+                backHref={route('admin.users.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/users"
+                cancelHref={route('admin.users.index')}
                 width="lg"
             >
                 <FormField label="Ism" error={errors.name} required>

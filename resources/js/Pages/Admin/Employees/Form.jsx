@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Input, Select } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FaceCaptureField from '../../../Components/FaceCaptureField';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
@@ -23,9 +24,9 @@ export default function Form({ employee, departments = [], schedules = [] }) {
     const submit = (e) => {
         e.preventDefault();
         if (isEdit) {
-            post(`/admin/employees/${employee.id}`, { forceFormData: true });
+            post(route('admin.employees.update', employee.id), { forceFormData: true });
         } else {
-            post('/admin/employees', { forceFormData: true });
+            post(route('admin.employees.store'), { forceFormData: true });
         }
     };
 
@@ -34,10 +35,10 @@ export default function Form({ employee, departments = [], schedules = [] }) {
             <FormCard
                 title={isEdit ? 'Xodimni tahrirlash' : 'Yangi xodim'}
                 subtitle="Chapda ma'lumotlar, o'ngda yuz rasmi — ochiq va qulay."
-                backHref="/admin/employees"
+                backHref={route('admin.employees.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/employees"
+                cancelHref={route('admin.employees.index')}
                 width="full"
             >
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">

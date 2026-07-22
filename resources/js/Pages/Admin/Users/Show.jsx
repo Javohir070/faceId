@@ -1,16 +1,17 @@
 import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
 
 export default function Show({ user }) {
     return (
         <AdminLayout title="Foydalanuvchi">
             <ShowPage
-                backHref="/admin/users"
+                backHref={route('admin.users.index')}
                 title={user.name}
                 subtitle={user.email}
-                editHref={`/admin/users/${user.id}/edit`}
-                deleteHref={`/admin/users/${user.id}`}
+                editHref={route('admin.users.edit', user.id)}
+                deleteHref={route('admin.users.destroy', user.id)}
                 maxWidth="max-w-2xl"
             >
                 <div>

@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { App as AntApp, Button, Checkbox, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
 
 function DetailRow({ label, children }) {
@@ -61,7 +62,7 @@ function EmployeeDevicesPanel({ employeeId, devices }) {
             okButtonProps: { danger: true },
             onOk: () => new Promise((resolve, reject) => {
                 setRemoving(true);
-                router.post(`/admin/employees/${employeeId}/remove-devices`, {
+                router.post(route('admin.employees.remove-devices', employeeId), {
                     device_ids: selectedIds,
                 }, {
                     preserveScroll: true,
@@ -151,7 +152,7 @@ function EmployeeDevicesPanel({ employeeId, devices }) {
                                     <button
                                         type="button"
                                         className="font-medium text-brand-600 transition hover:text-brand-700 hover:underline"
-                                        onClick={() => router.visit(`/admin/devices/${device.id}`)}
+                                        onClick={() => router.visit(route('admin.devices.show', device.id))}
                                     >
                                         {device.name}
                                     </button>
@@ -186,11 +187,11 @@ export default function Show({ employee }) {
     return (
         <AdminLayout title="Xodim">
             <ShowPage
-                backHref="/admin/employees"
+                backHref={route('admin.employees.index')}
                 title={employee.name}
                 subtitle={`Karta: ${employee.card}`}
-                editHref={`/admin/employees/${employee.id}/edit`}
-                deleteHref={`/admin/employees/${employee.id}`}
+                editHref={route('admin.employees.edit', employee.id)}
+                deleteHref={route('admin.employees.destroy', employee.id)}
             >
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,360px)_1fr]">
                     <div>

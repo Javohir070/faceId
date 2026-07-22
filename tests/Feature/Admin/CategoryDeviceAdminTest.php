@@ -38,7 +38,9 @@ class CategoryDeviceAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.devices.index'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Admin/Devices/Index'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Devices/Index')
+                ->has('devices.data', 0));
 
         $this->actingAs($admin)
             ->post(route('admin.devices.store'), [
@@ -59,6 +61,16 @@ class CategoryDeviceAdminTest extends TestCase
         $this->assertSame($admin->id, $device->user_id);
         $this->assertSame('secret', $device->password);
         $this->assertTrue($device->autoconnect);
+
+        $this->actingAs($admin)
+            ->get(route('admin.devices.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Devices/Index')
+                ->has('devices.data', 1)
+                ->where('devices.data.0.name', 'Terminal 1')
+                ->where('devices.data.0.has_password', true)
+                ->missing('devices.data.0.password'));
 
         $this->actingAs($admin)
             ->put(route('admin.devices.update', $device), [

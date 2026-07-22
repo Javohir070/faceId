@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -9,12 +10,12 @@ export default function Index({ permissions }) {
             <PageHeader
                 title="Ruxsatlar"
                 subtitle="Tizim bo‘limlariga kirish huquqlarini boshqaring."
-                createHref="/admin/permissions/create"
+                createHref={route('admin.permissions.create')}
                 createLabel="Ruxsat qo'shish"
             />
             <TableShell
                 empty={permissions.data.length === 0}
-                createHref="/admin/permissions/create"
+                createHref={route('admin.permissions.create')}
                 createLabel="Ruxsat qo'shish"
                 footer={permissions.data.length > 0 ? (
                     <Pagination
@@ -39,9 +40,9 @@ export default function Index({ permissions }) {
                                 <td className="font-bold text-ink">{permission.name}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/permissions/${permission.id}`}
-                                        editHref={`/admin/permissions/${permission.id}/edit`}
-                                        deleteHref={`/admin/permissions/${permission.id}`}
+                                        showHref={route('admin.permissions.show', permission.id)}
+                                        editHref={route('admin.permissions.edit', permission.id)}
+                                        deleteHref={route('admin.permissions.destroy', permission.id)}
                                     />
                                 </td>
                             </tr>

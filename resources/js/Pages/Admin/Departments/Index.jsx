@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -9,12 +10,12 @@ export default function Index({ departments }) {
             <PageHeader
                 title="Bo'limlar"
                 subtitle="Tashkilot bo'limlarini boshqaring."
-                createHref="/admin/departments/create"
+                createHref={route('admin.departments.create')}
                 createLabel="Bo'lim qo'shish"
             />
             <TableShell
                 empty={departments.data.length === 0}
-                createHref="/admin/departments/create"
+                createHref={route('admin.departments.create')}
                 createLabel="Bo'lim qo'shish"
                 footer={departments.data.length > 0 ? (
                     <Pagination
@@ -39,9 +40,9 @@ export default function Index({ departments }) {
                                 <td className="font-bold text-ink">{department.name}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/departments/${department.id}`}
-                                        editHref={`/admin/departments/${department.id}/edit`}
-                                        deleteHref={`/admin/departments/${department.id}`}
+                                        showHref={route('admin.departments.show', department.id)}
+                                        editHref={route('admin.departments.edit', department.id)}
+                                        deleteHref={route('admin.departments.destroy', department.id)}
                                     />
                                 </td>
                             </tr>

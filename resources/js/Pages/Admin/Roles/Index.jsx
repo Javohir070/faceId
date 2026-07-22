@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
@@ -9,12 +10,12 @@ export default function Index({ roles }) {
             <PageHeader
                 title="Rollar"
                 subtitle="Foydalanuvchi rollari va ularga tegishli ruxsatlarni sozlang."
-                createHref="/admin/roles/create"
+                createHref={route('admin.roles.create')}
                 createLabel="Rol qo'shish"
             />
             <TableShell
                 empty={roles.data.length === 0}
-                createHref="/admin/roles/create"
+                createHref={route('admin.roles.create')}
                 createLabel="Rol qo'shish"
                 footer={roles.data.length > 0 ? (
                     <Pagination
@@ -39,9 +40,9 @@ export default function Index({ roles }) {
                                 <td className="font-bold text-ink">{role.name}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={`/admin/roles/${role.id}`}
-                                        editHref={`/admin/roles/${role.id}/edit`}
-                                        deleteHref={`/admin/roles/${role.id}`}
+                                        showHref={route('admin.roles.show', role.id)}
+                                        editHref={route('admin.roles.edit', role.id)}
+                                        deleteHref={route('admin.roles.destroy', role.id)}
                                     />
                                 </td>
                             </tr>

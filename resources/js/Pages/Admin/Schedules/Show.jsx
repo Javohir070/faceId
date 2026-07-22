@@ -1,4 +1,5 @@
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
 
 function DetailRow({ label, children }) {
@@ -14,10 +15,10 @@ export default function Show({ schedule }) {
     return (
         <AdminLayout title="Jadval">
             <ShowPage
-                backHref="/admin/schedules"
+                backHref={route('admin.schedules.index')}
                 title={schedule.name}
-                editHref={`/admin/schedules/${schedule.id}/edit`}
-                deleteHref={`/admin/schedules/${schedule.id}`}
+                editHref={route('admin.schedules.edit', schedule.id)}
+                deleteHref={route('admin.schedules.destroy', schedule.id)}
                 maxWidth="max-w-md"
             >
                 <dl>

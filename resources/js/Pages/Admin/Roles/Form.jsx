@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Checkbox, Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 import InputError from '../../../Components/InputError';
@@ -23,8 +24,8 @@ export default function Form({ role, permissions = {} }) {
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEdit) put(`/admin/roles/${role.id}`);
-        else post('/admin/roles');
+        if (isEdit) put(route('admin.roles.update', role.id));
+        else post(route('admin.roles.store'));
     };
 
     return (
@@ -32,10 +33,10 @@ export default function Form({ role, permissions = {} }) {
             <FormCard
                 title={isEdit ? 'Rolni tahrirlash' : "Yangi rol"}
                 subtitle="Rol nomi va ruxsatlar to‘plamini belgilang."
-                backHref="/admin/roles"
+                backHref={route('admin.roles.index')}
                 onSubmit={submit}
                 processing={processing}
-                cancelHref="/admin/roles"
+                cancelHref={route('admin.roles.index')}
             >
                 <FormField label="Rol nomi" error={errors.name} required className="max-w-md">
                     <Input
