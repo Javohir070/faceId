@@ -134,11 +134,11 @@ export function ResourceActions({ showHref, editHref, deleteHref }) {
 
 export function FormActions({ cancelHref, processing, submitLabel = 'Saqlash' }) {
     return (
-        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5 justify-end">
+            <Button onClick={() => router.visit(cancelHref)}>Bekor qilish</Button>
             <Button type="primary" htmlType="submit" loading={processing}>
                 {submitLabel}
             </Button>
-            <Button onClick={() => router.visit(cancelHref)}>Bekor qilish</Button>
         </div>
     );
 }

@@ -28,6 +28,8 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Home')
+                ->has('stats')
+                ->has('recentEvents')
             );
     }
 

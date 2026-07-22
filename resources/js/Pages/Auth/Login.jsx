@@ -5,7 +5,8 @@ import { LockOutlined, LoginOutlined, MailOutlined } from '@ant-design/icons';
 import { Alert, Button, Checkbox, Input } from 'antd';
 
 export default function Login() {
-    const { flash } = usePage().props;
+    const { flash, appName } = usePage().props;
+    const brandName = appName || 'EIdora';
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -22,7 +23,7 @@ export default function Login() {
     return (
         <GuestLayout
             title="Tizimga kirish"
-            subtitle="EIdora boshqaruv paneliga kirish uchun elektron pochta va parolingizni kiriting."
+            subtitle={`${brandName} boshqaruv paneliga kirish uchun elektron pochta va parolingizni kiriting.`}
         >
             {flash?.status && (
                 <Alert className="mb-5" type="success" showIcon message={flash.status} />
@@ -48,7 +49,9 @@ export default function Login() {
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="label">Parol</label>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                        <label htmlFor="password" className="label mb-0">Parol</label>
+                    </div>
                     <Input.Password
                         id="password"
                         size="large"
@@ -62,15 +65,18 @@ export default function Login() {
                     <InputError message={errors.password} />
                 </div>
 
-                <Checkbox checked={data.remember} onChange={(e) => setData('remember', e.target.checked)}>
-                    Meni eslab qolish
-                </Checkbox>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Checkbox checked={data.remember} onChange={(e) => setData('remember', e.target.checked)}>
+                        Meni eslab qolish
+                    </Checkbox>
+                </div>
 
                 <Button
                     type="primary"
                     htmlType="submit"
                     size="large"
-                    className="h-12 w-full text-base font-bold"
+                    block
+                    className="!h-12 !text-base !font-bold"
                     icon={<LoginOutlined />}
                     loading={processing}
                 >
