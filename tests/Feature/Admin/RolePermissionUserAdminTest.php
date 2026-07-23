@@ -85,4 +85,26 @@ class RolePermissionUserAdminTest extends TestCase
             ->delete(route('admin.permissions.destroy', $permission))
             ->assertRedirect(route('admin.permissions.index'));
     }
+
+    public function test_cannot_delete_user_with_attached_devices(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['users'],
+        ]);
+
+        $target = User::factory()->create();
+        $category = \App\Models\Category::factory()->create();
+        \App\Models\Device::factory()->create([
+            'user_id' => $target->id,
+            'category_id' => $category->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.users.index'))
+            ->delete(route('admin.users.destroy', $target))
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
+    }
 }

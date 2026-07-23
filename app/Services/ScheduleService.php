@@ -28,10 +28,16 @@ class ScheduleService
         return DB::transaction(fn (): Schedule => $this->scheduleRepository->update($schedule, $data));
     }
 
-    public function delete(Schedule $schedule): void
+    public function delete(Schedule $schedule): ?string
     {
+        if ($this->scheduleRepository->hasEmployees($schedule)) {
+            return 'Jadvalga biriktirilgan xodimlar bor. Avval xodimlarni o‘chiring yoki boshqa jadvalga o‘tkazing.';
+        }
+
         DB::transaction(function () use ($schedule): void {
             $this->scheduleRepository->delete($schedule);
         });
+
+        return null;
     }
 }

@@ -16,6 +16,7 @@ import {
 import { Alert, Button } from 'antd';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { route } from '../../routes';
+import useInertiaPoll from '../../hooks/useInertiaPoll';
 
 const quickActions = [
     {
@@ -320,6 +321,8 @@ export default function Home({ stats = {}, recentEvents = [] }) {
     const userName = auth?.user?.name || 'Foydalanuvchi';
     const greeting = greetingForHour(new Date().getHours());
     const brandName = appName || 'EIdora';
+
+    useInertiaPoll(['stats', 'recentEvents'], 10000);
 
     const visibleActions = quickActions.filter((action) => can[action.key]);
     const visibleGroups = moduleGroups

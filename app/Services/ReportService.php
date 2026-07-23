@@ -16,6 +16,14 @@ class ReportService
             return null;
         }
 
+        $existing = Report::query()
+            ->where('access_controller_event_id', $event->id)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
         $employee = $this->resolveEmployee($event);
         $device = $this->resolveDevice($event);
         $type = $this->resolveType($event, $device);
@@ -48,12 +56,10 @@ class ReportService
 
     private function resolveEmployee(AccessControllerEvent $event): ?Employee
     {
-        if ($event->employee_no) {
-            $employee = Employee::query()->where('card', $event->employee_no)->first();
+        $employee = $event->employee;
 
-            if ($employee !== null) {
-                return $employee->loadMissing('department');
-            }
+        if ($employee !== null) {
+            return $employee->loadMissing('department');
         }
 
         if ($event->card_no) {
@@ -69,13 +75,7 @@ class ReportService
 
     private function resolveDevice(AccessControllerEvent $event): ?Device
     {
-        if (! $event->device_ip) {
-            return null;
-        }
-
-        return Device::query()
-            ->where('ip_address', $event->device_ip)
-            ->first();
+        return $event->device;
     }
 
     private function resolveType(AccessControllerEvent $event, ?Device $device): string

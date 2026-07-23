@@ -66,7 +66,9 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department): RedirectResponse
     {
-        $this->departmentService->delete($department);
+        if ($error = $this->departmentService->delete($department)) {
+            return redirect()->back()->with('error', $error);
+        }
 
         return redirect()
             ->route('admin.departments.index')

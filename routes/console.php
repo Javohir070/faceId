@@ -20,8 +20,6 @@ Schedule::command('devices:pull-events')
     ->withoutOverlapping()
     ->runInBackground();
 
-Schedule::command('devices:stream-events')
-    ->everyMinute()
-    ->when(fn (): bool => (bool) config('hikvision.alert_stream_enabled', false))
-    ->withoutOverlapping()
-    ->runInBackground();
+// alertStream — uzluksiz jarayon; schedule orqali ISHLATILMAYDI (har daqiqa yangi
+// manager ochilib qurilmani yuklaydi). Alohida terminalda ishga tushiring:
+// php artisan devices:stream-events

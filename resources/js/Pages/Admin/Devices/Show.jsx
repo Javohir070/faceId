@@ -2,6 +2,7 @@ import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
+import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
 function DetailRow({ label, children }) {
     return (
@@ -13,6 +14,8 @@ function DetailRow({ label, children }) {
 }
 
 export default function Show({ device }) {
+    useInertiaPoll(['device'], 10000);
+
     return (
         <AdminLayout title="Qurilma">
             <ShowPage
@@ -24,6 +27,18 @@ export default function Show({ device }) {
                 maxWidth="max-w-2xl"
             >
                 <dl>
+                    <DetailRow label="Holat">
+                        <Tag color={device.is_connected ? 'success' : 'default'}>
+                            {device.is_connected ? 'Ulangan' : 'Ulanmagan'}
+                        </Tag>
+                    </DetailRow>
+                    <DetailRow label="Oxirgi ping">{device.last_ping_at || '—'}</DetailRow>
+                    <DetailRow label="Ulangan vaqt">{device.last_connected_at || '—'}</DetailRow>
+                    <DetailRow label="Webhook">
+                        <Tag color={device.webhook_configured ? 'success' : 'default'}>
+                            {device.webhook_configured ? 'Sozlangan' : 'Yo‘q'}
+                        </Tag>
+                    </DetailRow>
                     <DetailRow label="Kategoriya">{device.category?.name || '—'}</DetailRow>
                     <DetailRow label="Egasi">{device.owner?.name || '—'}</DetailRow>
                     <DetailRow label="IP / Port">
@@ -32,7 +47,7 @@ export default function Show({ device }) {
                         {device.port}
                     </DetailRow>
                     <DetailRow label="Login">{device.user}</DetailRow>
-                    <DetailRow label="Turi">{device.type}</DetailRow>
+                    <DetailRow label="Turi">{device.type_label || device.type}</DetailRow>
                     <DetailRow label="Avtoulanish">
                         <Tag color={device.autoconnect ? 'success' : 'default'}>
                             {device.autoconnect ? 'Yoqilgan' : 'O‘chirilgan'}

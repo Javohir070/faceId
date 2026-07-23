@@ -5,6 +5,7 @@ namespace App\Services\Hikvision;
 use App\Exceptions\HikvisionConnectionException;
 use App\Models\Device;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class HikvisionDeviceService
@@ -55,18 +56,25 @@ class HikvisionDeviceService
         $this->persistConnectionSettings($device, $resolved);
 
         $this->getDeviceInfo($resolved);
-        $this->setupWebhook($resolved);
+        $webhookConfigured = $this->setupWebhook($resolved);
 
         $device->forceFill([
             'is_online' => true,
             'last_connected_at' => now(),
-            'webhook_configured' => true,
+            'webhook_configured' => $webhookConfigured,
         ])->save();
 
         Log::info('Hikvision: qurilma ulandi', [
             'device_id' => $device->id,
             'url' => $device->isapiBaseUrl(),
+            'webhook_configured' => $webhookConfigured,
         ]);
+
+        if (! $webhookConfigured) {
+            Log::warning('Hikvision: qurilma ulandi, lekin webhook sozlanmadi', [
+                'device_id' => $device->id,
+            ]);
+        }
 
         return true;
     }
@@ -76,8 +84,10 @@ class HikvisionDeviceService
         $device->forceFill(['last_ping_at' => now()]);
 
         try {
-            $resolved = $this->resolveWorkingConnection($device);
+            $resolved = $this->pingDevice($device);
             $this->persistConnectionSettings($device, $resolved);
+
+            Cache::forget($this->pingFailureCacheKey($device));
 
             $device->forceFill([
                 'is_online' => true,
@@ -86,15 +96,47 @@ class HikvisionDeviceService
 
             return true;
         } catch (\Throwable $exception) {
-            $device->forceFill(['is_online' => false])->save();
+            $failures = (int) Cache::increment($this->pingFailureCacheKey($device));
+            $threshold = max((int) config('hikvision.ping_offline_after_failures', 3), 1);
+
+            if ($failures >= $threshold) {
+                $device->forceFill(['is_online' => false])->save();
+            }
 
             Log::debug('Hikvision: qurilma ping muvaffaqiyatsiz', [
                 'device_id' => $device->id,
+                'failures' => $failures,
+                'threshold' => $threshold,
                 'message' => $exception->getMessage(),
             ]);
 
             return false;
         }
+    }
+
+    private function pingDevice(Device $device): Device
+    {
+        try {
+            $response = $this->client->request(
+                $device,
+                'GET',
+                '/ISAPI/System/deviceInfo',
+                ['format' => 'json'],
+            );
+
+            if ($response->successful()) {
+                return $device;
+            }
+        } catch (ConnectionException) {
+            // Joriy sozlamalar bilan ishlamadi — to‘liq qidiruvga o‘tamiz.
+        }
+
+        return $this->resolveWorkingConnection($device);
+    }
+
+    private function pingFailureCacheKey(Device $device): string
+    {
+        return 'hikvision.device.'.$device->id.'.ping_failures';
     }
 
     /**
@@ -160,6 +202,57 @@ class HikvisionDeviceService
     {
         [$webhookUrl, $host, $serverPort, $path] = $this->resolveWebhookTarget();
 
+        if ($this->setupWebhookWithXml($device, $host, $serverPort, $path, $webhookUrl)) {
+            return true;
+        }
+
+        return $this->setupWebhookWithJson($device, $host, $serverPort, $path, $webhookUrl);
+    }
+
+    private function setupWebhookWithXml(
+        Device $device,
+        string $host,
+        int $serverPort,
+        string $path,
+        string $webhookUrl,
+    ): bool {
+        try {
+            $response = $this->client->requestWithBody(
+                $device,
+                'PUT',
+                '/ISAPI/Event/notification/httpHosts/1',
+                [],
+                $this->buildWebhookXml($host, $serverPort, $path),
+            );
+        } catch (ConnectionException $exception) {
+            throw HikvisionConnectionException::fromThrowable($device, $exception);
+        }
+
+        if ($response->failed()) {
+            Log::warning('Hikvision: webhook XML sozlash muvaffaqiyatsiz', [
+                'device_id' => $device->id,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+        }
+
+        Log::info('Hikvision: webhook sozlandi (XML)', [
+            'device_id' => $device->id,
+            'url' => $webhookUrl,
+        ]);
+
+        return true;
+    }
+
+    private function setupWebhookWithJson(
+        Device $device,
+        string $host,
+        int $serverPort,
+        string $path,
+        string $webhookUrl,
+    ): bool {
         try {
             $response = $this->client->request(
                 $device,
@@ -194,12 +287,31 @@ class HikvisionDeviceService
             return false;
         }
 
-        Log::info('Hikvision: webhook sozlandi', [
+        Log::info('Hikvision: webhook sozlandi (JSON)', [
             'device_id' => $device->id,
             'url' => $webhookUrl,
         ]);
 
         return true;
+    }
+
+    private function buildWebhookXml(string $host, int $serverPort, string $path): string
+    {
+        $escapedPath = htmlspecialchars($path, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $escapedHost = htmlspecialchars($host, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+
+        return '<?xml version="1.0" encoding="UTF-8"?>'
+            .'<HttpHostNotification version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">'
+            .'<id>1</id>'
+            .'<url>'.$escapedPath.'</url>'
+            .'<protocolType>HTTP</protocolType>'
+            .'<parameterFormatType>JSON</parameterFormatType>'
+            .'<addressingFormatType>ipaddress</addressingFormatType>'
+            .'<ipAddress>'.$escapedHost.'</ipAddress>'
+            .'<portNo>'.$serverPort.'</portNo>'
+            .'<httpAuthenticationMethod>none</httpAuthenticationMethod>'
+            .'<httpMethod>POST</httpMethod>'
+            .'</HttpHostNotification>';
     }
 
     /**

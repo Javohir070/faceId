@@ -39,4 +39,9 @@ class DepartmentRepository implements DepartmentRepositoryInterface
     {
         $department->delete();
     }
+
+    public function hasEmployees(Department $department): bool
+    {
+        return $department->employees()->exists();
+    }
 }

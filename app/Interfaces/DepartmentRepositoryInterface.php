@@ -17,4 +17,6 @@ interface DepartmentRepositoryInterface
     public function update(Department $department, array $data): Department;
 
     public function delete(Department $department): void;
+
+    public function hasEmployees(Department $department): bool;
 }

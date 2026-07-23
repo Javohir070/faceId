@@ -17,4 +17,6 @@ interface ScheduleRepositoryInterface
     public function update(Schedule $schedule, array $data): Schedule;
 
     public function delete(Schedule $schedule): void;
+
+    public function hasEmployees(Schedule $schedule): bool;
 }

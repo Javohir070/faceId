@@ -103,4 +103,36 @@ class DepartmentScheduleAdminTest extends TestCase
             ->get(route('admin.schedules.index'))
             ->assertForbidden();
     }
+
+    public function test_cannot_delete_department_or_schedule_with_employees(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['departments'],
+            config('menu_permissions.resources')['schedules'],
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $department = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+        \App\Models\Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.departments.index'))
+            ->delete(route('admin.departments.destroy', $department))
+            ->assertRedirect(route('admin.departments.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('departments', ['id' => $department->id]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.schedules.index'))
+            ->delete(route('admin.schedules.destroy', $schedule))
+            ->assertRedirect(route('admin.schedules.index'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('schedules', ['id' => $schedule->id]);
+    }
 }

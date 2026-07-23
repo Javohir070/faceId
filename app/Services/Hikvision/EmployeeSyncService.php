@@ -2,6 +2,12 @@
 
 namespace App\Services\Hikvision;
 
+use App\Jobs\Hikvision\ClearDeviceUsersJob;
+use App\Jobs\Hikvision\RemoveHikvisionFacesJob;
+use App\Jobs\Hikvision\RemoveHikvisionUsersJob;
+use App\Jobs\Hikvision\SyncDeviceEmployeesJob;
+use App\Jobs\Hikvision\SyncEmployeeJob;
+use App\Jobs\Hikvision\TransferEmployeesJob;
 use App\Models\Device;
 use App\Models\Employee;
 use Illuminate\Support\Collection;
@@ -12,6 +18,70 @@ class EmployeeSyncService
     public function __construct(
         private readonly HikvisionUserService $userService,
     ) {}
+
+    /**
+     * @param  list<int>  $deviceIds
+     * @param  list<int>  $employeeIds
+     */
+    public function queueTransfer(array $deviceIds, array $employeeIds): void
+    {
+        TransferEmployeesJob::dispatch($deviceIds, $employeeIds);
+    }
+
+    public function queueSyncEmployee(Employee $employee, ?Device $device = null): void
+    {
+        SyncEmployeeJob::dispatch(
+            $employee->id,
+            $device !== null ? [$device->id] : null,
+        );
+    }
+
+    public function queueSyncAllEmployees(Device $device): void
+    {
+        SyncDeviceEmployeesJob::dispatch($device->id);
+    }
+
+    /**
+     * @param  list<int>  $deviceIds
+     */
+    public function queueRemoveFromDevices(Employee $employee, array $deviceIds): void
+    {
+        if ($deviceIds === []) {
+            return;
+        }
+
+        RemoveHikvisionUsersJob::dispatch($employee->card, $deviceIds, $employee->id);
+    }
+
+    public function queueRemoveEmployee(Employee $employee, ?Device $device = null): void
+    {
+        $deviceIds = $device !== null
+            ? [$device->id]
+            : $employee->devices()->pluck('devices.id')->all();
+
+        if ($deviceIds === []) {
+            return;
+        }
+
+        // Xodim DB dan o‘chirilgach ham ishlashi uchun faqat card + device ids.
+        RemoveHikvisionUsersJob::dispatch($employee->card, $deviceIds);
+    }
+
+    public function queueRemoveFace(Employee $employee, ?Device $device = null): void
+    {
+        $deviceIds = $this->resolveDevices($employee, $device)->pluck('id')->all();
+
+        if ($deviceIds === []) {
+            return;
+        }
+
+        RemoveHikvisionFacesJob::dispatch($employee->card, $deviceIds);
+    }
+
+    public function queueClearDeviceUsers(Device $device): void
+    {
+        ClearDeviceUsersJob::dispatch($device->id);
+    }
 
     /**
      * @param  list<int>  $deviceIds
@@ -93,6 +163,38 @@ class EmployeeSyncService
     }
 
     /**
+     * Xodim DB dan o‘chirilgandan keyin qurilmadan o‘chirish.
+     *
+     * @param  list<int>  $deviceIds
+     * @return array{success:int, failed:int}
+     */
+    public function removeCardFromDevices(string $employeeCard, array $deviceIds): array
+    {
+        $devices = Device::query()->whereIn('id', $deviceIds)->get();
+        $success = 0;
+        $failed = 0;
+
+        foreach ($devices as $device) {
+            try {
+                if ($this->userService->deleteUser($device, $employeeCard)) {
+                    $success++;
+                } else {
+                    $failed++;
+                }
+            } catch (\Throwable $exception) {
+                $failed++;
+                Log::error('Hikvision: xodim (card) qurilmadan o‘chirish xatoligi', [
+                    'device_id' => $device->id,
+                    'employee_card' => $employeeCard,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return ['success' => $success, 'failed' => $failed];
+    }
+
+    /**
      * @return array{success:int, failed:int}
      */
     public function syncAllEmployees(Device $device): array
@@ -124,13 +226,26 @@ class EmployeeSyncService
 
     public function removeFace(Employee $employee, ?Device $device = null): void
     {
-        foreach ($this->resolveDevices($employee, $device) as $target) {
+        $this->removeCardFacesFromDevices(
+            $employee->card,
+            $this->resolveDevices($employee, $device)->pluck('id')->all(),
+        );
+    }
+
+    /**
+     * @param  list<int>  $deviceIds
+     */
+    public function removeCardFacesFromDevices(string $employeeCard, array $deviceIds): void
+    {
+        $devices = Device::query()->whereIn('id', $deviceIds)->get();
+
+        foreach ($devices as $device) {
             try {
-                $this->userService->deleteFace($target, $employee->card);
+                $this->userService->deleteFace($device, $employeeCard);
             } catch (\Throwable $exception) {
                 Log::error('Hikvision: yuz o‘chirish sync xatoligi', [
-                    'device_id' => $target->id,
-                    'employee_id' => $employee->id,
+                    'device_id' => $device->id,
+                    'employee_card' => $employeeCard,
                     'message' => $exception->getMessage(),
                 ]);
             }
@@ -196,9 +311,12 @@ class EmployeeSyncService
     }
 
     /**
+     * Faqat aniq berilgan yoki allaqachon bog‘langan qurilmalar.
+     * Yangi xodim avtomatik qurilmaga yuborilmaydi — Sync sahifasi kerak.
+     *
      * @return Collection<int, Device>
      */
-    private function resolveDevices(Employee $employee, ?Device $device = null): Collection
+    public function resolveDevices(Employee $employee, ?Device $device = null): Collection
     {
         if ($device !== null) {
             return collect([$device]);

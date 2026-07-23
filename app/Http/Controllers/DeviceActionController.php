@@ -78,31 +78,15 @@ class DeviceActionController extends Controller
 
     public function clear(Device $device): RedirectResponse
     {
-        try {
-            $result = $this->employeeSyncService->clearDeviceUsers($device);
+        $this->employeeSyncService->queueClearDeviceUsers($device);
 
-            return back()->with('success', sprintf(
-                'Qurilma tozalandi: %d o‘chirildi, %d xatolik.',
-                $result['success'],
-                $result['failed'],
-            ));
-        } catch (\Throwable $exception) {
-            return back()->with('error', 'Tozalashda xatolik: '.$exception->getMessage());
-        }
+        return back()->with('success', 'Qurilmadagi xodimlarni o‘chirish navbatga qo‘yildi.');
     }
 
     public function syncEmployees(Device $device): RedirectResponse
     {
-        try {
-            $result = $this->employeeSyncService->syncAllEmployees($device);
+        $this->employeeSyncService->queueSyncAllEmployees($device);
 
-            return back()->with('success', sprintf(
-                'Sinxronlash yakunlandi: %d muvaffaqiyatli, %d xatolik.',
-                $result['success'],
-                $result['failed'],
-            ));
-        } catch (\Throwable $exception) {
-            return back()->with('error', 'Sinxronlashda xatolik: '.$exception->getMessage());
-        }
+        return back()->with('success', 'Barcha xodimlarni sinxronlash navbatga qo‘yildi.');
     }
 }

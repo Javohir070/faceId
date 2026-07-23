@@ -82,7 +82,9 @@ class ScheduleController extends Controller
 
     public function destroy(Schedule $schedule): RedirectResponse
     {
-        $this->scheduleService->delete($schedule);
+        if ($error = $this->scheduleService->delete($schedule)) {
+            return redirect()->back()->with('error', $error);
+        }
 
         return redirect()
             ->route('admin.schedules.index')

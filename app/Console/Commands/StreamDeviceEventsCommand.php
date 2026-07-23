@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Device;
 use App\Services\Hikvision\HikvisionAlertStreamService;
-use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Process\Process;
 
 class StreamDeviceEventsCommand extends Command
@@ -21,18 +21,19 @@ class StreamDeviceEventsCommand extends Command
 
     public function handle(
         HikvisionAlertStreamService $alertStreamService,
-        HikvisionDeviceService $deviceService,
     ): int {
-        if (! config('hikvision.alert_stream_enabled', false)) {
+        $deviceId = $this->option('device');
+        $manualDevice = $deviceId !== null && $deviceId !== '';
+
+        if (! $manualDevice && ! config('hikvision.alert_stream_enabled', false)) {
             $this->comment('alertStream o‘chirilgan (HIKVISION_ALERT_STREAM_ENABLED=false).');
+            $this->comment('Qo‘lda sinash: php artisan devices:stream-events --device=1');
 
             return self::SUCCESS;
         }
 
-        $deviceId = $this->option('device');
-
-        if ($deviceId !== null && $deviceId !== '') {
-            return $this->runDeviceWorker($alertStreamService, $deviceService, (int) $deviceId);
+        if ($manualDevice) {
+            return $this->runDeviceWorker($alertStreamService, (int) $deviceId);
         }
 
         if ($this->option('worker')) {
@@ -99,63 +100,68 @@ class StreamDeviceEventsCommand extends Command
 
     private function runDeviceWorker(
         HikvisionAlertStreamService $alertStreamService,
-        HikvisionDeviceService $deviceService,
         int $deviceId,
     ): int {
-        $reconnectDelay = max((int) config('hikvision.alert_stream_reconnect_seconds', 5), 1);
+        $reconnectDelay = max((int) config('hikvision.alert_stream_reconnect_seconds', 30), 5);
+        $lock = Cache::lock("hikvision.alert_stream.device.{$deviceId}", 86400);
 
-        while (true) {
-            $device = Device::query()->find($deviceId);
+        if (! $lock->get()) {
+            $this->warn("Qurilma #{$deviceId} uchun alertStream worker allaqachon ishlayapti.");
 
-            if ($device === null) {
-                $this->error("Qurilma bazadan topilmadi: {$deviceId}");
+            return self::SUCCESS;
+        }
 
-                return self::FAILURE;
-            }
+        try {
+            while (true) {
+                $device = Device::query()->find($deviceId);
 
-            if (! $device->hasIsapiCredentials()) {
-                $this->warn(sprintf(
-                    'Qurilma #%d ISAPI ma’lumotlari to‘liq emas — %d soniyadan keyin qayta tekshiriladi.',
-                    $device->id,
-                    $reconnectDelay,
-                ));
-                sleep($reconnectDelay);
+                if ($device === null) {
+                    $this->error("Qurilma bazadan topilmadi: {$deviceId}");
 
-                continue;
-            }
+                    return self::FAILURE;
+                }
 
-            $deviceService->refreshOnlineStatus($device);
-            $device->refresh();
-
-            $this->info(sprintf(
-                'Qurilma #%d (%s) uchun alertStream tinglanmoqda…',
-                $device->id,
-                $device->ip_address,
-            ));
-
-            try {
-                $alertStreamService->listen($device, function (array $event) use ($device): void {
-                    $employeeNo = data_get($event, 'AccessControllerEvent.employeeNoString', '—');
-                    $this->line(sprintf(
-                        '[%s] #%d (%s) event: xodim %s',
-                        now()->format('H:i:s'),
+                if (! $device->hasIsapiCredentials()) {
+                    $this->warn(sprintf(
+                        'Qurilma #%d ISAPI ma’lumotlari to‘liq emas — %d soniyadan keyin qayta tekshiriladi.',
                         $device->id,
-                        $device->ip_address,
-                        $employeeNo,
+                        $reconnectDelay,
                     ));
-                });
-            } catch (\Throwable $exception) {
-                $device->forceFill(['is_online' => false])->save();
+                    sleep($reconnectDelay);
 
-                $this->warn(sprintf(
-                    'Qurilma #%d alertStream xatosi: %s',
+                    continue;
+                }
+
+                $this->info(sprintf(
+                    'Qurilma #%d (%s) uchun alertStream tinglanmoqda…',
                     $device->id,
-                    $exception->getMessage(),
+                    $device->ip_address,
                 ));
-            }
 
-            sleep($reconnectDelay);
-            $this->comment(sprintf('Qurilma #%d uchun qayta ulanish…', $device->id));
+                try {
+                    $alertStreamService->listen($device, function (array $event) use ($device): void {
+                        $employeeNo = data_get($event, 'AccessControllerEvent.employeeNoString', '—');
+                        $this->line(sprintf(
+                            '[%s] #%d (%s) event: xodim %s',
+                            now()->format('H:i:s'),
+                            $device->id,
+                            $device->ip_address,
+                            $employeeNo,
+                        ));
+                    });
+                } catch (\Throwable $exception) {
+                    $this->warn(sprintf(
+                        'Qurilma #%d alertStream xatosi: %s',
+                        $device->id,
+                        $exception->getMessage(),
+                    ));
+                }
+
+                sleep($reconnectDelay);
+                $this->comment(sprintf('Qurilma #%d uchun qayta ulanish…', $deviceId));
+            }
+        } finally {
+            $lock->release();
         }
     }
 }

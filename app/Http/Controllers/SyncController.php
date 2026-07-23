@@ -59,17 +59,13 @@ class SyncController extends Controller
 
     public function transfer(TransferSyncRequest $request): RedirectResponse
     {
-        $result = $this->employeeSyncService->transfer(
+        $this->employeeSyncService->queueTransfer(
             $request->validated('device_ids'),
             $request->validated('employee_ids'),
         );
 
         return redirect()
             ->route('admin.sync.index')
-            ->with('success', sprintf(
-                'Yuborish yakunlandi: %d muvaffaqiyatli, %d xatolik.',
-                $result['success'],
-                $result['failed'],
-            ));
+            ->with('success', 'Xodimlarni qurilmalarga yuborish navbatga qo‘yildi. Natijani Sync holati va loglardan kuzating.');
     }
 }

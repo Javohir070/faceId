@@ -69,14 +69,50 @@ class IsapiClient
             default => throw new \InvalidArgumentException("Unsupported HTTP method: {$method}"),
         };
 
+        $this->logRequest($device, strtoupper($method), $url, $response);
+
+        return $response;
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @param  array<string, string>  $headers
+     */
+    public function requestWithBody(
+        Device $device,
+        string $method,
+        string $path,
+        array $query = [],
+        string $body = '',
+        string $contentType = 'application/xml',
+        array $headers = [],
+    ): Response {
+        $url = $this->url($device, $path, $query);
+        $client = $this->forDevice($device)->withHeaders(array_merge([
+            'Content-Type' => $contentType,
+        ], $headers));
+
+        $response = match (strtoupper($method)) {
+            'GET' => $client->withBody($body, $contentType)->get($url),
+            'POST' => $client->withBody($body, $contentType)->post($url),
+            'PUT' => $client->withBody($body, $contentType)->put($url),
+            'DELETE' => $client->withBody($body, $contentType)->delete($url),
+            default => throw new \InvalidArgumentException("Unsupported HTTP method: {$method}"),
+        };
+
+        $this->logRequest($device, strtoupper($method), $url, $response);
+
+        return $response;
+    }
+
+    private function logRequest(Device $device, string $method, string $url, Response $response): void
+    {
         Log::debug('Hikvision ISAPI request', [
             'device_id' => $device->id,
-            'method' => strtoupper($method),
+            'method' => $method,
             'url' => $url,
             'status' => $response->status(),
         ]);
-
-        return $response;
     }
 
     /**

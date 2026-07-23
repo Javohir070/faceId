@@ -45,8 +45,8 @@ class DeviceResource extends JsonResource
             'autoconnect' => $this->autoconnect,
             'is_online' => $this->is_online,
             'webhook_configured' => $this->webhook_configured,
-            'last_connected_at' => $this->last_connected_at?->format('Y-m-d H:i'),
-            'last_ping_at' => $this->last_ping_at?->format('Y-m-d H:i'),
+            'last_connected_at' => $this->last_connected_at?->format('Y-m-d H:i:s'),
+            'last_ping_at' => $this->last_ping_at?->format('Y-m-d H:i:s'),
             'category' => $this->category?->only(['id', 'name']),
             'owner' => $this->owner?->only(['id', 'name']),
         ];
@@ -57,6 +57,9 @@ class DeviceResource extends JsonResource
      */
     private function showFields(): array
     {
+        /** @var DeviceService $deviceService */
+        $deviceService = app(DeviceService::class);
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -67,7 +70,13 @@ class DeviceResource extends JsonResource
             'user' => $this->user,
             'has_password' => filled($this->password),
             'type' => $this->type,
+            'type_label' => $deviceService->typeLabel($this->resource),
             'autoconnect' => $this->autoconnect,
+            'is_connected' => $this->is_online,
+            'is_online' => $this->is_online,
+            'webhook_configured' => $this->webhook_configured,
+            'last_connected_at' => $this->last_connected_at?->format('Y-m-d H:i:s'),
+            'last_ping_at' => $this->last_ping_at?->format('Y-m-d H:i:s'),
             'created_at' => $this->created_at,
             'category' => $this->category?->only(['id', 'name']),
             'owner' => $this->owner?->only(['id', 'name']),

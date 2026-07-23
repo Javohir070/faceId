@@ -49,10 +49,7 @@ class EmployeeService
                 $this->syncFace($employee, $faceFile);
             }
 
-            $employee->load('face');
-            $this->employeeSyncService->syncEmployee($employee);
-
-            return $employee;
+            return $employee->load('face');
         });
     }
 
@@ -67,22 +64,19 @@ class EmployeeService
 
             if ($removeFace) {
                 $employee->face()?->delete();
-                $this->employeeSyncService->removeFace($employee);
             } elseif ($faceFile instanceof UploadedFile) {
                 $this->syncFace($employee, $faceFile);
             }
 
-            $employee->load('face');
-            $this->employeeSyncService->syncEmployee($employee);
-
-            return $employee;
+            return $employee->load('face');
         });
     }
 
     public function delete(Employee $employee): void
     {
         DB::transaction(function () use ($employee): void {
-            $this->employeeSyncService->removeEmployee($employee);
+            // Faqat allaqachon sync qilingan qurilmalardan olib tashlash.
+            $this->employeeSyncService->queueRemoveEmployee($employee);
             $this->employeeRepository->delete($employee);
         });
     }

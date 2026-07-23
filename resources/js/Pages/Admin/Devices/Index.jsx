@@ -11,6 +11,9 @@ import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
+import useInertiaPoll from '../../../hooks/useInertiaPoll';
+
+const LIVE_POLL_MS = 10000;
 
 function SortableHeader({ children }) {
     return (
@@ -135,6 +138,8 @@ function DeviceActionsMenu({ device }) {
 export default function Index({ devices }) {
     const [selectedIds, setSelectedIds] = useState([]);
 
+    useInertiaPoll(['devices'], LIVE_POLL_MS);
+
     const pageIds = useMemo(
         () => devices.data.map((device) => device.id),
         [devices.data],
@@ -156,12 +161,13 @@ export default function Index({ devices }) {
     const from = devices.from ?? (devices.data.length ? 1 : 0);
     const to = devices.to ?? devices.data.length;
     const total = devices.total ?? devices.data.length;
+    const onlineCount = devices.data.filter((device) => device.is_connected).length;
 
     return (
         <AdminLayout title="Qurilmalar">
             <PageHeader
                 title="Qurilmalar"
-                subtitle="Hikvision Face ID qurilmalarini ISAPI orqali boshqaring."
+                subtitle={`Hikvision Face ID — holat har ${LIVE_POLL_MS / 1000} soniyada yangilanadi. Onlayn: ${onlineCount}/${devices.data.length}`}
                 createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
             />

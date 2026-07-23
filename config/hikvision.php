@@ -45,15 +45,19 @@ return [
     | Uzluksiz HTTP stream orqali eshik ochilishi va Face ID eventlarini oladi.
     | Ishga tushirish: php artisan devices:stream-events
     |
-    | alertStream yoqilganda events_pull ni o‘chirish tavsiya etiladi (dublikatdan).
+    | alertStream yoqilganda events_pull ni o‘chirish shart emas — u offline/zaxira
+    | kanal sifatida qoladi. Real-time uchun webhook + alertStream ishlatiladi;
+    | pull interval ni 10–15 daqiqaga qo‘ying (dublikat ReportService da filtrlanadi).
     |
     */
 
     'alert_stream_enabled' => env('HIKVISION_ALERT_STREAM_ENABLED', true),
 
+    'alert_stream_connect_timeout' => (int) env('HIKVISION_ALERT_STREAM_CONNECT_TIMEOUT', 15),
+
     'alert_stream_timeout' => (int) env('HIKVISION_ALERT_STREAM_TIMEOUT', 0),
 
-    'alert_stream_reconnect_seconds' => max((int) env('HIKVISION_ALERT_STREAM_RECONNECT', 5), 1),
+    'alert_stream_reconnect_seconds' => max((int) env('HIKVISION_ALERT_STREAM_RECONNECT', 30), 5),
 
     /*
     |--------------------------------------------------------------------------
@@ -82,5 +86,7 @@ return [
     'ping_enabled' => env('HIKVISION_PING_ENABLED', true),
 
     'ping_interval_minutes' => max((int) env('HIKVISION_PING_INTERVAL', 1), 1),
+
+    'ping_offline_after_failures' => max((int) env('HIKVISION_PING_OFFLINE_AFTER_FAILURES', 3), 1),
 
 ];

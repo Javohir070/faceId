@@ -86,7 +86,16 @@ Bir nechta qurilma qo'shishingiz mumkin — har biri o'z IP/login/parol bilan is
 | `valid_to_dt` | `Valid.endTime` |
 | `faces.face` (base64) | multipart `img` |
 
-Xodim yaratilganda / yangilanganda / o'chirilganda `EmployeeSyncService` barcha **onlayn** qurilmalarga sync yuboradi.
+Xodim yaratish/yangilash **avtomatik** qurilmaga yubormaydi. Qurilmaga yuborish faqat:
+
+- Admin → **Sinxronizatsiya** (tanlangan xodim + qurilma)
+- Qurilma amali → **Sync** (shu qurilmaga barcha xodimlar)
+
+Bu amallar `EmployeeSyncService` orqali **queue** ga tushadi. Xodim o‘chirilganda esa allaqachon bog‘langan qurilmalardan olib tashlash navbatga qo‘yiladi.
+
+Ishga tushirish: `php artisan queue:work` (yoki `composer dev` ichidagi `queue:listen`).
+
+Joblar: `app/Jobs/Hikvision/` (`TransferEmployeesJob`, `SyncDeviceEmployeesJob`, …).
 
 ## Qurilma amallari (admin jadvali)
 
@@ -210,7 +219,15 @@ app/Services/Hikvision/
   HikvisionAlertStreamService.php — real-time alertStream
   HikvisionEventParser.php — XML/multipart event parsing
   FaceImageOptimizer.php    — rasm siqish
-  EmployeeSyncService.php   — xodim ↔ qurilma sync
+  EmployeeSyncService.php   — xodim ↔ qurilma sync (+ queue dispatch)
+
+app/Jobs/Hikvision/
+  SyncEmployeeJob.php
+  TransferEmployeesJob.php
+  SyncDeviceEmployeesJob.php
+  RemoveHikvisionUsersJob.php
+  RemoveHikvisionFacesJob.php
+  ClearDeviceUsersJob.php
 
 app/Http/Controllers/
   DeviceActionController.php
@@ -225,7 +242,7 @@ docs/hikvision-integration.md  — ushbu fayl
 
 1. Har bir HTTP chaqiruvda timeout (`connect_timeout`, `timeout`)
 2. Barcha ISAPI javoblarini log qilish (`storage/logs/laravel.log`)
-3. Ko'p qurilma uchun sync ni queue ga ko'chirish (keyingi bosqich)
+3. Sync queue orqali ishlaydi — productionda `queue:work` doimiy ishlashi kerak
 4. Har bir qurilma modeli uchun rasmiy Hikvision API hujjatini tekshirish
 
 ## Eslatma

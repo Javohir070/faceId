@@ -19,7 +19,9 @@ Ko‘rsatiladigan ilova nomi `.env` dagi `APP_NAME` orqali sozlanadi (default: *
 Batafsil qo'llanma: [`docs/hikvision-integration.md`](docs/hikvision-integration.md)
 
 - Admin → **Qurilmalar** — ISAPI ulanish, webhook, eshik ochish, sync
-- Admin → **Xodimlar** — yaratish/yangilash/o'chirish avtomatik qurilmalarga sync qilinadi
+- Admin → **Xodimlar** — faqat bazaga saqlanadi; qurilmaga **avtomatik** ketmaydi
+- Admin → **Sinxronizatsiya** — xodimlarni tanlab qurilmalarga qo‘lda yuborish (queue orqali)
+- Sync va qurilma amallari `QUEUE_CONNECTION` (odatda `database`) orqali fon ishiga tushadi — `php artisan queue:work` yoki `composer dev` ishlatilsin
 - `.env` da `HIKVISION_WEBHOOK_SECRET` va `APP_URL` ni sozlang
 - Har bir qurilmaning IP, login, parol ma'lumotlari **Admin → Qurilmalar** da saqlanadi (`.env` emas)
 

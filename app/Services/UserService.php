@@ -62,6 +62,10 @@ class UserService
             return 'Oxirgi super-admin foydalanuvchini o\'chirib bo\'lmaydi.';
         }
 
+        if ($user->devices()->exists()) {
+            return 'Foydalanuvchiga biriktirilgan qurilmalar bor. Avval qurilmalarni o\'chiring yoki boshqa foydalanuvchiga o\'tkazing.';
+        }
+
         DB::transaction(function () use ($user): void {
             $this->userRepository->delete($user);
         });

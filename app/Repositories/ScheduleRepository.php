@@ -39,4 +39,9 @@ class ScheduleRepository implements ScheduleRepositoryInterface
     {
         $schedule->delete();
     }
+
+    public function hasEmployees(Schedule $schedule): bool
+    {
+        return $schedule->employees()->exists();
+    }
 }

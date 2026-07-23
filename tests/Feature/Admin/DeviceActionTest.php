@@ -44,6 +44,7 @@ class DeviceActionTest extends TestCase
         $device->refresh();
         $this->assertTrue($device->is_online);
         $this->assertNotNull($device->last_connected_at);
+        $this->assertTrue($device->webhook_configured);
     }
 
     public function test_unauthorized_user_cannot_run_device_actions(): void

@@ -46,7 +46,7 @@ class EmployeeController extends Controller
 
         return redirect()
             ->route('admin.employees.index')
-            ->with('success', 'Xodim muvaffaqiyatli yaratildi.');
+            ->with('success', 'Xodim muvaffaqiyatli yaratildi. Qurilmaga yuborish uchun Sinxronizatsiya sahifasidan foydalaning.');
     }
 
     public function show(Request $request, Employee $employee): Response
@@ -60,18 +60,14 @@ class EmployeeController extends Controller
 
     public function removeDevices(RemoveEmployeeDevicesRequest $request, Employee $employee): RedirectResponse
     {
-        $result = $this->employeeSyncService->removeFromDevices(
+        $this->employeeSyncService->queueRemoveFromDevices(
             $employee,
             $request->validated('device_ids'),
         );
 
         return redirect()
             ->route('admin.employees.show', $employee)
-            ->with('success', sprintf(
-                'Qurilmalardan o‘chirildi: %d muvaffaqiyatli, %d xatolik.',
-                $result['success'],
-                $result['failed'],
-            ));
+            ->with('success', 'Xodimni qurilmalardan o‘chirish navbatga qo‘yildi.');
     }
 
     public function edit(Request $request, Employee $employee): Response
@@ -94,7 +90,7 @@ class EmployeeController extends Controller
 
         return redirect()
             ->route('admin.employees.index')
-            ->with('success', 'Xodim muvaffaqiyatli yangilandi.');
+            ->with('success', 'Xodim muvaffaqiyatli yangilandi. O‘zgarishni qurilmaga yuborish uchun Sinxronizatsiya sahifasidan foydalaning.');
     }
 
     public function destroy(Employee $employee): RedirectResponse
@@ -103,6 +99,6 @@ class EmployeeController extends Controller
 
         return redirect()
             ->route('admin.employees.index')
-            ->with('success', "Xodim muvaffaqiyatli o'chirildi.");
+            ->with('success', 'Xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
     }
 }
