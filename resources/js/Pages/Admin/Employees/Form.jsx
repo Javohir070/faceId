@@ -1,17 +1,22 @@
 import { useForm } from '@inertiajs/react';
-import { Input, Select } from 'antd';
+import { Button, Input, Select, Space } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import FaceCaptureField from '../../../Components/FaceCaptureField';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
-export default function Form({ employee, departments = [], schedules = [] }) {
+function generateCardNumber() {
+    return String(Math.floor(10000000 + Math.random() * 90000000));
+}
+
+export default function Form({ employee, suggestedCard = '', departments = [], schedules = [] }) {
     const isEdit = !!employee;
 
     const { data, setData, post, processing, errors } = useForm({
         name: employee?.name || '',
-        card: employee?.card || '',
+        card: employee?.card || suggestedCard || generateCardNumber(),
         department_id: employee?.department_id || null,
         schedule_id: employee?.schedule_id || null,
         valid_from_dt: employee?.valid_from_dt || '',
@@ -54,12 +59,26 @@ export default function Form({ employee, departments = [], schedules = [] }) {
                             </FormField>
 
                             <FormField label="Karta" error={errors.card} required>
-                                <Input
-                                    size="large"
-                                    value={data.card}
-                                    status={errors.card ? 'error' : undefined}
-                                    onChange={(e) => setData('card', e.target.value)}
-                                />
+                                <Space.Compact className="w-full">
+                                    <Input
+                                        size="large"
+                                        value={data.card}
+                                        status={errors.card ? 'error' : undefined}
+                                        inputMode="numeric"
+                                        maxLength={14}
+                                        placeholder="1–14 xonali son"
+                                        onChange={(e) => {
+                                            const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
+                                            setData('card', digits);
+                                        }}
+                                    />
+                                    <Button
+                                        size="large"
+                                        icon={<ReloadOutlined />}
+                                        title="Yangi raqam generatsiya qilish"
+                                        onClick={() => setData('card', generateCardNumber())}
+                                    />
+                                </Space.Compact>
                             </FormField>
                         </div>
 
@@ -125,6 +144,7 @@ export default function Form({ employee, departments = [], schedules = [] }) {
                             removeFace={data.remove_face}
                             required={!isEdit}
                             error={errors.face}
+                            maxBytes={1024 * 1024}
                             onChange={(file) => setData('face', file)}
                             onRemoveChange={(remove) => setData('remove_face', remove)}
                         />

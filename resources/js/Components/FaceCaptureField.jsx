@@ -1,24 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { CameraOutlined, CloseOutlined, UploadOutlined } from '@ant-design/icons';
 
+const DEFAULT_MAX_BYTES = 1024 * 1024;
+
 export default function FaceCaptureField({
     value = null,
     existingPreview = null,
     removeFace = false,
     required = false,
     error = null,
+    maxBytes = DEFAULT_MAX_BYTES,
     onChange,
     onRemoveChange,
 }) {
     const fileInputRef = useRef(null);
     const [localPreview, setLocalPreview] = useState(null);
     const [fileName, setFileName] = useState('');
+    const [localError, setLocalError] = useState(null);
 
     useEffect(() => {
         if (value) {
             const objectUrl = URL.createObjectURL(value);
             setLocalPreview(objectUrl);
             setFileName(value.name || 'face.jpg');
+            setLocalError(null);
             return () => URL.revokeObjectURL(objectUrl);
         }
 
@@ -27,8 +32,20 @@ export default function FaceCaptureField({
         return undefined;
     }, [value]);
 
+    const maxMbLabel = maxBytes % (1024 * 1024) === 0
+        ? `${maxBytes / (1024 * 1024)} MB`
+        : `${(maxBytes / (1024 * 1024)).toFixed(1)} MB`;
+
     const applyFile = (file) => {
         if (!file) return;
+
+        if (file.size > maxBytes) {
+            setLocalError(`Rasm hajmi ${maxMbLabel} dan oshmasligi kerak (hozir ${(file.size / (1024 * 1024)).toFixed(2)} MB).`);
+            onChange?.(null);
+            return;
+        }
+
+        setLocalError(null);
         onRemoveChange?.(false);
         onChange?.(file);
     };
@@ -42,6 +59,7 @@ export default function FaceCaptureField({
     };
 
     const handleClear = () => {
+        setLocalError(null);
         onChange?.(null);
         onRemoveChange?.(true);
         if (fileInputRef.current) {
@@ -62,7 +80,7 @@ export default function FaceCaptureField({
                         {required ? <span className="ml-1 text-negative" aria-hidden="true">*</span> : null}
                     </p>
                     <p className="mt-1 text-xs font-medium leading-5 text-ink-subtle">
-                        Yuz rasmini fayl sifatida yuklang.
+                        Yuz rasmini fayl sifatida yuklang. Maksimal hajm: {maxMbLabel}.
                     </p>
                 </div>
                 {hasImage ? (
@@ -132,8 +150,8 @@ export default function FaceCaptureField({
                     Tozalash
                 </button>
 
-                {error ? (
-                    <p className="text-sm font-semibold text-negative">{error}</p>
+                {(localError || error) ? (
+                    <p className="text-sm font-semibold text-negative">{localError || error}</p>
                 ) : null}
             </div>
         </div>

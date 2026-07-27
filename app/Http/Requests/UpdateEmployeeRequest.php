@@ -23,13 +23,25 @@ class UpdateEmployeeRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'card' => ['required', 'string', 'max:20', Rule::unique('employees', 'card')->ignore($employee->id)],
+            'card' => ['required', 'digits_between:1,14', Rule::unique('employees', 'card')->ignore($employee->id)],
             'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
             'valid_from_dt' => ['required', 'date'],
             'valid_to_dt' => ['required', 'date', 'after_or_equal:valid_from_dt'],
-            'face' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:5120'],
+            'face' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:1024'],
             'remove_face' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'card.digits_between' => 'Karta raqami 1 dan 14 xonagacha son bo‘lishi kerak.',
+            'card.unique' => 'Bu karta raqami allaqachon band.',
+            'face.max' => 'Yuz rasmi hajmi 1 MB dan oshmasligi kerak.',
         ];
     }
 }

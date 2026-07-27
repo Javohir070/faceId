@@ -21,7 +21,7 @@ class EmployeeFactory extends Factory
 
         return [
             'name' => fake()->name(),
-            'card' => fake()->unique()->numerify('##########'),
+            'card' => fake()->unique()->numerify('########'),
             'schedule_id' => Schedule::factory(),
             'department_id' => Department::factory(),
             'valid_from_dt' => $validFrom->format('Y-m-d H:i:s'),

@@ -48,7 +48,7 @@ class EmployeeSyncQueueTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Yangi Xodim',
-                'card' => '9988776655',
+                'card' => '99887766',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-01-01T09:00',
@@ -57,7 +57,7 @@ class EmployeeSyncQueueTest extends TestCase
             ])
             ->assertRedirect(route('admin.employees.index'));
 
-        $employee = Employee::query()->where('card', '9988776655')->first();
+        $employee = Employee::query()->where('card', '99887766')->first();
         $this->assertNotNull($employee);
         $this->assertSame(0, $employee->devices()->count());
         Queue::assertNotPushed(SyncEmployeeJob::class);
@@ -123,7 +123,7 @@ class EmployeeSyncQueueTest extends TestCase
         $employee = Employee::factory()->create([
             'department_id' => $department->id,
             'schedule_id' => $schedule->id,
-            'card' => '5566778899',
+            'card' => '55667788',
         ]);
         $employee->devices()->attach($device->id, ['synced_at' => now()]);
 
@@ -134,7 +134,7 @@ class EmployeeSyncQueueTest extends TestCase
         $this->assertDatabaseMissing('employees', ['id' => $employee->id]);
 
         Queue::assertPushed(RemoveHikvisionUsersJob::class, function (RemoveHikvisionUsersJob $job) use ($device): bool {
-            return $job->employeeCard === '5566778899'
+            return $job->employeeCard === '55667788'
                 && $job->deviceIds === [$device->id]
                 && $job->employeeId === null;
         });

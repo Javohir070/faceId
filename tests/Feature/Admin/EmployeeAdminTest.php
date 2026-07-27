@@ -41,7 +41,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Ali Valiyev',
-                'card' => '1234567890',
+                'card' => '12345678',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-01-01T09:00',
@@ -50,7 +50,7 @@ class EmployeeAdminTest extends TestCase
             ])
             ->assertRedirect(route('admin.employees.index'));
 
-        $employee = Employee::query()->where('card', '1234567890')->first();
+        $employee = Employee::query()->where('card', '12345678')->first();
         $this->assertNotNull($employee);
         $this->assertSame('Ali Valiyev', $employee->name);
         $this->assertSame($department->id, $employee->department_id);
@@ -63,7 +63,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
-                'card' => '1234567890',
+                'card' => '12345678',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-02-01T09:00',
@@ -79,7 +79,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
-                'card' => '1234567890',
+                'card' => '12345678',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-02-01T09:00',
