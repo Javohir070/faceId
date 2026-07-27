@@ -40,7 +40,7 @@ class DeviceActionController extends Controller
 
     public function ping(Device $device): RedirectResponse
     {
-        $online = $this->deviceService->refreshOnlineStatus($device);
+        $online = $this->deviceService->refreshOnlineStatus($device, probeAlternatives: true);
 
         return back()->with(
             $online ? 'success' : 'error',

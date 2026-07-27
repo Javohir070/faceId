@@ -91,7 +91,7 @@ class ReportService
         }
 
         if ($device !== null) {
-            return (int) $device->type === 1 ? Report::TYPE_EXIT : Report::TYPE_ENTRY;
+            return $device->isExit() ? Report::TYPE_EXIT : Report::TYPE_ENTRY;
         }
 
         return Report::TYPE_ENTRY;

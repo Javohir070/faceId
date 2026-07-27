@@ -58,9 +58,12 @@ class HikvisionDeviceService
         $this->getDeviceInfo($resolved);
         $webhookConfigured = $this->setupWebhook($resolved);
 
+        Cache::forget($this->pingFailureCacheKey($device));
+
         $device->forceFill([
             'is_online' => true,
             'last_connected_at' => now(),
+            'last_ping_at' => now(),
             'webhook_configured' => $webhookConfigured,
         ])->save();
 
@@ -79,11 +82,18 @@ class HikvisionDeviceService
         return true;
     }
 
-    public function refreshOnlineStatus(Device $device): bool
+    /**
+     * @param  bool  $probeAlternatives  true = qo‘lda tekshiruv (port/HTTPS qidiradi);
+     *                                   false = scheduler (faqat saqlangan sozlamalar).
+     */
+    public function refreshOnlineStatus(Device $device, bool $probeAlternatives = false): bool
     {
         try {
-            $resolved = $this->pingDevice($device);
-            $this->persistConnectionSettings($device, $resolved);
+            $resolved = $this->pingDevice($device, $probeAlternatives);
+
+            if ($probeAlternatives) {
+                $this->persistConnectionSettings($device, $resolved);
+            }
 
             Cache::forget($this->pingFailureCacheKey($device));
 
@@ -95,24 +105,25 @@ class HikvisionDeviceService
 
             return true;
         } catch (\Throwable $exception) {
-            $failures = (int) Cache::increment($this->pingFailureCacheKey($device));
-            $threshold = max((int) config('hikvision.ping_offline_after_failures', 3), 1);
+            $failures = $this->incrementPingFailures($device);
+            $threshold = max((int) config('hikvision.ping_offline_after_failures', 5), 1);
 
-            Cache::put(
-                $this->pingFailureCacheKey($device),
-                $failures,
-                now()->addHours(6),
-            );
+            $updates = [
+                'last_ping_at' => now(),
+            ];
 
             if ($failures >= $threshold) {
-                $device->forceFill(['is_online' => false])->save();
+                $updates['is_online'] = false;
             }
+
+            $device->forceFill($updates)->save();
 
             Log::warning('Hikvision: qurilma ping muvaffaqiyatsiz', [
                 'device_id' => $device->id,
                 'url' => $device->isapiBaseUrl(),
                 'failures' => $failures,
                 'threshold' => $threshold,
+                'probe' => $probeAlternatives,
                 'message' => $exception->getMessage(),
             ]);
 
@@ -120,7 +131,7 @@ class HikvisionDeviceService
         }
     }
 
-    private function pingDevice(Device $device): Device
+    private function pingDevice(Device $device, bool $probeAlternatives = false): Device
     {
         try {
             $response = $this->client->request(
@@ -133,11 +144,30 @@ class HikvisionDeviceService
             if ($response->successful()) {
                 return $device;
             }
-        } catch (ConnectionException) {
-            // Joriy sozlamalar bilan ishlamadi — to‘liq qidiruvga o‘tamiz.
+
+            if (! $probeAlternatives) {
+                throw new HikvisionConnectionException(
+                    'Qurilma javob bermadi: HTTP '.$response->status().' ['.$device->isapiBaseUrl().']',
+                    $device,
+                );
+            }
+        } catch (ConnectionException $exception) {
+            if (! $probeAlternatives) {
+                throw HikvisionConnectionException::fromThrowable($device, $exception);
+            }
         }
 
         return $this->resolveWorkingConnection($device);
+    }
+
+    private function incrementPingFailures(Device $device): int
+    {
+        $key = $this->pingFailureCacheKey($device);
+        $failures = (int) Cache::get($key, 0) + 1;
+
+        Cache::put($key, $failures, now()->addHours(6));
+
+        return $failures;
     }
 
     private function pingFailureCacheKey(Device $device): string
@@ -484,7 +514,12 @@ class HikvisionDeviceService
     private function cloneForProbe(Device $device, bool $useHttps, int $port): Device
     {
         $clone = $device->replicate();
+        $clone->id = $device->id;
+        $clone->exists = true;
         $clone->applyIsapiConnectionSettings($useHttps, $port);
+
+        // Encrypted cast: probe uchun ochiq parolni saqlab qo'yamiz.
+        $clone->password = $device->password;
 
         return $clone;
     }

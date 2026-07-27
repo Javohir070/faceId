@@ -67,6 +67,7 @@ class DeviceResource extends JsonResource
             'ip_address' => $this->ip_address,
             'port' => $this->port,
             'use_https' => $this->use_https,
+            'isapi_base_url' => $this->isapiBaseUrl(),
             'user' => $this->user,
             'has_password' => filled($this->password),
             'type' => $this->type,
@@ -77,7 +78,8 @@ class DeviceResource extends JsonResource
             'webhook_configured' => $this->webhook_configured,
             'last_connected_at' => $this->last_connected_at?->format('Y-m-d H:i:s'),
             'last_ping_at' => $this->last_ping_at?->format('Y-m-d H:i:s'),
-            'created_at' => $this->created_at,
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
             'category' => $this->category?->only(['id', 'name']),
             'owner' => $this->owner?->only(['id', 'name']),
         ];

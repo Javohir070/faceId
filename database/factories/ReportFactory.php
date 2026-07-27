@@ -63,7 +63,7 @@ class ReportFactory extends Factory
         return $this->state(fn (): array => [
             'device_id' => $device->id,
             'device_name' => $device->name,
-            'type' => (int) $device->type === 1 ? Report::TYPE_EXIT : Report::TYPE_ENTRY,
+            'type' => $device->isExit() ? Report::TYPE_EXIT : Report::TYPE_ENTRY,
         ]);
     }
 }

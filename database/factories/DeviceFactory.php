@@ -26,7 +26,7 @@ class DeviceFactory extends Factory
             'port' => fake()->numberBetween(80, 8999),
             'user' => 'admin',
             'password' => 'password',
-            'type' => fake()->numberBetween(0, 3),
+            'type' => fake()->randomElement([Device::TYPE_ENTRY, Device::TYPE_EXIT]),
             'autoconnect' => fake()->boolean(),
         ];
     }

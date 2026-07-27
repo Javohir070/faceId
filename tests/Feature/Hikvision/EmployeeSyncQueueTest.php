@@ -12,6 +12,7 @@ use App\Models\Employee;
 use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\InteractsWithPermissions;
@@ -63,14 +64,13 @@ class EmployeeSyncQueueTest extends TestCase
         Queue::assertNotPushed(TransferEmployeesJob::class);
     }
 
-    public function test_sync_transfer_is_queued(): void
+    public function test_sync_transfer_pushes_employees_immediately(): void
     {
         Queue::fake();
+        Http::fake(['*' => Http::response('', 200)]);
 
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['sync'],
-            config('menu_permissions.resources')['devices'],
-            config('menu_permissions.resources')['employees'],
         ]);
 
         $category = Category::factory()->create();
@@ -79,6 +79,7 @@ class EmployeeSyncQueueTest extends TestCase
         $device = Device::factory()->create([
             'user_id' => $admin->id,
             'category_id' => $category->id,
+            'is_online' => true,
         ]);
         $employee = Employee::factory()->create([
             'department_id' => $department->id,
@@ -90,12 +91,18 @@ class EmployeeSyncQueueTest extends TestCase
                 'device_ids' => [$device->id],
                 'employee_ids' => [$employee->id],
             ])
-            ->assertRedirect(route('admin.sync.index'));
+            ->assertRedirect(route('admin.sync.index'))
+            ->assertSessionHas('success');
 
-        Queue::assertPushed(TransferEmployeesJob::class, function (TransferEmployeesJob $job) use ($device, $employee): bool {
-            return $job->deviceIds === [$device->id]
-                && $job->employeeIds === [$employee->id];
-        });
+        Queue::assertNotPushed(TransferEmployeesJob::class);
+
+        $this->assertDatabaseHas('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
+        $this->assertNotNull(
+            $employee->devices()->where('devices.id', $device->id)->first()?->pivot->synced_at,
+        );
     }
 
     public function test_deleting_employee_queues_device_removal_by_card(): void

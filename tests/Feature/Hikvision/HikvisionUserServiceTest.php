@@ -20,7 +20,6 @@ class HikvisionUserServiceTest extends TestCase
         Http::fake([
             '*' => Http::sequence()
                 ->push('', 200)
-                ->push('', 200)
                 ->push('', 200),
         ]);
 

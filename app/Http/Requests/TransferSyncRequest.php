@@ -9,7 +9,7 @@ class TransferSyncRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return ($this->user()?->can('Qurilmalar') && $this->user()?->can('Xodimlar')) ?? false;
+        return $this->user()?->can('Sinxronizatsiya') ?? false;
     }
 
     /**

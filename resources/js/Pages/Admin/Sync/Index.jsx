@@ -1,12 +1,16 @@
 import { router } from '@inertiajs/react';
-import { Button, Checkbox, Input, Select } from 'antd';
+import { App as AntApp, Button, Checkbox, Input, Select, Tag } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
+import useInertiaPoll from '../../../hooks/useInertiaPoll';
+
+const POLL_MS = 5000;
 
 function PanelTable({
     title,
+    subtitle,
     rows,
     selectedIds,
     onToggleAll,
@@ -17,6 +21,7 @@ function PanelTable({
     pageSize,
     onPageSizeChange,
     emptyLabel,
+    headerExtra,
 }) {
     const filtered = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -26,7 +31,11 @@ function PanelTable({
         }
 
         return rows.filter((row) => Object.values(row).some((value) => {
-            if (value === null || value === undefined) {
+            if (value === null || value === undefined || typeof value === 'object') {
+                if (value && typeof value === 'object' && 'name' in value) {
+                    return String(value.name).toLowerCase().includes(query);
+                }
+
                 return false;
             }
 
@@ -40,8 +49,14 @@ function PanelTable({
 
     return (
         <div className="flex min-h-[520px] flex-1 flex-col rounded-xl border border-line bg-surface shadow-ambient">
-            <div className="border-b border-line px-4 py-3">
-                <h2 className="text-base font-extrabold text-ink">{title}</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
+                <div>
+                    <h2 className="text-base font-extrabold text-ink">{title}</h2>
+                    {subtitle ? (
+                        <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>
+                    ) : null}
+                </div>
+                {headerExtra}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
@@ -53,7 +68,7 @@ function PanelTable({
                 />
                 <Input
                     allowClear
-                    placeholder="Nima qidiryapsiz?"
+                    placeholder="Qidiruv..."
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="max-w-xs"
@@ -84,7 +99,10 @@ function PanelTable({
                                 </td>
                             </tr>
                         ) : visible.map((row, index) => (
-                            <tr key={row.id}>
+                            <tr
+                                key={row.id}
+                                className={selectedIds.includes(row.id) ? 'bg-brand-50/60' : undefined}
+                            >
                                 <td className="devices-table__checkbox">
                                     <Checkbox
                                         checked={selectedIds.includes(row.id)}
@@ -103,21 +121,21 @@ function PanelTable({
             </div>
 
             <div className="mt-auto border-t border-line px-4 py-3 text-sm text-ink-muted">
-                1 dan
+                Tanlangan:
                 {' '}
+                <span className="font-semibold text-ink">{selectedIds.length}</span>
+                {' · '}
+                1–
                 {visible.length}
-                {' '}
-                gacha, jami
-                {' '}
+                {' / '}
                 {filtered.length}
-                {' '}
-                ta yozuv
             </div>
         </div>
     );
 }
 
-export default function Index({ devices, employees, categories, departments }) {
+export default function Index({ devices = [], employees = [], categories = [], departments = [] }) {
+    const { modal } = AntApp.useApp();
     const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
     const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
     const [deviceSearch, setDeviceSearch] = useState('');
@@ -127,6 +145,8 @@ export default function Index({ devices, employees, categories, departments }) {
     const [categoryFilter, setCategoryFilter] = useState(null);
     const [departmentFilter, setDepartmentFilter] = useState(null);
     const [transferring, setTransferring] = useState(false);
+
+    useInertiaPoll(['devices', 'employees'], POLL_MS);
 
     const filteredDevices = useMemo(() => {
         if (!categoryFilter) {
@@ -144,6 +164,14 @@ export default function Index({ devices, employees, categories, departments }) {
         return employees.filter((employee) => employee.department?.id === departmentFilter);
     }, [employees, departmentFilter]);
 
+    const selectedDevices = useMemo(
+        () => devices.filter((device) => selectedDeviceIds.includes(device.id)),
+        [devices, selectedDeviceIds],
+    );
+
+    const offlineSelectedCount = selectedDevices.filter((device) => !device.is_online).length;
+    const totalOps = selectedDeviceIds.length * selectedEmployeeIds.length;
+
     const toggleIds = (setter, id, checked) => {
         setter((prev) => (checked ? [...prev, id] : prev.filter((item) => item !== id)));
     };
@@ -159,21 +187,45 @@ export default function Index({ devices, employees, categories, departments }) {
     };
 
     const submitTransfer = () => {
-        setTransferring(true);
-        router.post(route('admin.sync.transfer'), {
-            device_ids: selectedDeviceIds,
-            employee_ids: selectedEmployeeIds,
-        }, {
-            preserveScroll: true,
-            onFinish: () => setTransferring(false),
-        });
+        const doTransfer = () => {
+            setTransferring(true);
+            router.post(route('admin.sync.transfer'), {
+                device_ids: selectedDeviceIds,
+                employee_ids: selectedEmployeeIds,
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedDeviceIds([]);
+                    setSelectedEmployeeIds([]);
+                },
+                onFinish: () => setTransferring(false),
+            });
+        };
+
+        if (offlineSelectedCount > 0) {
+            modal.confirm({
+                title: 'Ulanmagan qurilmalar bor',
+                content: `${offlineSelectedCount} ta tanlangan qurilma hozir ulanmagan. Yuborish baribir uriniladi, lekin xato bo‘lishi mumkin. Davom etasizmi?`,
+                okText: 'Ha, yuborish',
+                cancelText: 'Bekor qilish',
+                onOk: () => new Promise((resolve) => {
+                    doTransfer();
+                    resolve();
+                }),
+            });
+            return;
+        }
+
+        doTransfer();
     };
+
+    const canTransfer = selectedDeviceIds.length > 0 && selectedEmployeeIds.length > 0 && !transferring;
 
     return (
         <AdminLayout title="Sinxronizatsiya">
             <PageHeader
                 title="Sinxronizatsiya"
-                subtitle="Tanlangan xodimlarni tanlangan Hikvision qurilmalariga yuboring."
+                subtitle={`Tanlangan xodimlar darhol Hikvision qurilmalariga yuboriladi. Holat har ${POLL_MS / 1000} soniyada yangilanadi.`}
                 actions={(
                     <div className="flex flex-wrap items-center gap-3">
                         <Select
@@ -197,18 +249,48 @@ export default function Index({ devices, employees, categories, departments }) {
                             size="large"
                             className="!h-11 !rounded-lg !px-6 !font-bold"
                             loading={transferring}
-                            disabled={!selectedDeviceIds.length || !selectedEmployeeIds.length}
+                            disabled={!canTransfer}
                             onClick={submitTransfer}
                         >
-                            Ko'chirish
+                            {transferring
+                                ? 'Yuborilmoqda...'
+                                : `Yuborish${totalOps > 0 ? ` (${totalOps})` : ''}`}
                         </Button>
                     </div>
                 )}
             />
 
+            {(selectedDeviceIds.length > 0 || selectedEmployeeIds.length > 0) && (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface-muted px-4 py-3 text-sm">
+                    <span className="font-semibold text-ink">
+                        {selectedEmployeeIds.length}
+                        {' '}
+                        xodim →
+                        {' '}
+                        {selectedDeviceIds.length}
+                        {' '}
+                        qurilma
+                    </span>
+                    <span className="text-ink-muted">
+                        (
+                        {totalOps}
+                        {' '}
+                        ta yuborish)
+                    </span>
+                    {offlineSelectedCount > 0 ? (
+                        <Tag color="warning">
+                            {offlineSelectedCount}
+                            {' '}
+                            ulanmagan qurilma
+                        </Tag>
+                    ) : null}
+                </div>
+            )}
+
             <div className="grid gap-4 xl:grid-cols-2">
                 <PanelTable
                     title="Qurilmalar"
+                    subtitle="Qayerga yuboriladi"
                     rows={filteredDevices}
                     selectedIds={selectedDeviceIds}
                     onToggleAll={(checked, ids) => toggleAll(setSelectedDeviceIds, checked, ids)}
@@ -218,11 +300,29 @@ export default function Index({ devices, employees, categories, departments }) {
                     pageSize={devicePageSize}
                     onPageSizeChange={setDevicePageSize}
                     emptyLabel="Qurilmalar topilmadi"
+                    headerExtra={(
+                        <Tag color="processing">
+                            {filteredDevices.filter((d) => d.is_online).length}
+                            /
+                            {filteredDevices.length}
+                            {' '}
+                            online
+                        </Tag>
+                    )}
                     columns={[
                         {
                             key: 'index',
                             label: '№',
                             render: (_row, index) => index + 1,
+                        },
+                        {
+                            key: 'status',
+                            label: 'Holat',
+                            render: (row) => (
+                                <Tag color={row.is_online ? 'success' : 'default'}>
+                                    {row.is_online ? 'Ulangan' : 'Ulanmagan'}
+                                </Tag>
+                            ),
                         },
                         {
                             key: 'ip',
@@ -234,13 +334,37 @@ export default function Index({ devices, employees, categories, departments }) {
                             key: 'name',
                             label: 'Nomi',
                             className: 'font-medium',
-                            render: (row) => row.name,
+                            render: (row) => (
+                                <div>
+                                    <div>{row.name}</div>
+                                    <div className="text-xs font-medium text-ink-muted">
+                                        {row.type_label || '—'}
+                                        {row.category?.name ? ` · ${row.category.name}` : ''}
+                                    </div>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'synced',
+                            label: 'Sync',
+                            className: 'font-semibold text-brand-600',
+                            render: (row) => {
+                                const total = row.assigned_employees_count ?? 0;
+                                const synced = row.synced_employees_count ?? 0;
+
+                                if (total === 0) {
+                                    return '—';
+                                }
+
+                                return `${synced}/${total}`;
+                            },
                         },
                     ]}
                 />
 
                 <PanelTable
                     title="Xodimlar"
+                    subtitle="Kimlar yuboriladi"
                     rows={filteredEmployees}
                     selectedIds={selectedEmployeeIds}
                     onToggleAll={(checked, ids) => toggleAll(setSelectedEmployeeIds, checked, ids)}
@@ -257,16 +381,27 @@ export default function Index({ devices, employees, categories, departments }) {
                             render: (_row, index) => index + 1,
                         },
                         {
-                            key: 'id',
-                            label: 'ID',
-                            className: 'font-medium text-ink-subtle',
-                            render: (row) => row.id,
+                            key: 'name',
+                            label: 'Xodim',
+                            className: 'font-medium',
+                            render: (row) => (
+                                <div>
+                                    <div>{row.name}</div>
+                                    <div className="text-xs font-medium text-ink-muted">
+                                        {row.card || 'Karta yo‘q'}
+                                        {row.department?.name ? ` · ${row.department.name}` : ''}
+                                    </div>
+                                </div>
+                            ),
                         },
                         {
-                            key: 'name',
-                            label: 'Ism',
-                            className: 'font-medium',
-                            render: (row) => row.name,
+                            key: 'face',
+                            label: 'Yuz',
+                            render: (row) => (
+                                <Tag color={row.has_face ? 'success' : 'default'}>
+                                    {row.has_face ? 'Bor' : 'Yo‘q'}
+                                </Tag>
+                            ),
                         },
                         {
                             key: 'devices',

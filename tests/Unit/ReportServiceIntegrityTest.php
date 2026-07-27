@@ -34,7 +34,7 @@ class ReportServiceIntegrityTest extends TestCase
             'user_id' => $owner->id,
             'category_id' => $category->id,
             'ip_address' => '10.0.0.55',
-            'type' => 0,
+            'type' => Device::TYPE_ENTRY,
         ]);
 
         $event = AccessControllerEvent::factory()->create([

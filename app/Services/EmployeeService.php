@@ -63,6 +63,7 @@ class EmployeeService
             $employee = $this->employeeRepository->update($employee, $data);
 
             if ($removeFace) {
+                $this->employeeSyncService->queueRemoveFace($employee);
                 $employee->face()?->delete();
             } elseif ($faceFile instanceof UploadedFile) {
                 $this->syncFace($employee, $faceFile);

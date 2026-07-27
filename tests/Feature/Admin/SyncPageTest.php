@@ -24,8 +24,6 @@ class SyncPageTest extends TestCase
 
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['sync'],
-            config('menu_permissions.resources')['devices'],
-            config('menu_permissions.resources')['employees'],
         ]);
 
         $category = Category::factory()->create();
@@ -35,6 +33,7 @@ class SyncPageTest extends TestCase
         $device = Device::factory()->create([
             'user_id' => $admin->id,
             'category_id' => $category->id,
+            'is_online' => true,
         ]);
 
         $employee = Employee::factory()->create([
@@ -66,6 +65,54 @@ class SyncPageTest extends TestCase
         $employee->refresh();
         $this->assertSame(1, $employee->devices()->count());
         $this->assertSame(1, $employee->devices()->whereNotNull('device_employee.synced_at')->count());
+    }
+
+    public function test_transfer_skips_offline_devices_when_online_exists(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['sync'],
+        ]);
+
+        $category = Category::factory()->create();
+        $department = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+
+        $online = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $category->id,
+            'name' => 'Online',
+            'is_online' => true,
+            'ip_address' => '10.0.0.1',
+        ]);
+        $offline = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $category->id,
+            'name' => 'Offline',
+            'is_online' => false,
+            'ip_address' => '10.0.0.2',
+        ]);
+        $employee = Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.sync.transfer'), [
+                'device_ids' => [$online->id, $offline->id],
+                'employee_ids' => [$employee->id],
+            ])
+            ->assertRedirect(route('admin.sync.index'));
+
+        $this->assertDatabaseHas('device_employee', [
+            'device_id' => $online->id,
+            'employee_id' => $employee->id,
+        ]);
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $offline->id,
+            'employee_id' => $employee->id,
+        ]);
     }
 
     public function test_unauthorized_user_cannot_access_sync_page(): void

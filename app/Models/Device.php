@@ -16,9 +16,14 @@ class Device extends Model
     /** @use HasFactory<DeviceFactory> */
     use HasFactory;
 
+    public const TYPE_ENTRY = 1;
+
+    public const TYPE_EXIT = 2;
+
     /**
      * Hikvision Face ID ulanish ma'lumotlari shu modelda saqlanadi.
      * Bir nechta qurilma: har biri uchun alohida ip_address, port, user, password.
+     * type: 1 = Kirish, 2 = Chiqish.
      */
 
     /**
@@ -122,10 +127,29 @@ class Device extends Model
 
     public function hasIsapiCredentials(): bool
     {
-        return $this->ip_address !== ''
-            && $this->port > 0
-            && $this->user !== ''
-            && $this->password !== '';
+        return filled($this->ip_address)
+            && (int) $this->port > 0
+            && filled($this->user)
+            && filled($this->password);
+    }
+
+    public function isEntry(): bool
+    {
+        return (int) $this->type === self::TYPE_ENTRY;
+    }
+
+    public function isExit(): bool
+    {
+        return (int) $this->type === self::TYPE_EXIT;
+    }
+
+    public function typeLabel(): string
+    {
+        return match ((int) $this->type) {
+            self::TYPE_EXIT => 'Chiqish',
+            self::TYPE_ENTRY => 'Kirish',
+            default => 'Noma’lum',
+        };
     }
 
     /**

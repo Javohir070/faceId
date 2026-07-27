@@ -85,8 +85,8 @@ return [
 
     'ping_enabled' => env('HIKVISION_PING_ENABLED', true),
 
-    'ping_interval_minutes' => max((int) env('HIKVISION_PING_INTERVAL', 1), 1),
+    'ping_interval_minutes' => max((int) env('HIKVISION_PING_INTERVAL', 2), 1),
 
-    'ping_offline_after_failures' => max((int) env('HIKVISION_PING_OFFLINE_AFTER_FAILURES', 3), 1),
+    'ping_offline_after_failures' => max((int) env('HIKVISION_PING_OFFLINE_AFTER_FAILURES', 5), 1),
 
 ];

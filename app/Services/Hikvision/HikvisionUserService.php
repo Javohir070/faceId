@@ -146,6 +146,12 @@ class HikvisionUserService
             return false;
         }
 
+        // Avval yuklash — muvaffaqiyatsiz bo‘lsa eski yuz o‘chib ketmasin.
+        if ($this->uploadFace($device, $employee->card, $binary)) {
+            return true;
+        }
+
+        // Ba’zi qurilmalar mavjud yuz ustiga yozishni rad etadi — o‘chirib qayta urinish.
         $this->deleteFace($device, $employee->card);
 
         return $this->uploadFace($device, $employee->card, $binary);

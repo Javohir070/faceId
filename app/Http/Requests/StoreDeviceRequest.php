@@ -26,7 +26,7 @@ class StoreDeviceRequest extends FormRequest
             'use_https' => ['sometimes', 'boolean'],
             'user' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'integer', 'min:0', 'max:255'],
+            'type' => ['required', 'integer', Rule::in([1, 2])],
             'autoconnect' => ['sometimes', 'boolean'],
         ];
     }

@@ -86,18 +86,45 @@ class EmployeeSyncService
     /**
      * @param  list<int>  $deviceIds
      * @param  list<int>  $employeeIds
-     * @return array{success:int, failed:int}
+     * @return array{success:int, failed:int, skipped:int}
      */
     public function transfer(array $deviceIds, array $employeeIds): array
     {
-        $devices = Device::query()->whereIn('id', $deviceIds)->get();
+        $devices = Device::query()->whereIn('id', $deviceIds)->get()
+            ->filter(fn (Device $device): bool => $device->hasIsapiCredentials())
+            ->values();
         $employees = Employee::query()->with('face')->whereIn('id', $employeeIds)->get();
 
         $success = 0;
         $failed = 0;
+        $skipped = 0;
+
+        if ($devices->isEmpty() || $employees->isEmpty()) {
+            return [
+                'success' => 0,
+                'failed' => 0,
+                'skipped' => max($employees->count(), 1),
+            ];
+        }
+
+        $onlineDevices = $devices->filter(fn (Device $device): bool => $device->is_online)->values();
+        $offlineDevices = $devices->filter(fn (Device $device): bool => ! $device->is_online)->values();
+
+        // Online bor bo‘lsa faqat ular — offline timeoutdan saqlaydi.
+        // Hammasi offline bo‘lsa (eski holat) baribir uriniladi.
+        if ($onlineDevices->isNotEmpty()) {
+            $targetDevices = $onlineDevices;
+            $skipped = $offlineDevices->count() * $employees->count();
+        } else {
+            $targetDevices = $devices;
+        }
+
+        if (function_exists('set_time_limit')) {
+            set_time_limit(0);
+        }
 
         foreach ($employees as $employee) {
-            foreach ($devices as $device) {
+            foreach ($targetDevices as $device) {
                 $synced = $this->pushToDevice($employee, $device);
                 $synced ? $success++ : $failed++;
             }
@@ -108,9 +135,10 @@ class EmployeeSyncService
             'employees' => $employeeIds,
             'success' => $success,
             'failed' => $failed,
+            'skipped' => $skipped,
         ]);
 
-        return ['success' => $success, 'failed' => $failed];
+        return ['success' => $success, 'failed' => $failed, 'skipped' => $skipped];
     }
 
     public function syncEmployee(Employee $employee, ?Device $device = null): void
@@ -261,11 +289,20 @@ class EmployeeSyncService
         $failed = 0;
 
         foreach ($device->employees()->get() as $employee) {
-            if ($this->userService->deleteUser($device, $employee->card)) {
-                $device->employees()->detach($employee->id);
-                $success++;
-            } else {
+            try {
+                if ($this->userService->deleteUser($device, $employee->card)) {
+                    $device->employees()->detach($employee->id);
+                    $success++;
+                } else {
+                    $failed++;
+                }
+            } catch (\Throwable $exception) {
                 $failed++;
+                Log::error('Hikvision: qurilmani tozalash xatoligi', [
+                    'device_id' => $device->id,
+                    'employee_id' => $employee->id,
+                    'message' => $exception->getMessage(),
+                ]);
             }
         }
 

@@ -16,7 +16,7 @@ export default function Form({ device, categories = [] }) {
         use_https: device?.use_https ?? false,
         user: device?.user || '',
         password: '',
-        type: device?.type ?? 0,
+        type: device?.type ?? null,
         autoconnect: device?.autoconnect ?? false,
     });
 
@@ -60,13 +60,16 @@ export default function Form({ device, categories = [] }) {
                         />
                     </FormField>
                     <FormField label="Turi" error={errors.type} required>
-                        <InputNumber
+                        <Select
                             className="w-full"
-                            min={0}
-                            max={255}
-                            value={data.type}
+                            placeholder="Turini tanlang"
+                            value={data.type || undefined}
                             status={errors.type ? 'error' : undefined}
-                            onChange={(value) => setData('type', value ?? 0)}
+                            options={[
+                                { value: 1, label: 'Kirish' },
+                                { value: 2, label: 'Chiqish' },
+                            ]}
+                            onChange={(value) => setData('type', value)}
                         />
                     </FormField>
                 </div>

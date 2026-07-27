@@ -33,7 +33,7 @@ class ReportWebhookTest extends TestCase
             'department_id' => $department->id,
         ]);
 
-        $device = $this->registerDevice('10.0.0.8', 'Kirish 1', 0);
+        $device = $this->registerDevice('10.0.0.8', 'Kirish 1', Device::TYPE_ENTRY);
 
         $this->postJson('/api/webhooks/hikvision/events', [
             'event_log' => json_encode([
@@ -75,7 +75,7 @@ class ReportWebhookTest extends TestCase
             'card' => '2002',
         ]);
 
-        $this->registerDevice('10.0.0.9', 'Chiqish 2', 1);
+        $this->registerDevice('10.0.0.9', 'Chiqish 2', Device::TYPE_EXIT);
 
         $this->postJson('/api/webhooks/hikvision/events', [
             'event_log' => json_encode([
