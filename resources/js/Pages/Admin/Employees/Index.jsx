@@ -1,8 +1,8 @@
-import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
+import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
 
 export default function Index({ employees }) {
@@ -48,9 +48,9 @@ export default function Index({ employees }) {
                                 <td className="font-medium">{employee.department?.name || '—'}</td>
                                 <td className="font-medium">{employee.schedule?.name || '—'}</td>
                                 <td>
-                                    <Tag color={employee.has_face ? 'success' : 'default'}>
+                                    <StatusTag tone={employee.has_face ? 'success' : 'neutral'}>
                                         {employee.has_face ? 'Bor' : "Yo'q"}
-                                    </Tag>
+                                    </StatusTag>
                                 </td>
                                 <td className="font-medium text-ink-muted">
                                     {employee.valid_from_dt}

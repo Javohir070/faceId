@@ -35,7 +35,7 @@ export default function Edit({ user }) {
                     className="card space-y-4"
                 >
                     <div className="flex items-start gap-3 border-b border-line pb-4">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-50 text-brand-700"><UserOutlined /></span>
+                        <span className="brand-chip h-9 w-9"><UserOutlined /></span>
                         <div>
                             <h2 className="text-base font-extrabold text-ink">Profil ma’lumotlari</h2>
                             <p className="mt-1 text-sm text-ink-muted">Ism va elektron pochta manzilingizni yangilang.</p>
@@ -64,7 +64,7 @@ export default function Edit({ user }) {
                     className="card space-y-4"
                 >
                     <div className="flex items-start gap-3 border-b border-line pb-4">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-50 text-brand-700"><KeyOutlined /></span>
+                        <span className="brand-chip h-9 w-9"><KeyOutlined /></span>
                         <div>
                             <h2 className="text-base font-extrabold text-ink">Parolni yangilash</h2>
                             <p className="mt-1 text-sm text-ink-muted">Hisobingiz uchun kuchli va yangi parol o‘rnating.</p>

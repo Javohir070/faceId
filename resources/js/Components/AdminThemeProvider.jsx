@@ -130,6 +130,13 @@ export default function AdminThemeProvider({ children }) {
                 Pagination: {
                     itemActiveBg: dark ? '#172b22' : '#ffffff',
                 },
+                Tag: {
+                    defaultBg: dark ? '#172033' : '#ffffff',
+                    defaultColor: dark ? '#aebbd0' : '#4b5563',
+                    borderRadiusSM: 6,
+                    fontSizeSM: 12,
+                    lineHeightSM: 1.4,
+                },
             },
         };
     }, [adminActive, mode]);

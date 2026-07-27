@@ -21,9 +21,9 @@ export default function GuestLayout({ children, title, subtitle }) {
                     <div className="border-b border-brand-800 bg-brand-900 px-4 py-4 text-white lg:hidden">
                         <div className="mx-auto flex max-w-md items-center gap-3 sm:max-w-lg">
                             <img
-                                src="/admin/assets/img/eidora-logo.png"
+                                src="/admin/assets/img/eidora-icon.png"
                                 alt=""
-                                className="h-10 w-10 shrink-0 rounded-lg object-cover object-top"
+                                className="h-9 w-auto shrink-0 object-contain"
                             />
                             <div className="min-w-0 text-left">
                                 <p className="truncate text-base font-extrabold tracking-tight">{brandName}</p>

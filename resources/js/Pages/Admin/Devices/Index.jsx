@@ -4,12 +4,13 @@ import {
     CaretUpOutlined,
     MoreOutlined,
 } from '@ant-design/icons';
-import { App as AntApp, Checkbox, Dropdown, Tag } from 'antd';
+import { App as AntApp, Checkbox, Dropdown } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
+import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
@@ -244,22 +245,16 @@ export default function Index({ devices }) {
                                 <td className="font-medium">{device.port}</td>
                                 <td className="font-medium">{device.user}</td>
                                 <td>
-                                    <Tag color={device.has_password ? 'success' : 'default'}>
+                                    <StatusTag tone={device.has_password ? 'success' : 'neutral'}>
                                         {device.has_password ? 'Sozlangan' : "Yo'q"}
-                                    </Tag>
+                                    </StatusTag>
                                 </td>
                                 <td className="font-medium">{device.type_label}</td>
                                 <td>
                                     <div>
-                                        <span
-                                            className={
-                                                device.is_connected
-                                                    ? 'font-semibold text-emerald-600'
-                                                    : 'font-semibold text-ink-muted'
-                                            }
-                                        >
+                                        <StatusTag tone={device.is_connected ? 'success' : 'neutral'}>
                                             {device.is_connected ? 'Ulangan' : 'Ulanmagan'}
-                                        </span>
+                                        </StatusTag>
                                         {device.last_ping_at ? (
                                             <p className="mt-0.5 text-xs text-ink-subtle">
                                                 Ping:

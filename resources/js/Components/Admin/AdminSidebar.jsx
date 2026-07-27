@@ -26,12 +26,12 @@ export default function AdminSidebar({
             <div className={`flex h-14 shrink-0 items-center border-b border-line ${collapsed ? 'justify-center px-3' : 'justify-between px-5'}`}>
                 <Link
                     href={route('home.index')}
-                    className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none"
+                    className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none"
                 >
                     <img
-                        src="/admin/assets/img/eidora-logo.png"
-                        alt="EIdora"
-                        className="h-9 w-9 shrink-0 rounded-lg object-cover object-top"
+                        src="/admin/assets/img/eidora-icon.png"
+                        alt=""
+                        className="h-8 w-auto shrink-0 object-contain"
                     />
                     {!collapsed ? (
                         <span className="truncate text-lg font-extrabold tracking-tight text-ink">

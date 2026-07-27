@@ -222,6 +222,185 @@
         @apply flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center;
     }
 
+    /* Status tags — light = white + solid border; dark = soft tint */
+    .status-tag.ant-tag,
+    .status-tag {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        border-radius: 0.375rem !important;
+        border-width: 1px !important;
+        border-style: solid !important;
+        padding: 0.125rem 0.625rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        line-height: 1.25rem !important;
+        background-image: none !important;
+    }
+
+    .status-tag--success.ant-tag,
+    .status-tag--success {
+        color: #145734 !important;
+        background: #ffffff !important;
+        border-color: #228f5c !important;
+    }
+
+    html[data-admin-theme='dark'] .status-tag--success.ant-tag,
+    html[data-admin-theme='dark'] .status-tag--success {
+        color: #8fe2b9 !important;
+        background: rgba(10, 42, 28, 0.72) !important;
+        border-color: rgba(74, 186, 130, 0.45) !important;
+    }
+
+    .status-tag--neutral.ant-tag,
+    .status-tag--neutral {
+        color: #4b5563 !important;
+        background: #ffffff !important;
+        border-color: #d1d5db !important;
+    }
+
+    html[data-admin-theme='dark'] .status-tag--neutral.ant-tag,
+    html[data-admin-theme='dark'] .status-tag--neutral {
+        color: #aebbd0 !important;
+        background: #172033 !important;
+        border-color: #334155 !important;
+    }
+
+    .status-tag--warning.ant-tag,
+    .status-tag--warning {
+        color: #c2410c !important;
+        background: #ffffff !important;
+        border-color: #ea580c !important;
+    }
+
+    html[data-admin-theme='dark'] .status-tag--warning.ant-tag,
+    html[data-admin-theme='dark'] .status-tag--warning {
+        color: #fb923c !important;
+        background: rgba(234, 88, 12, 0.12) !important;
+        border-color: rgba(251, 146, 60, 0.45) !important;
+    }
+
+    .status-tag--info.ant-tag,
+    .status-tag--info {
+        color: #1d4ed8 !important;
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
+
+    html[data-admin-theme='dark'] .status-tag--info.ant-tag,
+    html[data-admin-theme='dark'] .status-tag--info {
+        color: #93c5fd !important;
+        background: #172d4e !important;
+        border-color: rgba(147, 197, 253, 0.4) !important;
+    }
+
+    .status-tag--danger.ant-tag,
+    .status-tag--danger {
+        color: #b91c1c !important;
+        background: #ffffff !important;
+        border-color: #dc2626 !important;
+    }
+
+    html[data-admin-theme='dark'] .status-tag--danger.ant-tag,
+    html[data-admin-theme='dark'] .status-tag--danger {
+        color: #f87171 !important;
+        background: rgba(220, 38, 38, 0.12) !important;
+        border-color: rgba(248, 113, 113, 0.45) !important;
+    }
+
+    /* Ant Design preset tags — force same crisp light look */
+    .ant-tag {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        border-radius: 0.375rem !important;
+        border-width: 1px !important;
+        padding: 0.125rem 0.625rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        line-height: 1.25rem !important;
+    }
+
+    html[data-admin-theme='light'] .ant-tag:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag:not(.status-tag) {
+        color: #4b5563 !important;
+        background: #ffffff !important;
+        border-color: #d1d5db !important;
+    }
+
+    html[data-admin-theme='light'] .ant-tag-success:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-success:not(.status-tag) {
+        color: #145734 !important;
+        background: #ffffff !important;
+        border-color: #228f5c !important;
+    }
+
+    html[data-admin-theme='light'] .ant-tag-warning:not(.status-tag),
+    html[data-admin-theme='light'] .ant-tag-orange:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-warning:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-orange:not(.status-tag) {
+        color: #c2410c !important;
+        background: #ffffff !important;
+        border-color: #ea580c !important;
+    }
+
+    html[data-admin-theme='light'] .ant-tag-processing:not(.status-tag),
+    html[data-admin-theme='light'] .ant-tag-blue:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-processing:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-blue:not(.status-tag) {
+        color: #1d4ed8 !important;
+        background: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
+
+    html[data-admin-theme='light'] .ant-tag-error:not(.status-tag),
+    :root:not([data-admin-theme]) .ant-tag-error:not(.status-tag) {
+        color: #b91c1c !important;
+        background: #ffffff !important;
+        border-color: #dc2626 !important;
+    }
+
+    html[data-admin-theme='dark'] .ant-tag:not(.status-tag) {
+        color: #aebbd0 !important;
+        background: #172033 !important;
+        border-color: #334155 !important;
+    }
+
+    html[data-admin-theme='dark'] .ant-tag-success:not(.status-tag) {
+        color: #8fe2b9 !important;
+        background: rgba(10, 42, 28, 0.72) !important;
+        border-color: rgba(74, 186, 130, 0.45) !important;
+    }
+
+    html[data-admin-theme='dark'] .ant-tag-warning:not(.status-tag),
+    html[data-admin-theme='dark'] .ant-tag-orange:not(.status-tag) {
+        color: #fb923c !important;
+        background: rgba(234, 88, 12, 0.12) !important;
+        border-color: rgba(251, 146, 60, 0.45) !important;
+    }
+
+    html[data-admin-theme='dark'] .ant-tag-processing:not(.status-tag),
+    html[data-admin-theme='dark'] .ant-tag-blue:not(.status-tag) {
+        color: #93c5fd !important;
+        background: #172d4e !important;
+        border-color: rgba(147, 197, 253, 0.4) !important;
+    }
+
+    html[data-admin-theme='dark'] .ant-tag-error:not(.status-tag) {
+        color: #f87171 !important;
+        background: rgba(220, 38, 38, 0.12) !important;
+        border-color: rgba(248, 113, 113, 0.45) !important;
+    }
+
+    /* Soft brand chips / icon wells — light stays light */
+    .brand-chip {
+        @apply inline-flex items-center justify-center rounded-lg border border-line bg-surface text-brand-700;
+    }
+
+    html[data-admin-theme='dark'] .brand-chip {
+        @apply border-brand-400/30 bg-brand-950/50 text-brand-400;
+    }
+
     #admin-sidebar nav a:hover,
     #admin-sidebar nav a:active,
     #admin-sidebar nav a[aria-current='page']:active {

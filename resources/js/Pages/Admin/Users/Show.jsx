@@ -1,7 +1,7 @@
-import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
+import StatusTag from '../../../Components/StatusTag';
 
 export default function Show({ user }) {
     return (
@@ -21,7 +21,7 @@ export default function Show({ user }) {
                     <div className="flex flex-wrap gap-2">
                         {user.roles?.length
                             ? user.roles.map((role) => (
-                                <Tag key={role.id} color="processing">{role.name}</Tag>
+                                <StatusTag key={role.id} tone="info">{role.name}</StatusTag>
                             ))
                             : <span className="text-sm font-semibold text-ink-subtle">—</span>}
                     </div>

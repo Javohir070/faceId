@@ -265,7 +265,7 @@ function QuickLinkRow({ item }) {
             href={item.href}
             className="group flex min-h-[52px] items-center gap-3.5 px-4 py-3.5 transition-colors duration-200 hover:bg-surface-muted active:bg-surface-muted sm:gap-4 sm:px-5"
         >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-100/10 dark:text-brand-400">
+            <span className="brand-chip h-9 w-9 shrink-0">
                 <Icon className="text-base" aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
@@ -339,20 +339,29 @@ export default function Home({ stats = {}, recentEvents = [] }) {
 
     return (
         <AdminLayout title="Bosh sahifa">
-            <section className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-ambient">
-                <div
-                    className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-brand-50/90 to-transparent dark:from-brand-950/50"
-                    aria-hidden="true"
-                />
-                <div className="relative px-5 py-5 sm:px-6 sm:py-6">
-                    <p className="text-sm font-bold text-brand-700 dark:text-brand-400">{greeting},</p>
-                    <h1 className="mt-1 text-xl font-extrabold tracking-tight text-ink text-balance sm:text-2xl">
-                        {userName}
-                    </h1>
-                    <p className="mt-2 max-w-[62ch] text-sm leading-6 text-ink-muted text-pretty">
-                        {brandName} paneli — kerakli bo‘limni tanlang yoki quyidagi tezkor harakatlardan foydalaning.
-                    </p>
-                    <div className="mt-4 inline-flex items-center rounded-full border border-line bg-surface-muted px-3 py-1 text-xs font-bold text-ink-muted">
+            <section className="rounded-xl border border-line bg-surface shadow-ambient">
+                <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-6">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                            <img
+                                src="/admin/assets/img/eidora-icon.png"
+                                alt=""
+                                className="h-9 w-auto shrink-0 object-contain"
+                            />
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-brand-700 dark:text-brand-400">
+                                    {greeting},
+                                </p>
+                                <h1 className="mt-0.5 text-xl font-extrabold tracking-tight text-ink text-balance sm:text-2xl">
+                                    {userName}
+                                </h1>
+                            </div>
+                        </div>
+                        <p className="mt-3 max-w-[62ch] text-sm leading-6 text-ink-muted text-pretty">
+                            {brandName} paneli — kerakli bo‘limni tanlang yoki quyidagi tezkor harakatlardan foydalaning.
+                        </p>
+                    </div>
+                    <div className="inline-flex shrink-0 items-center self-start rounded-md border border-line bg-surface-muted px-3 py-1.5 text-xs font-bold text-ink-muted">
                         {roleLabel(auth?.user?.roles)}
                     </div>
                 </div>

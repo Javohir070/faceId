@@ -84,11 +84,11 @@ export default function FaceCaptureField({
                     </p>
                 </div>
                 {hasImage ? (
-                    <span className="shrink-0 rounded-full bg-brand-100 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-brand-800">
+                    <span className="status-tag status-tag--success">
                         Tayyor
                     </span>
                 ) : (
-                    <span className="shrink-0 rounded-full bg-surface-muted px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-ink-subtle">
+                    <span className="status-tag status-tag--neutral">
                         Bo‘sh
                     </span>
                 )}

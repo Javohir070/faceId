@@ -7,11 +7,12 @@ import {
     SyncOutlined,
     UnlockOutlined,
 } from '@ant-design/icons';
-import { App as AntApp, Button, Tag } from 'antd';
+import { App as AntApp, Button } from 'antd';
 import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
+import StatusTag from '../../../Components/StatusTag';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
 function Field({ label, children }) {
@@ -186,27 +187,27 @@ export default function Show({ device }) {
                 <div
                     className={`rounded-lg border px-4 py-4 sm:px-5 ${
                         online
-                            ? 'border-brand-600/30 bg-brand-50'
+                            ? 'border-brand-600/30 bg-surface'
                             : 'border-line bg-surface-muted'
                     }`}
                 >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                    className={`inline-flex h-2.5 w-2.5 rounded-full ${
-                                        online ? 'bg-positive' : 'bg-ink-subtle'
-                                    }`}
-                                    aria-hidden="true"
-                                />
-                                <p className="text-base font-extrabold text-ink">
+                                <StatusTag tone={online ? 'success' : 'neutral'}>
+                                    <span
+                                        className={`mr-1.5 inline-flex h-2 w-2 rounded-full ${
+                                            online ? 'bg-positive' : 'bg-ink-subtle'
+                                        }`}
+                                        aria-hidden="true"
+                                    />
                                     {online ? 'Ulangan' : 'Ulanmagan'}
-                                </p>
-                                <Tag color={device.type === 2 ? 'orange' : 'blue'}>
+                                </StatusTag>
+                                <StatusTag tone={device.type === 2 ? 'warning' : 'info'}>
                                     {device.type_label || 'Tur noma’lum'}
-                                </Tag>
+                                </StatusTag>
                                 {device.category?.name ? (
-                                    <Tag>{device.category.name}</Tag>
+                                    <StatusTag tone="neutral">{device.category.name}</StatusTag>
                                 ) : null}
                             </div>
                             <p className="mt-2 text-sm text-ink-muted">
@@ -267,14 +268,14 @@ export default function Show({ device }) {
                             </Field>
                             <Field label="Login">{device.user}</Field>
                             <Field label="Parol">
-                                <Tag color={device.has_password ? 'success' : 'default'}>
+                                <StatusTag tone={device.has_password ? 'success' : 'neutral'}>
                                     {device.has_password ? 'Sozlangan' : 'Yo‘q'}
-                                </Tag>
+                                </StatusTag>
                             </Field>
                             <Field label="Webhook">
-                                <Tag color={device.webhook_configured ? 'success' : 'default'}>
+                                <StatusTag tone={device.webhook_configured ? 'success' : 'neutral'}>
                                     {device.webhook_configured ? 'Sozlangan' : 'Sozlanmagan'}
-                                </Tag>
+                                </StatusTag>
                             </Field>
                         </dl>
                     </section>

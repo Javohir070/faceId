@@ -1,9 +1,10 @@
 import { router } from '@inertiajs/react';
-import { App as AntApp, Button, Checkbox, Input, Select, Tag } from 'antd';
+import { App as AntApp, Button, Checkbox, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
+import StatusTag from '../../../Components/StatusTag';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
 const POLL_MS = 5000;
@@ -278,11 +279,11 @@ export default function Index({ devices = [], employees = [], categories = [], d
                         ta yuborish)
                     </span>
                     {offlineSelectedCount > 0 ? (
-                        <Tag color="warning">
+                        <StatusTag tone="warning">
                             {offlineSelectedCount}
                             {' '}
                             ulanmagan qurilma
-                        </Tag>
+                        </StatusTag>
                     ) : null}
                 </div>
             )}
@@ -301,13 +302,13 @@ export default function Index({ devices = [], employees = [], categories = [], d
                     onPageSizeChange={setDevicePageSize}
                     emptyLabel="Qurilmalar topilmadi"
                     headerExtra={(
-                        <Tag color="processing">
+                        <StatusTag tone="info">
                             {filteredDevices.filter((d) => d.is_online).length}
                             /
                             {filteredDevices.length}
                             {' '}
                             online
-                        </Tag>
+                        </StatusTag>
                     )}
                     columns={[
                         {
@@ -319,9 +320,9 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             key: 'status',
                             label: 'Holat',
                             render: (row) => (
-                                <Tag color={row.is_online ? 'success' : 'default'}>
+                                <StatusTag tone={row.is_online ? 'success' : 'neutral'}>
                                     {row.is_online ? 'Ulangan' : 'Ulanmagan'}
-                                </Tag>
+                                </StatusTag>
                             ),
                         },
                         {
@@ -398,9 +399,9 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             key: 'face',
                             label: 'Yuz',
                             render: (row) => (
-                                <Tag color={row.has_face ? 'success' : 'default'}>
+                                <StatusTag tone={row.has_face ? 'success' : 'neutral'}>
                                     {row.has_face ? 'Bor' : 'Yo‘q'}
-                                </Tag>
+                                </StatusTag>
                             ),
                         },
                         {

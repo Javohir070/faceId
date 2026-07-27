@@ -1,7 +1,7 @@
-import { Tag } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
+import StatusTag from '../../../Components/StatusTag';
 
 export default function Show({ role }) {
     return (
@@ -19,7 +19,7 @@ export default function Show({ role }) {
                     <div className="flex flex-wrap gap-2">
                         {role.permissions?.length
                             ? role.permissions.map((permission) => (
-                                <Tag key={permission.id}>{permission.name}</Tag>
+                                <StatusTag key={permission.id} tone="neutral">{permission.name}</StatusTag>
                             ))
                             : (
                                 <span className="text-sm font-semibold text-ink-subtle">
