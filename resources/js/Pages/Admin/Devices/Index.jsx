@@ -77,6 +77,18 @@ function runDeviceAction(deviceId, action, { modal, onDone }) {
         return;
     }
 
+    if (action === 'sync') {
+        modal.confirm({
+            title: 'Xodimlarni sinxronlash',
+            content: 'Faqat ushbu qurilmaga ulangan xodimlar qayta yuboriladi. Davom etasizmi?',
+            okText: 'Ha, sinxronlash',
+            cancelText: 'Bekor qilish',
+            onOk: submit,
+        });
+
+        return;
+    }
+
     submit();
 }
 

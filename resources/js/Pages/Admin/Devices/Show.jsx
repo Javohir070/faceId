@@ -89,6 +89,25 @@ function runAction(deviceId, action, { modal, setBusy }) {
         return;
     }
 
+    if (action === 'sync') {
+        modal.confirm({
+            title: 'Xodimlarni sinxronlash',
+            content: 'Faqat ushbu qurilmaga ulangan xodimlar qayta yuboriladi. Davom etasizmi?',
+            okText: 'Ha, sinxronlash',
+            cancelText: 'Bekor qilish',
+            onOk: () => new Promise((resolve, reject) => {
+                setBusy(action);
+                router.post(url, {}, {
+                    preserveScroll: true,
+                    onSuccess: resolve,
+                    onError: reject,
+                    onFinish: () => setBusy(null),
+                });
+            }),
+        });
+        return;
+    }
+
     submit();
 }
 

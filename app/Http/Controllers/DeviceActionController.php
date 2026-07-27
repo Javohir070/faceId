@@ -85,8 +85,35 @@ class DeviceActionController extends Controller
 
     public function syncEmployees(Device $device): RedirectResponse
     {
-        $this->employeeSyncService->queueSyncAllEmployees($device);
+        if (! $device->hasIsapiCredentials()) {
+            return back()->with('error', 'Qurilmada login/parol sozlanmagan.');
+        }
 
-        return back()->with('success', 'Barcha xodimlarni sinxronlash navbatga qo‘yildi.');
+        // Offline qurilmada har bir xodim timeout kutadi — saytni sekinlashtiradi.
+        if (! $device->is_online) {
+            return back()->with('error', 'Qurilma ulanmagan. Avval ulash yoki ping qiling, keyin sinxronlang.');
+        }
+
+        $result = $this->employeeSyncService->syncAllEmployees($device);
+
+        $message = sprintf(
+            'Sinxronlash yakunlandi: %d muvaffaqiyatli, %d xato.',
+            $result['success'],
+            $result['failed'],
+        );
+
+        if ($result['success'] === 0 && $result['failed'] === 0) {
+            return back()->with('error', 'Ushbu qurilmaga ulangan xodim topilmadi. Avval Sinxronizatsiya sahifasidan xodim biriktiring.');
+        }
+
+        if ($result['failed'] > 0 && $result['success'] === 0) {
+            return back()->with('error', $message.' Qurilma ulanishi, login/parol yoki yuz rasmini tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return back()->with('error', $message);
+        }
+
+        return back()->with('success', $message);
     }
 }

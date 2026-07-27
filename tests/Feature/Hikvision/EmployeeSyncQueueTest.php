@@ -139,4 +139,85 @@ class EmployeeSyncQueueTest extends TestCase
                 && $job->employeeId === null;
         });
     }
+
+    public function test_device_sync_only_pushes_linked_employees(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $category = Category::factory()->create();
+        $department = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $category->id,
+            'ip_address' => '192.168.1.20',
+            'port' => 80,
+            'user' => 'admin',
+            'password' => 'secret',
+        ]);
+
+        $linked = Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+            'card' => '11112222',
+        ]);
+        $unlinked = Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+            'card' => '33334444',
+        ]);
+        $linked->devices()->attach($device->id);
+
+        $result = app(\App\Services\Hikvision\EmployeeSyncService::class)->syncAllEmployees($device);
+
+        $this->assertSame(1, $result['success']);
+        $this->assertSame(0, $result['failed']);
+        $this->assertNotNull(
+            $linked->devices()->where('devices.id', $device->id)->first()?->pivot->synced_at,
+        );
+        $this->assertSame(0, $unlinked->devices()->count());
+    }
+
+    public function test_device_sync_runs_immediately_for_linked_employees(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $category = Category::factory()->create();
+        $department = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $category->id,
+            'ip_address' => '192.168.1.21',
+            'port' => 80,
+            'user' => 'admin',
+            'password' => 'secret',
+            'is_online' => true,
+        ]);
+
+        $linked = Employee::factory()->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+            'card' => '55556666',
+        ]);
+        $linked->devices()->attach($device->id);
+
+        $this->actingAs($admin)
+            ->from(route('admin.devices.show', $device))
+            ->post(route('admin.devices.sync-employees', $device))
+            ->assertRedirect(route('admin.devices.show', $device))
+            ->assertSessionHas('success');
+
+        $this->assertNotNull(
+            $linked->devices()->where('devices.id', $device->id)->first()?->pivot->synced_at,
+        );
+    }
 }

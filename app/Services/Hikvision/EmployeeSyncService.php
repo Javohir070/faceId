@@ -223,6 +223,8 @@ class EmployeeSyncService
     }
 
     /**
+     * Sync only employees already linked to this device (HTTP request ichida).
+     *
      * @return array{success:int, failed:int}
      */
     public function syncAllEmployees(Device $device): array
@@ -230,9 +232,18 @@ class EmployeeSyncService
         $success = 0;
         $failed = 0;
 
-        Employee::query()
+        if (! $device->hasIsapiCredentials()) {
+            return ['success' => 0, 'failed' => 0];
+        }
+
+        // Ko‘p xodim + ISAPI chaqiriqlari PHP limitidan oshishi mumkin.
+        if (function_exists('set_time_limit')) {
+            set_time_limit(0);
+        }
+
+        $device->employees()
             ->with('face')
-            ->orderBy('id')
+            ->orderBy('employees.id')
             ->chunkById(50, function ($employees) use ($device, &$success, &$failed): void {
                 foreach ($employees as $employee) {
                     if ($this->pushToDevice($employee, $device)) {
@@ -241,9 +252,9 @@ class EmployeeSyncService
                         $failed++;
                     }
                 }
-            });
+            }, 'employees.id', 'id');
 
-        Log::info('Hikvision: barcha xodimlar sync qilindi', [
+        Log::info('Hikvision: qurilmaga ulangan xodimlar sync qilindi', [
             'device_id' => $device->id,
             'success' => $success,
             'failed' => $failed,
