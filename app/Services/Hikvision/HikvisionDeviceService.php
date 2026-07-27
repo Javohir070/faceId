@@ -81,8 +81,6 @@ class HikvisionDeviceService
 
     public function refreshOnlineStatus(Device $device): bool
     {
-        $device->forceFill(['last_ping_at' => now()]);
-
         try {
             $resolved = $this->pingDevice($device);
             $this->persistConnectionSettings($device, $resolved);
@@ -92,6 +90,7 @@ class HikvisionDeviceService
             $device->forceFill([
                 'is_online' => true,
                 'last_connected_at' => now(),
+                'last_ping_at' => now(),
             ])->save();
 
             return true;
@@ -99,12 +98,19 @@ class HikvisionDeviceService
             $failures = (int) Cache::increment($this->pingFailureCacheKey($device));
             $threshold = max((int) config('hikvision.ping_offline_after_failures', 3), 1);
 
+            Cache::put(
+                $this->pingFailureCacheKey($device),
+                $failures,
+                now()->addHours(6),
+            );
+
             if ($failures >= $threshold) {
                 $device->forceFill(['is_online' => false])->save();
             }
 
-            Log::debug('Hikvision: qurilma ping muvaffaqiyatsiz', [
+            Log::warning('Hikvision: qurilma ping muvaffaqiyatsiz', [
                 'device_id' => $device->id,
+                'url' => $device->isapiBaseUrl(),
                 'failures' => $failures,
                 'threshold' => $threshold,
                 'message' => $exception->getMessage(),
