@@ -2,18 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PullReportEventsRequest;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Report;
 use App\Models\Schedule;
+use App\Services\Hikvision\HikvisionEventPullService;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReportController extends Controller
 {
+    public function __construct(
+        private readonly HikvisionEventPullService $eventPullService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $filters = $request->validate([
@@ -84,5 +92,76 @@ class ReportController extends Controller
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'schedules' => Schedule::query()->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    public function pull(): Response
+    {
+        $devices = Device::query()
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Device $device): array => [
+                'id' => $device->id,
+                'name' => $device->name,
+                'ip_address' => $device->ip_address,
+                'type_label' => $device->typeLabel(),
+                'category' => $device->category?->only(['id', 'name']),
+                'is_online' => $device->is_online,
+                'has_credentials' => $device->hasIsapiCredentials(),
+            ]);
+
+        return Inertia::render('Admin/Reports/Pull', [
+            'devices' => $devices,
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function pullStore(PullReportEventsRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $startTime = Carbon::parse($data['date_from'])->startOfDay();
+        $endTime = Carbon::parse($data['date_to'])->endOfDay();
+
+        if ($startTime->diffInDays($endTime) > 31) {
+            return redirect()
+                ->route('admin.reports.pull')
+                ->with('error', 'Maksimal oraliq 31 kun. Qisqaroq sana tanlang.');
+        }
+
+        $result = $this->eventPullService->pullDevicesInRange(
+            $data['device_ids'],
+            $startTime,
+            $endTime,
+        );
+
+        $message = sprintf(
+            'Tortib olish yakunlandi: %d yangi, %d takror (o‘tkazib yuborildi), %d qurilma xato.',
+            $result['imported'],
+            $result['skipped'],
+            $result['failed'],
+        );
+
+        if ($result['imported'] === 0 && $result['failed'] > 0) {
+            return redirect()
+                ->route('admin.reports.pull')
+                ->with('error', $message.' Qurilma ulanishi yoki login/parolni tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return redirect()
+                ->route('admin.reports.index', [
+                    'date_from' => $startTime->toDateString(),
+                    'date_to' => $endTime->toDateString(),
+                ])
+                ->with('error', $message);
+        }
+
+        return redirect()
+            ->route('admin.reports.index', [
+                'date_from' => $startTime->toDateString(),
+                'date_to' => $endTime->toDateString(),
+            ])
+            ->with('success', $message);
     }
 }

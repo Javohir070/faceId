@@ -58,7 +58,7 @@ export default function AdminSidebar({
 
                         if (collapsed) {
                             return item.children.map((child) => {
-                                const ChildIcon = child.icon;
+                                const ChildIcon = child.icon || item.icon;
                                 const active = isActive(child.href);
 
                                 return (
@@ -104,7 +104,7 @@ export default function AdminSidebar({
                                 {open ? (
                                     <div className="space-y-1">
                                         {item.children.map((child) => {
-                                            const ChildIcon = child.icon;
+                                            const ChildIcon = child.icon || item.icon;
                                             const active = isActive(child.href);
 
                                             return (

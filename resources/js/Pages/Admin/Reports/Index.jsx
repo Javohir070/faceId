@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { Button, DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
@@ -75,6 +75,14 @@ export default function Index({
             <PageHeader
                 title="Hisobotlar"
                 subtitle="Xodimlarning kirish va chiqish yozuvlari."
+                actions={(
+                    <Link
+                        href={route('admin.reports.pull')}
+                        className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700"
+                    >
+                        Qurilmadan tortish
+                    </Link>
+                )}
             />
 
             <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
@@ -151,12 +159,12 @@ export default function Index({
                     />
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                    <Button type="primary" className="!font-bold" onClick={submitFilters}>
-                        Ko'rsatish
-                    </Button>
+                <div className="mt-4 flex flex-wrap gap-3 justify-end">
                     <Button onClick={resetFilters}>
                         Tozalash
+                    </Button>
+                    <Button type="primary" className="!font-bold" onClick={submitFilters}>
+                        Ko'rsatish
                     </Button>
                 </div>
             </div>

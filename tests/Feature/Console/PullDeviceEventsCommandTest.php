@@ -46,6 +46,7 @@ class PullDeviceEventsCommandTest extends TestCase
             'category_id' => $category->id,
             'ip_address' => '192.168.100.115',
             'port' => 80,
+            'type' => Device::TYPE_ENTRY,
             'is_online' => true,
         ]);
 

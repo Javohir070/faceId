@@ -2,6 +2,7 @@ import {
     AppstoreOutlined,
     BankOutlined,
     CalendarOutlined,
+    CloudDownloadOutlined,
     ClusterOutlined,
     FileTextOutlined,
     HomeOutlined,
@@ -27,7 +28,27 @@ export const adminNavGroups = [
             { key: 'departments', href: route('admin.departments.index'), label: "Bo'limlar", icon: BankOutlined },
             { key: 'schedules', href: route('admin.schedules.index'), label: 'Jadvallar', icon: CalendarOutlined },
             { key: 'employees', href: route('admin.employees.index'), label: 'Xodimlar', icon: IdcardOutlined },
-            { key: 'reports', href: route('admin.reports.index'), label: 'Hisobotlar', icon: FileTextOutlined },
+            {
+                key: 'reports-group',
+                label: 'Hisobotlar',
+                icon: FileTextOutlined,
+                children: [
+                    {
+                        key: 'reports-index',
+                        permission: 'reports',
+                        href: route('admin.reports.index'),
+                        label: "Ro'yxat",
+                        icon: FileTextOutlined,
+                    },
+                    {
+                        key: 'reports-pull',
+                        permission: 'reports',
+                        href: route('admin.reports.pull'),
+                        label: 'Event tortish',
+                        icon: CloudDownloadOutlined,
+                    },
+                ],
+            },
             {
                 key: 'settings',
                 label: 'Sozlamalar',
@@ -42,16 +63,20 @@ export const adminNavGroups = [
     },
 ];
 
+function permissionKey(item) {
+    return item.permission ?? item.key;
+}
+
 function isItemVisible(item, can = {}) {
     if (item.key === 'home') {
         return true;
     }
 
     if (item.children?.length) {
-        return item.children.some((child) => can[child.key]);
+        return item.children.some((child) => can[permissionKey(child)]);
     }
 
-    return Boolean(can[item.key]);
+    return Boolean(can[permissionKey(item)]);
 }
 
 /** Ruxsatga qarab faqat ko‘rinadigan guruhlarni qaytaradi */
@@ -67,7 +92,7 @@ export function getVisibleNavGroups(can = {}) {
 
                     return {
                         ...item,
-                        children: item.children.filter((child) => can[child.key]),
+                        children: item.children.filter((child) => can[permissionKey(child)]),
                     };
                 })
                 .filter((item) => isItemVisible(item, can)),

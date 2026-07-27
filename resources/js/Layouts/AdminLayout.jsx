@@ -22,14 +22,47 @@ export default function AdminLayout({ children, title }) {
         [navGroups],
     );
 
+    const allNavHrefs = useMemo(
+        () => navItems.flatMap((item) => (
+            item.children?.length
+                ? item.children.map((child) => child.href)
+                : [item.href]
+        )).filter(Boolean),
+        [navItems],
+    );
+
     const isActive = (href) => {
         if (!href) {
             return false;
         }
-        if (href === route('home.index')) {
-            return current === route('home.index') || current === `${route('home.index')}/`;
+
+        const path = (current.split('?')[0] || '').replace(/\/$/, '') || '/';
+        const target = href.replace(/\/$/, '') || '/';
+
+        if (target === route('home.index')) {
+            return path === target;
         }
-        return current.startsWith(href);
+
+        if (path === target) {
+            return true;
+        }
+
+        if (!path.startsWith(`${target}/`)) {
+            return false;
+        }
+
+        // Uzunroq mos keladigan menyu bo‘lsa (masalan /reports/pull), qisqasini active qilmaymiz
+        return !allNavHrefs.some((other) => {
+            if (!other || other === href) {
+                return false;
+            }
+
+            const longer = other.replace(/\/$/, '');
+
+            return longer.length > target.length
+                && longer.startsWith(target)
+                && (path === longer || path.startsWith(`${longer}/`));
+        });
     };
 
     const isGroupActive = (item) =>
