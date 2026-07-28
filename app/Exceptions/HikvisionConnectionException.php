@@ -30,14 +30,20 @@ class HikvisionConnectionException extends \RuntimeException
 
         if (str_contains($raw, 'Connection refused')
             || str_contains($raw, 'error 7')
-            || str_contains($raw, 'Failed to connect')) {
-            $hints[] = 'Qurilma IP manzili yoki port ochiq emas — tarmoq/firewall ni tekshiring.';
+            || str_contains($raw, 'Failed to connect')
+            || str_contains($raw, 'timed out')
+            || str_contains($raw, 'Operation timed out')
+            || str_contains($raw, 'error 28')) {
+            $hints[] = 'Qurilma javob bermadi — IP, tarmoq yoki qurilma yoqilganligini tekshiring.';
         }
 
-        if (str_contains($raw, 'SSL')
+        // SSL hint faqat haqiqatan HTTPS urinishida (use_https=true).
+        if ($device->use_https && (
+            str_contains($raw, 'SSL')
             || str_contains($raw, 'certificate')
-            || str_contains($raw, 'error 60')) {
-            $hints[] = 'HTTPS yoqilgan bo‘lishi kerak — qurilma formasida “HTTPS” ni belgilang.';
+            || str_contains($raw, 'error 60')
+        )) {
+            $hints[] = 'HTTPS sertifikat xatosi — formasida HTTPS belgilanganligini va port 443 ni tekshiring.';
         }
 
         if ($hints === []) {

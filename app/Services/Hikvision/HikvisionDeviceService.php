@@ -434,7 +434,9 @@ class HikvisionDeviceService
 
     private function resolveWorkingConnection(Device $device): Device
     {
+        $preferredException = null;
         $lastException = null;
+        $index = 0;
 
         foreach ($this->connectionCandidates($device) as $candidate) {
             try {
@@ -454,6 +456,10 @@ class HikvisionDeviceService
                     return $candidate;
                 }
             } catch (ConnectionException $exception) {
+                if ($index === 0) {
+                    $preferredException = $exception;
+                }
+
                 $lastException = $exception;
                 Log::debug('Hikvision: ulanish sinovi muvaffaqiyatsiz', [
                     'device_id' => $device->id,
@@ -461,10 +467,15 @@ class HikvisionDeviceService
                     'message' => $exception->getMessage(),
                 ]);
             }
+
+            $index++;
         }
 
-        if ($lastException !== null) {
-            throw HikvisionConnectionException::fromThrowable($device, $lastException);
+        // Oxirgi HTTPS probe SSL xatosi berishi mumkin — asosiy sozlama xatosini afzal ko‘ramiz.
+        $exception = $preferredException ?? $lastException;
+
+        if ($exception !== null) {
+            throw HikvisionConnectionException::fromThrowable($device, $exception);
         }
 
         throw new HikvisionConnectionException(
@@ -478,20 +489,19 @@ class HikvisionDeviceService
      */
     private function connectionCandidates(Device $device): array
     {
+        $port = (int) $device->port;
+
+        // Saqlangan sozlama birinchi; keyin standart HTTP/HTTPS.
+        // https://IP:80 kabi nonsens kombinatsiyalar sinanmaydi (SSL xato xabarini chalg‘itadi).
         $combos = [
-            ['use_https' => (bool) $device->use_https, 'port' => (int) $device->port],
+            ['use_https' => (bool) $device->use_https, 'port' => $port],
             ['use_https' => false, 'port' => 80],
             ['use_https' => true, 'port' => 443],
-            ['use_https' => false, 'port' => (int) $device->port === 8000 ? 8000 : (int) $device->port],
-            ['use_https' => true, 'port' => (int) $device->port],
         ];
 
-        if ((int) $device->port !== 80) {
-            $combos[] = ['use_https' => false, 'port' => 80];
-        }
-
-        if ((int) $device->port !== 443) {
-            $combos[] = ['use_https' => true, 'port' => 443];
+        if ($port !== 80 && $port !== 443) {
+            $combos[] = ['use_https' => false, 'port' => $port];
+            $combos[] = ['use_https' => true, 'port' => $port];
         }
 
         $unique = [];

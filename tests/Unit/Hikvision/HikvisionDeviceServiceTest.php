@@ -2,17 +2,53 @@
 
 namespace Tests\Unit\Hikvision;
 
+use App\Exceptions\HikvisionConnectionException;
 use App\Models\Category;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class HikvisionDeviceServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_connect_failure_does_not_blame_https_when_http_port_is_unreachable(): void
+    {
+        Http::fake(function ($request) {
+            $url = $request->url();
+
+            if (str_starts_with($url, 'https://')) {
+                throw new ConnectionException('cURL error 60: SSL certificate problem');
+            }
+
+            throw new ConnectionException('cURL error 7: Failed to connect to 192.168.100.110 port 80');
+        });
+
+        $owner = User::factory()->create();
+        $category = Category::factory()->create();
+        $device = Device::factory()->create([
+            'user_id' => $owner->id,
+            'category_id' => $category->id,
+            'ip_address' => '192.168.100.110',
+            'port' => 80,
+            'use_https' => false,
+        ]);
+
+        $service = app(HikvisionDeviceService::class);
+
+        try {
+            $service->connect($device);
+            $this->fail('Expected HikvisionConnectionException');
+        } catch (HikvisionConnectionException $exception) {
+            $this->assertStringContainsString('Qurilma javob bermadi', $exception->getMessage());
+            $this->assertStringNotContainsString('HTTPS yoqilgan', $exception->getMessage());
+            $this->assertStringContainsString('http://192.168.100.110', $exception->getMessage());
+        }
+    }
 
     public function test_setup_webhook_uses_xml_first(): void
     {
