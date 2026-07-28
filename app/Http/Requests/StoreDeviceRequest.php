@@ -27,6 +27,7 @@ class StoreDeviceRequest extends FormRequest
             'user' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
             'type' => ['required', 'integer', Rule::in([1, 2])],
+            'order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'autoconnect' => ['sometimes', 'boolean'],
         ];
     }

@@ -40,6 +40,7 @@ class Device extends Model
         'user',
         'password',
         'type',
+        'order',
         'autoconnect',
         'is_online',
         'last_connected_at',
@@ -63,6 +64,7 @@ class Device extends Model
             'port' => 'integer',
             'use_https' => 'boolean',
             'type' => 'integer',
+            'order' => 'integer',
             'autoconnect' => 'boolean',
             'is_online' => 'boolean',
             'webhook_configured' => 'boolean',
@@ -70,6 +72,15 @@ class Device extends Model
             'last_ping_at' => 'datetime',
             'password' => 'encrypted',
         ];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeOrdered(Builder $query): Builder
+    {
+        return $query->orderBy('order')->orderBy('id');
     }
 
     public function owner(): BelongsTo
@@ -173,7 +184,7 @@ class Device extends Model
     {
         return static::query()
             ->withIsapiHost()
-            ->orderBy('id')
+            ->ordered()
             ->get()
             ->filter(fn (self $device): bool => $device->hasIsapiCredentials())
             ->values();

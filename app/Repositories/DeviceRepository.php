@@ -12,7 +12,7 @@ class DeviceRepository implements DeviceRepositoryInterface
     {
         return Device::query()
             ->with(['category:id,name', 'owner:id,name'])
-            ->latest()
+            ->ordered()
             ->paginate($perPage);
     }
 

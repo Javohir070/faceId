@@ -26,7 +26,7 @@ class SyncController extends Controller
                 'employees as assigned_employees_count',
                 'employees as synced_employees_count' => fn ($query) => $query->whereNotNull('device_employee.synced_at'),
             ])
-            ->orderBy('name')
+            ->ordered()
             ->get()
             ->map(fn (Device $device): array => [
                 'id' => $device->id,

@@ -27,6 +27,7 @@ class DeviceFactory extends Factory
             'user' => 'admin',
             'password' => 'password',
             'type' => fake()->randomElement([Device::TYPE_ENTRY, Device::TYPE_EXIT]),
+            'order' => 0,
             'autoconnect' => fake()->boolean(),
         ];
     }

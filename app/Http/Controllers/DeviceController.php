@@ -44,6 +44,7 @@ class DeviceController extends Controller
         $data['user_id'] = $request->user()->id;
         $data['autoconnect'] = $request->boolean('autoconnect');
         $data['use_https'] = $request->boolean('use_https');
+        $data['order'] = (int) ($data['order'] ?? 0);
 
         $device = $this->deviceService->create($data);
 
@@ -80,6 +81,7 @@ class DeviceController extends Controller
         $data = $request->validated();
         $data['autoconnect'] = $request->boolean('autoconnect');
         $data['use_https'] = $request->boolean('use_https');
+        $data['order'] = (int) ($data['order'] ?? 0);
 
         $device = $this->deviceService->update($device, $data);
 

@@ -17,6 +17,7 @@ export default function Form({ device, categories = [] }) {
         user: device?.user || '',
         password: '',
         type: device?.type ?? null,
+        order: device?.order ?? 0,
         autoconnect: device?.autoconnect ?? false,
     });
 
@@ -73,6 +74,20 @@ export default function Form({ device, categories = [] }) {
                         />
                     </FormField>
                 </div>
+
+                <FormField label="Tartib (order)" error={errors.order}>
+                    <InputNumber
+                        className="w-full"
+                        min={0}
+                        max={9999}
+                        value={data.order}
+                        status={errors.order ? 'error' : undefined}
+                        onChange={(value) => setData('order', value ?? 0)}
+                    />
+                    <p className="mt-1.5 text-xs text-ink-muted">
+                        Kichik raqam yuqorida ko&apos;rinadi (masalan: 1, 2, 3…).
+                    </p>
+                </FormField>
 
                 <FormField label="Tavsif" error={errors.description} required>
                     <Input

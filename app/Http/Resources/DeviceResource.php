@@ -41,6 +41,7 @@ class DeviceResource extends JsonResource
             'has_password' => filled($this->password),
             'type' => $this->type,
             'type_label' => $deviceService->typeLabel($this->resource),
+            'order' => $this->order,
             'is_connected' => $this->is_online,
             'autoconnect' => $this->autoconnect,
             'is_online' => $this->is_online,
@@ -72,6 +73,7 @@ class DeviceResource extends JsonResource
             'has_password' => filled($this->password),
             'type' => $this->type,
             'type_label' => $deviceService->typeLabel($this->resource),
+            'order' => $this->order,
             'autoconnect' => $this->autoconnect,
             'is_connected' => $this->is_online,
             'is_online' => $this->is_online,
@@ -100,6 +102,7 @@ class DeviceResource extends JsonResource
             'use_https' => $this->use_https,
             'user' => $this->user,
             'type' => $this->type,
+            'order' => $this->order,
             'autoconnect' => $this->autoconnect,
         ];
     }

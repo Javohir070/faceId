@@ -20,6 +20,6 @@ class Category extends Model
 
     public function devices(): HasMany
     {
-        return $this->hasMany(Device::class);
+        return $this->hasMany(Device::class)->ordered();
     }
 }

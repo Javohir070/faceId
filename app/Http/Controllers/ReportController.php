@@ -88,7 +88,7 @@ class ReportController extends Controller
             'filters' => $filters,
             'employees' => Employee::query()->orderBy('name')->get(['id', 'name']),
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
-            'devices' => Device::query()->orderBy('name')->get(['id', 'name']),
+            'devices' => Device::query()->ordered()->get(['id', 'name']),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'schedules' => Schedule::query()->orderBy('name')->get(['id', 'name']),
         ]);
@@ -98,7 +98,7 @@ class ReportController extends Controller
     {
         $devices = Device::query()
             ->with('category:id,name')
-            ->orderBy('name')
+            ->ordered()
             ->get()
             ->map(fn (Device $device): array => [
                 'id' => $device->id,
