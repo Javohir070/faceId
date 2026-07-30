@@ -22,9 +22,12 @@ class EmployeeService
         private readonly EmployeeSyncService $employeeSyncService,
     ) {}
 
-    public function paginate(int $perPage = 12): LengthAwarePaginator
+    /**
+     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     */
+    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {
-        return $this->employeeRepository->paginate($perPage);
+        return $this->employeeRepository->paginate($perPage, $filters);
     }
 
     public function getDepartmentsForForm(): Collection

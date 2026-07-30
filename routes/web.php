@@ -63,16 +63,31 @@ Route::middleware('auth')->group(function () {
         Route::post('devices/{device}/sync-employees', [DeviceActionController::class, 'syncEmployees'])
             ->middleware('permission:'.$menuPermissions['devices'])
             ->name('devices.sync-employees');
+        Route::post('devices/{device}/pull-employees', [DeviceActionController::class, 'pullEmployees'])
+            ->middleware('permission:'.$menuPermissions['devices'])
+            ->name('devices.pull-employees');
+        Route::post('devices/{device}/remove-employees', [DeviceActionController::class, 'removeEmployees'])
+            ->middleware('permission:'.$menuPermissions['devices'])
+            ->name('devices.remove-employees');
         Route::get('sync', [SyncController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['sync'])
             ->name('sync.index');
         Route::post('sync/transfer', [SyncController::class, 'transfer'])
             ->middleware('permission:'.$menuPermissions['sync'])
             ->name('sync.transfer');
+        Route::post('sync/transfer-one', [SyncController::class, 'transferOne'])
+            ->middleware('permission:'.$menuPermissions['sync'])
+            ->name('sync.transfer-one');
         Route::resource('departments', DepartmentController::class)
             ->middleware('permission:'.$menuPermissions['departments']);
         Route::resource('schedules', ScheduleController::class)
             ->middleware('permission:'.$menuPermissions['schedules']);
+        Route::get('employees/pull', [EmployeeController::class, 'pull'])
+            ->middleware('permission:'.$menuPermissions['employees'])
+            ->name('employees.pull');
+        Route::post('employees/pull', [EmployeeController::class, 'pullStore'])
+            ->middleware('permission:'.$menuPermissions['employees'])
+            ->name('employees.pull.store');
         Route::resource('employees', EmployeeController::class)
             ->middleware('permission:'.$menuPermissions['employees']);
         Route::post('employees/{employee}/remove-devices', [EmployeeController::class, 'removeDevices'])

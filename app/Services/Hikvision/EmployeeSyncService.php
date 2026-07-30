@@ -53,6 +53,28 @@ class EmployeeSyncService
         RemoveHikvisionUsersJob::dispatch($employee->card, $deviceIds, $employee->id);
     }
 
+    /**
+     * @param  list<int>  $employeeIds
+     */
+    public function queueRemoveEmployeesFromDevice(Device $device, array $employeeIds): void
+    {
+        if ($employeeIds === []) {
+            return;
+        }
+
+        $employees = Employee::query()
+            ->whereIn('id', $employeeIds)
+            ->whereHas(
+                'devices',
+                fn ($query) => $query->where('devices.id', $device->id),
+            )
+            ->get(['id', 'card']);
+
+        foreach ($employees as $employee) {
+            $this->queueRemoveFromDevices($employee, [$device->id]);
+        }
+    }
+
     public function queueRemoveEmployee(Employee $employee, ?Device $device = null): void
     {
         $deviceIds = $device !== null
@@ -124,6 +146,15 @@ class EmployeeSyncService
         }
 
         foreach ($employees as $employee) {
+            if (! $this->hasUsableFace($employee)) {
+                foreach ($targetDevices as $device) {
+                    $this->markSkippedNoFace($employee, $device);
+                    $skipped++;
+                }
+
+                continue;
+            }
+
             foreach ($targetDevices as $device) {
                 $synced = $this->pushToDevice($employee, $device);
                 $synced ? $success++ : $failed++;
@@ -141,9 +172,99 @@ class EmployeeSyncService
         return ['success' => $success, 'failed' => $failed, 'skipped' => $skipped];
     }
 
+    /**
+     * Bitta xodimni bitta qurilmaga yuborish (progress modal uchun).
+     *
+     * @return array{
+     *     status: 'success'|'failed'|'skipped',
+     *     message: string,
+     *     device_id: int,
+     *     device_ip: string,
+     *     device_name: string,
+     *     employee_id: int,
+     *     employee_name: string,
+     *     employee_card: string
+     * }
+     */
+    public function transferOne(Device $device, Employee $employee): array
+    {
+        $employee->loadMissing('face');
+
+        $base = [
+            'device_id' => $device->id,
+            'device_ip' => (string) $device->ip_address,
+            'device_name' => (string) $device->name,
+            'employee_id' => $employee->id,
+            'employee_name' => (string) $employee->name,
+            'employee_card' => (string) $employee->card,
+        ];
+
+        if (! $device->hasIsapiCredentials()) {
+            return [
+                ...$base,
+                'status' => 'failed',
+                'message' => 'Login/parol sozlanmagan',
+            ];
+        }
+
+        if (! $device->is_online) {
+            return [
+                ...$base,
+                'status' => 'skipped',
+                'message' => 'device disconnected',
+            ];
+        }
+
+        if (! $this->hasUsableFace($employee)) {
+            $this->markSkippedNoFace($employee, $device);
+
+            return [
+                ...$base,
+                'status' => 'skipped',
+                'message' => 'Yuz rasmi yo‘q',
+            ];
+        }
+
+        try {
+            $synced = $this->pushToDevice($employee, $device);
+        } catch (\Throwable $exception) {
+            return [
+                ...$base,
+                'status' => 'failed',
+                'message' => $exception->getMessage(),
+            ];
+        }
+
+        if ($synced) {
+            return [
+                ...$base,
+                'status' => 'success',
+                'message' => 'OK',
+            ];
+        }
+
+        $error = $employee->devices()
+            ->where('devices.id', $device->id)
+            ->first()
+            ?->pivot
+            ?->sync_error;
+
+        return [
+            ...$base,
+            'status' => 'failed',
+            'message' => $error ?: 'ISAPI javob bermadi',
+        ];
+    }
+
     public function syncEmployee(Employee $employee, ?Device $device = null): void
     {
         foreach ($this->resolveDevices($employee, $device) as $target) {
+            if (! $this->hasUsableFace($employee)) {
+                $this->markSkippedNoFace($employee, $target);
+
+                continue;
+            }
+
             $this->pushToDevice($employee, $target);
         }
     }
@@ -225,15 +346,16 @@ class EmployeeSyncService
     /**
      * Sync only employees already linked to this device (HTTP request ichida).
      *
-     * @return array{success:int, failed:int}
+     * @return array{success:int, failed:int, skipped:int}
      */
     public function syncAllEmployees(Device $device): array
     {
         $success = 0;
         $failed = 0;
+        $skipped = 0;
 
         if (! $device->hasIsapiCredentials()) {
-            return ['success' => 0, 'failed' => 0];
+            return ['success' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
         // Ko‘p xodim + ISAPI chaqiriqlari PHP limitidan oshishi mumkin.
@@ -244,8 +366,15 @@ class EmployeeSyncService
         $device->employees()
             ->with('face')
             ->orderBy('employees.id')
-            ->chunkById(50, function ($employees) use ($device, &$success, &$failed): void {
+            ->chunkById(50, function ($employees) use ($device, &$success, &$failed, &$skipped): void {
                 foreach ($employees as $employee) {
+                    if (! $this->hasUsableFace($employee)) {
+                        $this->markSkippedNoFace($employee, $device);
+                        $skipped++;
+
+                        continue;
+                    }
+
                     if ($this->pushToDevice($employee, $device)) {
                         $success++;
                     } else {
@@ -258,9 +387,10 @@ class EmployeeSyncService
             'device_id' => $device->id,
             'success' => $success,
             'failed' => $failed,
+            'skipped' => $skipped,
         ]);
 
-        return ['success' => $success, 'failed' => $failed];
+        return compact('success', 'failed', 'skipped');
     }
 
     public function removeFace(Employee $employee, ?Device $device = null): void
@@ -322,6 +452,12 @@ class EmployeeSyncService
 
     private function pushToDevice(Employee $employee, Device $device): bool
     {
+        if (! $this->hasUsableFace($employee)) {
+            $this->markSkippedNoFace($employee, $device);
+
+            return false;
+        }
+
         try {
             $synced = $this->userService->addOrUpdateUser($device, $employee);
 
@@ -356,6 +492,30 @@ class EmployeeSyncService
 
             return false;
         }
+    }
+
+    private function hasUsableFace(Employee $employee): bool
+    {
+        $employee->loadMissing('face');
+        $face = $employee->face?->face;
+
+        return is_string($face) && trim($face) !== '';
+    }
+
+    private function markSkippedNoFace(Employee $employee, Device $device): void
+    {
+        $employee->devices()->syncWithoutDetaching([
+            $device->id => [
+                'synced_at' => null,
+                'sync_error' => 'Yuz rasmi yo‘q — sinxronlanmadi',
+            ],
+        ]);
+
+        Log::info('Hikvision: yuzsiz xodim sinxronlanmadi', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+            'employee_no' => $employee->card,
+        ]);
     }
 
     /**

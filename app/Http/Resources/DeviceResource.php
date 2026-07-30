@@ -6,6 +6,7 @@ use App\Models\Device;
 use App\Services\DeviceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /** @mixin Device */
 class DeviceResource extends JsonResource
@@ -84,6 +85,20 @@ class DeviceResource extends JsonResource
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
             'category' => $this->category?->only(['id', 'name']),
             'owner' => $this->owner?->only(['id', 'name']),
+            'employees' => $this->whenLoaded('employees', fn () => $this->employees
+                ->sortBy('name')
+                ->values()
+                ->map(fn ($employee): array => [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'card' => $employee->card,
+                    'department' => $employee->department?->only(['id', 'name']),
+                    'is_synced' => filled($employee->pivot->synced_at),
+                    'synced_at' => filled($employee->pivot->synced_at)
+                        ? Carbon::parse($employee->pivot->synced_at)->format('Y-m-d H:i')
+                        : null,
+                    'sync_error' => $employee->pivot->sync_error,
+                ])),
         ];
     }
 

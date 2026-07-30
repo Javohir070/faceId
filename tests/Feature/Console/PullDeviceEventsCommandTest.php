@@ -60,7 +60,6 @@ class PullDeviceEventsCommandTest extends TestCase
 
         $this->assertDatabaseHas('reports', [
             'employee_name' => 'Qayumov Javohir',
-            'employee_no' => '123741',
             'type' => Report::TYPE_ENTRY,
         ]);
     }

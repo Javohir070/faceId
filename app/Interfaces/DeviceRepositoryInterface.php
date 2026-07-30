@@ -7,7 +7,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface DeviceRepositoryInterface
 {
-    public function paginate(int $perPage = 12): LengthAwarePaginator;
+    /**
+     * @param  array{search?:?string, category_id?:?int, type?:?int, is_online?:?string}  $filters
+     */
+    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator;
 
     public function create(array $data): Device;
 

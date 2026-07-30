@@ -26,7 +26,6 @@ export default function Form({ department }) {
                 onSubmit={submit}
                 processing={processing}
                 cancelHref={route('admin.departments.index')}
-                width="sm"
             >
                 <FormField label="Nomi" error={errors.name} required>
                     <Input

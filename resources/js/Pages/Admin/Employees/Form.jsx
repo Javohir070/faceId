@@ -17,6 +17,8 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
     const { data, setData, post, processing, errors } = useForm({
         name: employee?.name || '',
         card: employee?.card || suggestedCard || generateCardNumber(),
+        gender: employee?.gender ?? null,
+        position: employee?.position || '',
         department_id: employee?.department_id || null,
         schedule_id: employee?.schedule_id || null,
         valid_from_dt: employee?.valid_from_dt || '',
@@ -79,6 +81,33 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                                         onClick={() => setData('card', generateCardNumber())}
                                     />
                                 </Space.Compact>
+                            </FormField>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormField label="Jins" error={errors.gender} required>
+                                <Select
+                                    className="w-full"
+                                    size="large"
+                                    placeholder="Jins tanlang"
+                                    value={data.gender}
+                                    status={errors.gender ? 'error' : undefined}
+                                    options={[
+                                        { value: 1, label: 'Erkak' },
+                                        { value: 2, label: 'Ayol' },
+                                    ]}
+                                    onChange={(value) => setData('gender', value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Lavozim" error={errors.position}>
+                                <Input
+                                    size="large"
+                                    value={data.position}
+                                    status={errors.position ? 'error' : undefined}
+                                    placeholder="Masalan: Operator"
+                                    onChange={(e) => setData('position', e.target.value)}
+                                />
                             </FormField>
                         </div>
 

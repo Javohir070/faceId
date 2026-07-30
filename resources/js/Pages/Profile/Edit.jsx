@@ -86,35 +86,6 @@ export default function Edit({ user }) {
                     </div>
                     <Button type="primary" htmlType="submit" loading={passwordForm.processing}>Parolni yangilash</Button>
                 </form>
-
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        modal.confirm({
-                            title: 'Hisobni o‘chirish',
-                            content: 'Bu amalni ortga qaytarib bo‘lmaydi. Davom etilsinmi?',
-                            okText: 'Ha, o‘chirish',
-                            cancelText: 'Bekor qilish',
-                            okButtonProps: { danger: true },
-                            onOk: () => deleteForm.delete('/profile'),
-                        });
-                    }}
-                    className="card space-y-4 border-negative/30 bg-negative/10 xl:col-span-2"
-                >
-                    <div className="flex items-start gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-negative/15 text-negative"><DeleteOutlined /></span>
-                        <div>
-                            <h2 className="text-base font-extrabold text-negative">Hisobni o‘chirish</h2>
-                            <p className="mt-1 text-sm text-negative">Bu amalni ortga qaytarib bo‘lmaydi. Davom etish uchun parolingizni kiriting.</p>
-                        </div>
-                    </div>
-                    <div className="max-w-md">
-                        <label htmlFor="delete_password" className="label">Parolingizni kiriting</label>
-                        <Input.Password id="delete_password" value={deleteForm.data.password} status={deleteForm.errors.password ? 'error' : undefined} onChange={(e) => deleteForm.setData('password', e.target.value)} />
-                        <InputError message={deleteForm.errors.password} />
-                    </div>
-                    <Button danger type="primary" htmlType="submit" loading={deleteForm.processing}>Hisobni o‘chirish</Button>
-                </form>
             </div>
         </AdminLayout>
     );

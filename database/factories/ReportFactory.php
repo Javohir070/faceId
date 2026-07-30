@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Report;
@@ -26,13 +25,8 @@ class ReportFactory extends Factory
             'department_id' => $employee->department_id,
             'device_id' => $device->id,
             'employee_name' => $employee->name,
-            'department_name' => $employee->department?->name,
-            'device_name' => $device->name,
-            'employee_no' => $employee->card,
-            'card_no' => $employee->card,
             'type' => fake()->randomElement([Report::TYPE_ENTRY, Report::TYPE_EXIT]),
             'occurred_at' => fake()->dateTimeBetween('-1 week', 'now'),
-            'verify_mode' => 'face',
         ];
     }
 
@@ -52,9 +46,6 @@ class ReportFactory extends Factory
             'employee_id' => $employee->id,
             'department_id' => $employee->department_id,
             'employee_name' => $employee->name,
-            'department_name' => $employee->department?->name ?? Department::find($employee->department_id)?->name,
-            'employee_no' => $employee->card,
-            'card_no' => $employee->card,
         ]);
     }
 
@@ -62,7 +53,6 @@ class ReportFactory extends Factory
     {
         return $this->state(fn (): array => [
             'device_id' => $device->id,
-            'device_name' => $device->name,
             'type' => $device->isExit() ? Report::TYPE_EXIT : Report::TYPE_ENTRY,
         ]);
     }

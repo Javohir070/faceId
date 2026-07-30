@@ -4,7 +4,7 @@ import {
     CaretUpOutlined,
     MoreOutlined,
 } from '@ant-design/icons';
-import { App as AntApp, Checkbox, Dropdown } from 'antd';
+import { App as AntApp, Button, Checkbox, Dropdown, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
@@ -15,6 +15,16 @@ import TableShell from '../../../Components/TableShell';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
 const LIVE_POLL_MS = 10000;
+
+const typeOptions = [
+    { value: 1, label: 'Kirish' },
+    { value: 2, label: 'Chiqish' },
+];
+
+const statusOptions = [
+    { value: '1', label: 'Ulangan' },
+    { value: '0', label: 'Ulanmagan' },
+];
 
 function SortableHeader({ children }) {
     return (
@@ -37,6 +47,7 @@ function runDeviceAction(deviceId, action, { modal, onDone }) {
         restart: route('admin.devices.restart', deviceId),
         clear: route('admin.devices.clear', deviceId),
         sync: route('admin.devices.sync-employees', deviceId),
+        pull: route('admin.devices.pull-employees', deviceId),
     };
 
     const url = routes[action];
@@ -89,6 +100,18 @@ function runDeviceAction(deviceId, action, { modal, onDone }) {
         return;
     }
 
+    if (action === 'pull') {
+        modal.confirm({
+            title: 'Xodimlarni tortish',
+            content: 'Qurilmadagi xodimlar bazaga yuklanadi. Bir xil karta (employeeNo) dublikat yaratilmaydi. Davom etasizmi?',
+            okText: 'Ha, tortish',
+            cancelText: 'Bekor qilish',
+            onOk: submit,
+        });
+
+        return;
+    }
+
     submit();
 }
 
@@ -133,6 +156,11 @@ function DeviceActionsMenu({ device }) {
             label: 'Sinxronlash',
             onClick: () => runDeviceAction(device.id, 'sync', { modal }),
         },
+        {
+            key: 'pull',
+            label: 'Xodimlarni tortish',
+            onClick: () => runDeviceAction(device.id, 'pull', { modal }),
+        },
     ];
 
     return (
@@ -148,8 +176,18 @@ function DeviceActionsMenu({ device }) {
     );
 }
 
-export default function Index({ devices }) {
+export default function Index({
+    devices,
+    filters = {},
+    categories = [],
+}) {
     const [selectedIds, setSelectedIds] = useState([]);
+    const [form, setForm] = useState({
+        search: filters.search ?? '',
+        category_id: filters.category_id ?? null,
+        type: filters.type ?? null,
+        is_online: filters.is_online ?? null,
+    });
 
     useInertiaPoll(['devices'], LIVE_POLL_MS);
 
@@ -171,6 +209,37 @@ export default function Index({ devices }) {
         ));
     };
 
+    const updateField = (key, value) => {
+        setForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const submitFilters = () => {
+        const payload = Object.fromEntries(
+            Object.entries(form).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+        );
+
+        setSelectedIds([]);
+        router.get(route('admin.devices.index'), payload, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    const resetFilters = () => {
+        setForm({
+            search: '',
+            category_id: null,
+            type: null,
+            is_online: null,
+        });
+        setSelectedIds([]);
+
+        router.get(route('admin.devices.index'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     const from = devices.from ?? (devices.data.length ? 1 : 0);
     const to = devices.to ?? devices.data.length;
     const total = devices.total ?? devices.data.length;
@@ -180,10 +249,57 @@ export default function Index({ devices }) {
         <AdminLayout title="Qurilmalar">
             <PageHeader
                 title="Qurilmalar"
-                subtitle={`Hikvision Face ID — holat har ${LIVE_POLL_MS / 1000} soniyada yangilanadi. Onlayn: ${onlineCount}/${devices.data.length}`}
+                subtitle={`Hikvision Face ID — holat har ${LIVE_POLL_MS / 1000} soniyada yangilanadi. Onlayn (sahifa): ${onlineCount}/${devices.data.length}`}
                 createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
             />
+
+            <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+                    <Input
+                        allowClear
+                        placeholder="Qidiruv (nomi / IP / login)"
+                        value={form.search}
+                        onChange={(e) => updateField('search', e.target.value)}
+                        onPressEnter={submitFilters}
+                    />
+                    <Select
+                        allowClear
+                        showSearch
+                        placeholder="Kategoriya"
+                        optionFilterProp="label"
+                        value={form.category_id}
+                        options={categories.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(value) => updateField('category_id', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        placeholder="Turi"
+                        value={form.type}
+                        options={typeOptions}
+                        onChange={(value) => updateField('type', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        placeholder="Holat"
+                        value={form.is_online}
+                        options={statusOptions}
+                        onChange={(value) => updateField('is_online', value ?? null)}
+                        className="w-full"
+                    />
+                    <div className="flex gap-2">
+                        <Button type="primary" className="flex-1 !font-bold" onClick={submitFilters}>
+                            Filtrlash
+                        </Button>
+                        <Button className="!font-semibold" onClick={resetFilters}>
+                            Tozalash
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <TableShell
                 empty={devices.data.length === 0}
                 createHref={route('admin.devices.create')}

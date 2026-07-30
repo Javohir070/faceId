@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PullEmployeesRequest;
 use App\Http\Requests\RemoveEmployeeDevicesRequest;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Http\Resources\EmployeeResource;
+use App\Models\Category;
+use App\Models\Device;
 use App\Models\Employee;
 use App\Services\EmployeeService;
+use App\Services\Hikvision\EmployeePullService;
 use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,17 +23,90 @@ class EmployeeController extends Controller
     public function __construct(
         private readonly EmployeeService $employeeService,
         private readonly EmployeeSyncService $employeeSyncService,
+        private readonly EmployeePullService $employeePullService,
     ) {}
 
     public function index(Request $request): Response
     {
-        $employees = $this->employeeService->paginate(12);
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
+            'device_id' => ['nullable', 'integer', 'exists:devices,id'],
+            'has_face' => ['nullable', 'in:0,1'],
+        ]);
+
+        $employees = $this->employeeService->paginate(12, $filters);
 
         return Inertia::render('Admin/Employees/Index', [
             'employees' => $employees->through(
                 fn (Employee $employee): array => EmployeeResource::make($employee)->toArray($request),
             ),
+            'filters' => [
+                'search' => $filters['search'] ?? null,
+                'department_id' => isset($filters['department_id']) ? (int) $filters['department_id'] : null,
+                'schedule_id' => isset($filters['schedule_id']) ? (int) $filters['schedule_id'] : null,
+                'device_id' => isset($filters['device_id']) ? (int) $filters['device_id'] : null,
+                'has_face' => $filters['has_face'] ?? null,
+            ],
+            'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
+            'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
+            'devices' => Device::query()->ordered()->get(['id', 'name']),
         ]);
+    }
+
+    public function pull(): Response
+    {
+        $devices = Device::query()
+            ->with('category:id,name')
+            ->ordered()
+            ->get()
+            ->map(fn (Device $device): array => [
+                'id' => $device->id,
+                'name' => $device->name,
+                'ip_address' => $device->ip_address,
+                'type_label' => $device->typeLabel(),
+                'category' => $device->category?->only(['id', 'name']),
+                'is_online' => $device->is_online,
+                'has_credentials' => $device->hasIsapiCredentials(),
+            ]);
+
+        return Inertia::render('Admin/Employees/Pull', [
+            'devices' => $devices,
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function pullStore(PullEmployeesRequest $request): RedirectResponse
+    {
+        $result = $this->employeePullService->pullDevices($request->validated('device_ids'));
+
+        $message = sprintf(
+            'Xodimlar tortildi: %d yangi, %d yangilangan, %d bog‘langan, %d o‘tkazildi, %d yuz, %d qurilma xato.',
+            $result['created'],
+            $result['updated'],
+            $result['linked'],
+            $result['skipped'],
+            $result['faces'],
+            $result['failed'],
+        );
+
+        if ($result['created'] + $result['updated'] + $result['linked'] + $result['faces'] === 0
+            && $result['failed'] > 0) {
+            return redirect()
+                ->route('admin.employees.pull')
+                ->with('error', $message.' Qurilma ulanishi yoki login/parolni tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return redirect()
+                ->route('admin.employees.index')
+                ->with('error', $message);
+        }
+
+        return redirect()
+            ->route('admin.employees.index')
+            ->with('success', $message);
     }
 
     public function create(): Response

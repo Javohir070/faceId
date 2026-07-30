@@ -20,6 +20,22 @@ Schedule::command('devices:pull-events')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Spatie laravel-backup (02:00–03:00 oralig'idan qochiladi — DST muammosi)
+Schedule::command('backup:clean')
+    ->daily()
+    ->at('01:00')
+    ->withoutOverlapping();
+
+Schedule::command('backup:run')
+    ->daily()
+    ->at('01:30')
+    ->withoutOverlapping();
+
+Schedule::command('backup:monitor')
+    ->daily()
+    ->at('03:00')
+    ->withoutOverlapping();
+
 // alertStream — uzluksiz jarayon; schedule orqali ISHLATILMAYDI (har daqiqa yangi
 // manager ochilib qurilmani yuklaydi). Alohida terminalda ishga tushiring:
 // php artisan devices:stream-events

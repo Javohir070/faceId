@@ -6,7 +6,6 @@ use Database\Factories\AccessControllerEventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AccessControllerEvent extends Model
 {
@@ -32,11 +31,6 @@ class AccessControllerEvent extends Model
         'payload' => 'array',
         'event_time' => 'datetime',
     ];
-
-    public function report(): HasOne
-    {
-        return $this->hasOne(Report::class);
-    }
 
     /**
      * Hikvision employeeNo ↔ employees.card (FK emas, mantiqiy bog‘lanish).

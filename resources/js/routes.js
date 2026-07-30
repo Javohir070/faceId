@@ -24,13 +24,18 @@ const routeBuilders = {
     'admin.devices.restart': (id) => `/admin/devices/${id}/restart`,
     'admin.devices.clear': (id) => `/admin/devices/${id}/clear`,
     'admin.devices.sync-employees': (id) => `/admin/devices/${id}/sync-employees`,
+    'admin.devices.pull-employees': (id) => `/admin/devices/${id}/pull-employees`,
+    'admin.devices.remove-employees': (id) => `/admin/devices/${id}/remove-employees`,
 
     'admin.sync.index': () => '/admin/sync',
     'admin.sync.transfer': () => '/admin/sync/transfer',
+    'admin.sync.transfer-one': () => '/admin/sync/transfer-one',
 
     ...resource('admin.departments', '/admin/departments'),
     ...resource('admin.schedules', '/admin/schedules'),
     ...resource('admin.employees', '/admin/employees'),
+    'admin.employees.pull': () => '/admin/employees/pull',
+    'admin.employees.pull.store': () => '/admin/employees/pull',
     'admin.employees.remove-devices': (id) => `/admin/employees/${id}/remove-devices`,
 
     'admin.reports.index': () => '/admin/reports',

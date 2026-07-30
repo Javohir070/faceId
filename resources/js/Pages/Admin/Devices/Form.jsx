@@ -75,27 +75,29 @@ export default function Form({ device, categories = [] }) {
                     </FormField>
                 </div>
 
-                <FormField label="Tartib (order)" error={errors.order}>
-                    <InputNumber
-                        className="w-full"
-                        min={0}
-                        max={9999}
-                        value={data.order}
-                        status={errors.order ? 'error' : undefined}
-                        onChange={(value) => setData('order', value ?? 0)}
-                    />
-                    <p className="mt-1.5 text-xs text-ink-muted">
-                        Kichik raqam yuqorida ko&apos;rinadi (masalan: 1, 2, 3…).
-                    </p>
-                </FormField>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <FormField label="Tartib (order)" error={errors.order}>
+                        <InputNumber
+                            className="w-full"
+                            min={0}
+                            max={9999}
+                            value={data.order}
+                            status={errors.order ? 'error' : undefined}
+                            onChange={(value) => setData('order', value ?? 0)}
+                        />
+                        <p className="mt-1.5 text-xs text-ink-muted">
+                            Kichik raqam yuqorida ko&apos;rinadi (masalan: 1, 2, 3…).
+                        </p>
+                    </FormField>
 
-                <FormField label="Tavsif" error={errors.description} required>
-                    <Input
-                        value={data.description}
-                        status={errors.description ? 'error' : undefined}
-                        onChange={(e) => setData('description', e.target.value)}
-                    />
-                </FormField>
+                    <FormField label="Tavsif" error={errors.description} required>
+                        <Input
+                            value={data.description}
+                            status={errors.description ? 'error' : undefined}
+                            onChange={(e) => setData('description', e.target.value)}
+                        />
+                    </FormField>
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <FormField label="IP manzil" error={errors.ip_address} required>

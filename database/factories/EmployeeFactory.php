@@ -22,6 +22,8 @@ class EmployeeFactory extends Factory
         return [
             'name' => fake()->name(),
             'card' => fake()->unique()->numerify('########'),
+            'gender' => fake()->randomElement([Employee::GENDER_MALE, Employee::GENDER_FEMALE]),
+            'position' => fake()->optional()->jobTitle(),
             'schedule_id' => Schedule::factory(),
             'department_id' => Department::factory(),
             'valid_from_dt' => $validFrom->format('Y-m-d H:i:s'),

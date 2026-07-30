@@ -9,7 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Bir eventga bir nechta report bo‘lsa — eng kichik id ni qoldiramiz.
+        // Eski o‘rnatishlar: access_controller_event_id hali reports da bo‘lsa — unique qo‘yamiz.
+        // Yangi o‘rnatishlarda ustun yo‘q (keyinroq drop migratsiyasi bilan tozalanadi).
+        if (! Schema::hasColumn('reports', 'access_controller_event_id')) {
+            return;
+        }
+
         $duplicateEventIds = DB::table('reports')
             ->select('access_controller_event_id')
             ->whereNotNull('access_controller_event_id')
@@ -36,6 +41,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('reports', 'access_controller_event_id')) {
+            return;
+        }
+
         Schema::table('reports', function (Blueprint $table) {
             $table->dropUnique(['access_controller_event_id']);
         });

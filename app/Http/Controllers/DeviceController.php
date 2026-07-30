@@ -22,12 +22,26 @@ class DeviceController extends Controller
 
     public function index(Request $request): Response
     {
-        $devices = $this->deviceService->paginate(12);
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'type' => ['nullable', 'integer', 'in:1,2'],
+            'is_online' => ['nullable', 'in:0,1'],
+        ]);
+
+        $devices = $this->deviceService->paginate(20, $filters);
 
         return Inertia::render('Admin/Devices/Index', [
             'devices' => $devices->through(
                 fn (Device $device): array => DeviceResource::make($device)->toArray($request),
             ),
+            'filters' => [
+                'search' => $filters['search'] ?? null,
+                'category_id' => isset($filters['category_id']) ? (int) $filters['category_id'] : null,
+                'type' => isset($filters['type']) ? (int) $filters['type'] : null,
+                'is_online' => $filters['is_online'] ?? null,
+            ],
+            'categories' => $this->deviceService->getCategoriesForForm()->map->only(['id', 'name'])->values(),
         ]);
     }
 

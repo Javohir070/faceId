@@ -89,4 +89,16 @@ return [
 
     'ping_offline_after_failures' => max((int) env('HIKVISION_PING_OFFLINE_AFTER_FAILURES', 5), 1),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Qurilmadan xodimlarni tortish (UserInfo/Search)
+    |--------------------------------------------------------------------------
+    */
+
+    'employees_pull_page_size' => max((int) env('HIKVISION_EMPLOYEES_PULL_PAGE_SIZE', 30), 1),
+
+    'employees_pull_department' => env('HIKVISION_EMPLOYEES_PULL_DEPARTMENT', 'Qurilmadan'),
+
+    'employees_pull_schedule' => env('HIKVISION_EMPLOYEES_PULL_SCHEDULE', 'Standart'),
+
 ];

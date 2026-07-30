@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RemoveDeviceEmployeesRequest;
 use App\Models\Device;
+use App\Services\Hikvision\EmployeePullService;
 use App\Services\Hikvision\EmployeeSyncService;
 use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +15,7 @@ class DeviceActionController extends Controller
     public function __construct(
         private readonly HikvisionDeviceService $deviceService,
         private readonly EmployeeSyncService $employeeSyncService,
+        private readonly EmployeePullService $employeePullService,
     ) {}
 
     public function connect(Device $device): RedirectResponse
@@ -97,17 +100,64 @@ class DeviceActionController extends Controller
         $result = $this->employeeSyncService->syncAllEmployees($device);
 
         $message = sprintf(
-            'Sinxronlash yakunlandi: %d muvaffaqiyatli, %d xato.',
+            'Sinxronlash yakunlandi: %d muvaffaqiyatli, %d xato, %d o‘tkazildi (yuz yo‘q).',
             $result['success'],
             $result['failed'],
+            $result['skipped'] ?? 0,
         );
 
-        if ($result['success'] === 0 && $result['failed'] === 0) {
+        if ($result['success'] === 0 && $result['failed'] === 0 && ($result['skipped'] ?? 0) === 0) {
             return back()->with('error', 'Ushbu qurilmaga ulangan xodim topilmadi. Avval Sinxronizatsiya sahifasidan xodim biriktiring.');
+        }
+
+        if ($result['success'] === 0 && $result['failed'] === 0 && ($result['skipped'] ?? 0) > 0) {
+            return back()->with('error', $message.' Yuz rasmi bo‘lmagan xodimlar qurilmaga yuborilmaydi.');
         }
 
         if ($result['failed'] > 0 && $result['success'] === 0) {
             return back()->with('error', $message.' Qurilma ulanishi, login/parol yoki yuz rasmini tekshiring.');
+        }
+
+        if ($result['failed'] > 0 || ($result['skipped'] ?? 0) > 0) {
+            return back()->with('error', $message);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function pullEmployees(Device $device): RedirectResponse
+    {
+        if (! $device->hasIsapiCredentials()) {
+            return back()->with('error', 'Qurilmada login/parol sozlanmagan.');
+        }
+
+        if (! $device->is_online) {
+            return back()->with('error', 'Qurilma ulanmagan. Avval ulash yoki ping qiling, keyin xodimlarni torting.');
+        }
+
+        try {
+            $result = $this->employeePullService->pullDevice($device);
+        } catch (\Throwable $exception) {
+            Log::error('Qurilmadan xodim tortish xatoligi', [
+                'device_id' => $device->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return back()->with('error', 'Xodimlarni tortib bo‘lmadi: '.$exception->getMessage());
+        }
+
+        $message = sprintf(
+            'Xodimlar tortildi: %d yangi, %d yangilangan, %d bog‘langan, %d o‘tkazildi, %d yuz, %d xato.',
+            $result['created'],
+            $result['updated'],
+            $result['linked'],
+            $result['skipped'],
+            $result['faces'],
+            $result['failed'],
+        );
+
+        if ($result['created'] + $result['updated'] + $result['linked'] === 0 && $result['failed'] > 0) {
+            return back()->with('error', $message);
         }
 
         if ($result['failed'] > 0) {
@@ -115,5 +165,15 @@ class DeviceActionController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function removeEmployees(RemoveDeviceEmployeesRequest $request, Device $device): RedirectResponse
+    {
+        $this->employeeSyncService->queueRemoveEmployeesFromDevice(
+            $device,
+            $request->validated('employee_ids'),
+        );
+
+        return back()->with('success', 'Tanlangan xodimlarni qurilmadan o‘chirish navbatga qo‘yildi.');
     }
 }

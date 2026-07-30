@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TransferOneSyncRequest;
 use App\Http\Requests\TransferSyncRequest;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Services\Hikvision\EmployeeSyncService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,7 +83,7 @@ class SyncController extends Controller
         ];
 
         if (($result['skipped'] ?? 0) > 0) {
-            $parts[] = sprintf('%d o‘tkazib yuborildi (ulanmagan)', $result['skipped']);
+            $parts[] = sprintf('%d o‘tkazib yuborildi (ulanmagan yoki yuz yo‘q)', $result['skipped']);
         }
 
         $message = 'Sinxronizatsiya yakunlandi: '.implode(', ', $parts).'.';
@@ -89,7 +91,7 @@ class SyncController extends Controller
         if ($result['success'] === 0 && $result['failed'] === 0 && ($result['skipped'] ?? 0) > 0) {
             return redirect()
                 ->route('admin.sync.index')
-                ->with('error', $message.' Avval qurilmani ulab yoki ping qiling.');
+                ->with('error', $message.' Qurilmani ulang yoki xodimga yuz rasmi qo‘shing.');
         }
 
         if ($result['failed'] > 0 && $result['success'] === 0) {
@@ -107,5 +109,15 @@ class SyncController extends Controller
         return redirect()
             ->route('admin.sync.index')
             ->with('success', $message);
+    }
+
+    public function transferOne(TransferOneSyncRequest $request): JsonResponse
+    {
+        $device = Device::query()->findOrFail($request->validated('device_id'));
+        $employee = Employee::query()->with('face')->findOrFail($request->validated('employee_id'));
+
+        $result = $this->employeeSyncService->transferOne($device, $employee);
+
+        return response()->json($result);
     }
 }

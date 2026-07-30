@@ -98,7 +98,7 @@ class ReportPullPageTest extends TestCase
 
         $this->assertDatabaseCount('reports', 1);
         $this->assertDatabaseHas('reports', [
-            'employee_no' => '123741',
+            'employee_name' => 'Qayumov Javohir',
             'type' => Report::TYPE_ENTRY,
         ]);
 

@@ -15,12 +15,18 @@ class Employee extends Model
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory;
 
+    public const GENDER_MALE = 1;
+
+    public const GENDER_FEMALE = 2;
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'name',
         'card',
+        'gender',
+        'position',
         'schedule_id',
         'valid_from_dt',
         'valid_to_dt',
@@ -33,9 +39,19 @@ class Employee extends Model
     protected function casts(): array
     {
         return [
+            'gender' => 'integer',
             'valid_from_dt' => 'datetime',
             'valid_to_dt' => 'datetime',
         ];
+    }
+
+    public function genderLabel(): string
+    {
+        return match ($this->gender) {
+            self::GENDER_MALE => 'Erkak',
+            self::GENDER_FEMALE => 'Ayol',
+            default => '—',
+        };
     }
 
     public function schedule(): BelongsTo

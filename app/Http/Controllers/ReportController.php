@@ -30,12 +30,14 @@ class ReportController extends Controller
             'device_id' => ['nullable', 'integer', 'exists:devices,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
-            'type' => ['nullable', 'in:entry,exit'],
+            'type' => ['nullable', 'integer', 'in:1,2'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
 
-        $query = Report::query()->latest('occurred_at');
+        $query = Report::query()
+            ->with(['department:id,name', 'device:id,name'])
+            ->latest('occurred_at');
 
         if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
@@ -58,7 +60,7 @@ class ReportController extends Controller
         }
 
         if (! empty($filters['type'])) {
-            $query->where('type', $filters['type']);
+            $query->where('type', (int) $filters['type']);
         }
 
         if (! empty($filters['date_from'])) {
@@ -76,8 +78,8 @@ class ReportController extends Controller
         $reports->getCollection()->transform(fn (Report $report): array => [
             'id' => $report->id,
             'employee_name' => $report->employee_name,
-            'department_name' => $report->department_name,
-            'device_name' => $report->device_name,
+            'department_name' => $report->department?->name,
+            'device_name' => $report->device?->name,
             'type' => $report->type,
             'type_label' => $report->type_label,
             'occurred_at' => $report->occurred_at?->format('Y-m-d H:i:s'),
@@ -85,7 +87,10 @@ class ReportController extends Controller
 
         return Inertia::render('Admin/Reports/Index', [
             'reports' => $reports,
-            'filters' => $filters,
+            'filters' => [
+                ...$filters,
+                'type' => isset($filters['type']) ? (int) $filters['type'] : null,
+            ],
             'employees' => Employee::query()->orderBy('name')->get(['id', 'name']),
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
             'devices' => Device::query()->ordered()->get(['id', 'name']),

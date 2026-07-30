@@ -4,7 +4,9 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Category;
 use App\Models\Device;
+use App\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
@@ -40,7 +42,9 @@ class CategoryDeviceAdminTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Devices/Index')
-                ->has('devices.data', 0));
+                ->has('devices.data', 0)
+                ->has('filters')
+                ->has('categories'));
 
         $this->actingAs($admin)
             ->post(route('admin.devices.store'), [
@@ -121,5 +125,118 @@ class CategoryDeviceAdminTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.devices.index'))
             ->assertForbidden();
+    }
+
+    public function test_device_index_filters_by_category_type_and_status(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $entryCategory = Category::factory()->create(['name' => 'Kirish']);
+        $exitCategory = Category::factory()->create(['name' => 'Chiqish']);
+
+        Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $entryCategory->id,
+            'name' => 'Entry Online',
+            'type' => Device::TYPE_ENTRY,
+            'is_online' => true,
+            'ip_address' => '10.0.0.1',
+        ]);
+        Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => $exitCategory->id,
+            'name' => 'Exit Offline',
+            'type' => Device::TYPE_EXIT,
+            'is_online' => false,
+            'ip_address' => '10.0.0.2',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.devices.index', [
+                'search' => 'Entry',
+                'category_id' => $entryCategory->id,
+                'type' => Device::TYPE_ENTRY,
+                'is_online' => '1',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Devices/Index')
+                ->where('filters.search', 'Entry')
+                ->where('filters.category_id', $entryCategory->id)
+                ->where('filters.type', Device::TYPE_ENTRY)
+                ->where('filters.is_online', '1')
+                ->has('devices.data', 1)
+                ->where('devices.data.0.name', 'Entry Online'));
+    }
+
+    public function test_device_show_includes_linked_employees(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'name' => 'Gate A',
+        ]);
+
+        $employee = Employee::factory()->create([
+            'name' => 'Ali Valiyev',
+            'card' => '11223344',
+        ]);
+
+        $device->employees()->attach($employee->id, [
+            'synced_at' => now(),
+            'sync_error' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.devices.show', $device))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Devices/Show')
+                ->has('device.employees', 1)
+                ->where('device.employees.0.name', 'Ali Valiyev')
+                ->where('device.employees.0.card', '11223344')
+                ->where('device.employees.0.is_synced', true));
+    }
+
+    public function test_device_can_remove_selected_employees(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'name' => 'Gate B',
+            'is_online' => true,
+        ]);
+
+        $employee = Employee::factory()->create([
+            'name' => 'Dilnoza Karimova',
+            'card' => '55667788',
+        ]);
+
+        $device->employees()->attach($employee->id, [
+            'synced_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.devices.show', $device))
+            ->post(route('admin.devices.remove-employees', $device), [
+                'employee_ids' => [$employee->id],
+            ])
+            ->assertRedirect(route('admin.devices.show', $device))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
     }
 }

@@ -36,12 +36,35 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.employees.index'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Admin/Employees/Index'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Index')
+                ->has('filters')
+                ->has('departments')
+                ->has('schedules')
+                ->has('devices'));
+
+        $this->actingAs($admin)
+            ->get(route('admin.employees.index', [
+                'search' => 'Ali',
+                'department_id' => $department->id,
+                'schedule_id' => $schedule->id,
+                'has_face' => '1',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Index')
+                ->where('filters.search', 'Ali')
+                ->where('filters.department_id', $department->id)
+                ->where('filters.schedule_id', $schedule->id)
+                ->where('filters.has_face', '1')
+                ->has('employees.data', 0));
 
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Ali Valiyev',
                 'card' => '12345678',
+                'gender' => 1,
+                'position' => 'Operator',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-01-01T09:00',
@@ -53,6 +76,8 @@ class EmployeeAdminTest extends TestCase
         $employee = Employee::query()->where('card', '12345678')->first();
         $this->assertNotNull($employee);
         $this->assertSame('Ali Valiyev', $employee->name);
+        $this->assertSame(1, $employee->gender);
+        $this->assertSame('Operator', $employee->position);
         $this->assertSame($department->id, $employee->department_id);
         $this->assertSame($schedule->id, $employee->schedule_id);
         $this->assertDatabaseHas('faces', ['employee_id' => $employee->id]);
@@ -64,6 +89,8 @@ class EmployeeAdminTest extends TestCase
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
                 'card' => '12345678',
+                'gender' => 2,
+                'position' => 'Nazoratchi',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-02-01T09:00',
@@ -74,12 +101,16 @@ class EmployeeAdminTest extends TestCase
 
         $employee->refresh();
         $this->assertSame('Ali Valiyev Updated', $employee->name);
+        $this->assertSame(2, $employee->gender);
+        $this->assertSame('Nazoratchi', $employee->position);
         $this->assertSame(1, Face::query()->where('employee_id', $employee->id)->count());
 
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
                 'card' => '12345678',
+                'gender' => 2,
+                'position' => 'Nazoratchi',
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-02-01T09:00',
@@ -149,5 +180,43 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.employees.index'))
             ->assertForbidden();
+    }
+
+    public function test_employee_index_filters_by_department_and_face(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $it = Department::factory()->create(['name' => 'IT']);
+        $hr = Department::factory()->create(['name' => 'HR']);
+        $schedule = Schedule::factory()->create();
+
+        $withFace = Employee::factory()->create([
+            'name' => 'Face User',
+            'card' => '11112222',
+            'department_id' => $it->id,
+            'schedule_id' => $schedule->id,
+        ]);
+        $withFace->face()->create(['face' => base64_encode('jpg')]);
+
+        Employee::factory()->create([
+            'name' => 'No Face',
+            'card' => '33334444',
+            'department_id' => $hr->id,
+            'schedule_id' => $schedule->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.employees.index', [
+                'department_id' => $it->id,
+                'has_face' => '1',
+                'search' => 'Face',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Index')
+                ->has('employees.data', 1)
+                ->where('employees.data.0.card', '11112222'));
     }
 }

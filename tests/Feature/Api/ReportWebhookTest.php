@@ -58,8 +58,6 @@ class ReportWebhookTest extends TestCase
             'department_id' => $department->id,
             'device_id' => $device->id,
             'employee_name' => 'Ali Valiyev',
-            'department_name' => 'IT bo\'limi',
-            'device_name' => 'Kirish 1',
             'type' => Report::TYPE_ENTRY,
         ]);
 
@@ -95,7 +93,7 @@ class ReportWebhookTest extends TestCase
 
         $this->assertDatabaseHas('reports', [
             'employee_name' => 'Artur',
-            'device_name' => 'Chiqish 2',
+            'device_id' => Device::query()->where('ip_address', '10.0.0.9')->value('id'),
             'type' => Report::TYPE_EXIT,
         ]);
     }

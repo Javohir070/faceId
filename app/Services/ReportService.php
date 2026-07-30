@@ -16,32 +16,39 @@ class ReportService
             return null;
         }
 
-        $existing = Report::query()
-            ->where('access_controller_event_id', $event->id)
-            ->first();
+        $employee = $this->resolveEmployee($event);
+        $device = $this->resolveDevice($event);
+        $type = $this->resolveType($event, $device);
+        $occurredAt = $event->event_time ?? now();
+        $employeeName = $employee?->name ?? $event->full_name ?? 'Noma’lum';
+
+        $existingQuery = Report::query()->where('occurred_at', $occurredAt);
+
+        if ($device !== null) {
+            $existingQuery->where('device_id', $device->id);
+        } else {
+            $existingQuery->whereNull('device_id');
+        }
+
+        if ($employee !== null) {
+            $existingQuery->where('employee_id', $employee->id);
+        } else {
+            $existingQuery->where('employee_name', $employeeName);
+        }
+
+        $existing = $existingQuery->first();
 
         if ($existing !== null) {
             return $existing;
         }
 
-        $employee = $this->resolveEmployee($event);
-        $device = $this->resolveDevice($event);
-        $type = $this->resolveType($event, $device);
-
         return Report::create([
             'employee_id' => $employee?->id,
             'department_id' => $employee?->department_id,
             'device_id' => $device?->id,
-            'access_controller_event_id' => $event->id,
-            'employee_name' => $employee?->name ?? $event->full_name ?? 'Noma’lum',
-            'department_name' => $employee?->department?->name,
-            'device_name' => $device?->name,
-            'employee_no' => $event->employee_no,
-            'card_no' => $event->card_no,
+            'employee_name' => $employeeName,
             'type' => $type,
-            'occurred_at' => $event->event_time ?? now(),
-            'verify_mode' => $event->verify_mode,
-            'picture' => $event->picture,
+            'occurred_at' => $occurredAt,
         ]);
     }
 
@@ -78,7 +85,7 @@ class ReportService
         return $event->device;
     }
 
-    private function resolveType(AccessControllerEvent $event, ?Device $device): string
+    private function resolveType(AccessControllerEvent $event, ?Device $device): int
     {
         $status = mb_strtolower((string) $event->attendance_status);
 

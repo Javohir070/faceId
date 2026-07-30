@@ -16,9 +16,12 @@ class DeviceService
         private readonly CategoryRepositoryInterface $categoryRepository,
     ) {}
 
-    public function paginate(int $perPage = 12): LengthAwarePaginator
+    /**
+     * @param  array{search?:?string, category_id?:?int, type?:?int, is_online?:?string}  $filters
+     */
+    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {
-        return $this->deviceRepository->paginate($perPage);
+        return $this->deviceRepository->paginate($perPage, $filters);
     }
 
     public function getCategoriesForForm(): Collection
@@ -49,7 +52,7 @@ class DeviceService
 
     public function loadForShow(Device $device): Device
     {
-        return $this->deviceRepository->loadRelations($device, ['category', 'owner']);
+        return $this->deviceRepository->loadRelations($device, ['category', 'owner', 'employees.department']);
     }
 
     public function loadForEdit(Device $device): Device

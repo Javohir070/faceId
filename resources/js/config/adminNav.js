@@ -27,7 +27,27 @@ export const adminNavGroups = [
             { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
             { key: 'departments', href: route('admin.departments.index'), label: "Bo'limlar", icon: BankOutlined },
             { key: 'schedules', href: route('admin.schedules.index'), label: 'Jadvallar', icon: CalendarOutlined },
-            { key: 'employees', href: route('admin.employees.index'), label: 'Xodimlar', icon: IdcardOutlined },
+            {
+                key: 'employees-group',
+                label: 'Xodimlar',
+                icon: IdcardOutlined,
+                children: [
+                    {
+                        key: 'employees',
+                        permission: 'employees',
+                        href: route('admin.employees.index'),
+                        label: "Ro'yxat",
+                        icon: IdcardOutlined,
+                    },
+                    {
+                        key: 'employees-pull',
+                        permission: 'employees',
+                        href: route('admin.employees.pull'),
+                        label: 'Xodim tortish',
+                        icon: CloudDownloadOutlined,
+                    },
+                ],
+            },
             {
                 key: 'reports-group',
                 label: 'Hisobotlar',

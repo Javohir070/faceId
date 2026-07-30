@@ -7,7 +7,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface EmployeeRepositoryInterface
 {
-    public function paginate(int $perPage = 12): LengthAwarePaginator;
+    /**
+     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     */
+    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator;
 
     public function create(array $data): Employee;
 

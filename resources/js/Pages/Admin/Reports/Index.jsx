@@ -9,8 +9,8 @@ import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
 
 const typeOptions = [
-    { value: 'entry', label: 'Kirish' },
-    { value: 'exit', label: 'Chiqish' },
+    { value: 1, label: 'Kirish' },
+    { value: 2, label: 'Chiqish' },
 ];
 
 export default function Index({
@@ -221,7 +221,7 @@ export default function Index({
                                 <td>
                                     <span
                                         className={
-                                            report.type === 'exit'
+                                            report.type === 2
                                                 ? 'font-semibold text-amber-600'
                                                 : 'font-semibold text-emerald-600'
                                         }

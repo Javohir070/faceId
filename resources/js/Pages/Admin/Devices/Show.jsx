@@ -1,14 +1,15 @@
 import { router } from '@inertiajs/react';
 import {
     ApiOutlined,
+    CloudDownloadOutlined,
     LinkOutlined,
     PoweroffOutlined,
     ReloadOutlined,
     SyncOutlined,
     UnlockOutlined,
 } from '@ant-design/icons';
-import { App as AntApp, Button } from 'antd';
-import { useState } from 'react';
+import { App as AntApp, Button, Checkbox, Input, Pagination, Select } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
@@ -35,6 +36,7 @@ function runAction(deviceId, action, { modal, setBusy }) {
         restart: route('admin.devices.restart', deviceId),
         clear: route('admin.devices.clear', deviceId),
         sync: route('admin.devices.sync-employees', deviceId),
+        pull: route('admin.devices.pull-employees', deviceId),
     };
 
     const url = routes[action];
@@ -108,7 +110,237 @@ function runAction(deviceId, action, { modal, setBusy }) {
         return;
     }
 
+    if (action === 'pull') {
+        modal.confirm({
+            title: 'Xodimlarni tortish',
+            content: 'Qurilmadagi xodimlar bazaga yuklanadi. Bir xil karta (employeeNo) dublikat yaratilmaydi. Davom etasizmi?',
+            okText: 'Ha, tortish',
+            cancelText: 'Bekor qilish',
+            onOk: () => new Promise((resolve, reject) => {
+                setBusy(action);
+                router.post(url, {}, {
+                    preserveScroll: true,
+                    onSuccess: resolve,
+                    onError: reject,
+                    onFinish: () => setBusy(null),
+                });
+            }),
+        });
+        return;
+    }
+
     submit();
+}
+
+function DeviceEmployeesPanel({ deviceId, employees }) {
+    const { modal } = AntApp.useApp();
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [search, setSearch] = useState('');
+    const [pageSize, setPageSize] = useState(25);
+    const [page, setPage] = useState(1);
+    const [removing, setRemoving] = useState(false);
+
+    const filtered = useMemo(() => {
+        const query = search.trim().toLowerCase();
+
+        if (!query) {
+            return employees;
+        }
+
+        return employees.filter((employee) => (
+            employee.name.toLowerCase().includes(query)
+            || String(employee.card).toLowerCase().includes(query)
+            || (employee.department?.name || '').toLowerCase().includes(query)
+        ));
+    }, [employees, search]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [search, pageSize, employees.length]);
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize) || 1);
+    const currentPage = Math.min(page, totalPages);
+    const from = filtered.length === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+    const to = Math.min(currentPage * pageSize, filtered.length);
+    const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    const allVisibleSelected = visible.length > 0 && visible.every((employee) => selectedIds.includes(employee.id));
+    const someVisibleSelected = visible.some((employee) => selectedIds.includes(employee.id)) && !allVisibleSelected;
+
+    const toggleAll = (checked) => {
+        const visibleIds = visible.map((employee) => employee.id);
+        setSelectedIds((prev) => (
+            checked
+                ? [...new Set([...prev, ...visibleIds])]
+                : prev.filter((id) => !visibleIds.includes(id))
+        ));
+    };
+
+    const toggleOne = (id, checked) => {
+        setSelectedIds((prev) => (
+            checked ? [...prev, id] : prev.filter((item) => item !== id)
+        ));
+    };
+
+    const removeSelected = () => {
+        modal.confirm({
+            title: 'Qurilmadan o‘chirish',
+            content: 'Tanlangan xodimlar ushbu qurilmadan o‘chiriladi. Davom etasizmi?',
+            okText: 'Ha, o‘chirish',
+            cancelText: 'Bekor qilish',
+            okButtonProps: { danger: true },
+            onOk: () => new Promise((resolve, reject) => {
+                setRemoving(true);
+                router.post(route('admin.devices.remove-employees', deviceId), {
+                    employee_ids: selectedIds,
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setSelectedIds([]);
+                        resolve();
+                    },
+                    onError: reject,
+                    onFinish: () => setRemoving(false),
+                });
+            }),
+        });
+    };
+
+    return (
+        <div className="rounded-xl border border-line bg-surface shadow-ambient">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+                <h2 className="text-base font-extrabold text-ink">
+                    Ulangan xodimlar
+                    <span className="ml-2 text-sm font-semibold text-ink-muted">
+                        (
+                        {employees.length}
+                        )
+                    </span>
+                </h2>
+                <Button
+                    danger
+                    type="primary"
+                    className="!font-bold"
+                    disabled={!selectedIds.length}
+                    loading={removing}
+                    onClick={removeSelected}
+                >
+                    O'chirish
+                </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-ink-muted">
+                    <span>Ko'rsatish</span>
+                    <Select
+                        value={pageSize}
+                        options={[25, 50, 100].map((size) => ({ value: size, label: String(size) }))}
+                        onChange={setPageSize}
+                        className="min-w-20"
+                    />
+                    <span>ta yozuv</span>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                    <span className="text-sm text-ink-muted">Qidiruv:</span>
+                    <Input
+                        allowClear
+                        placeholder="Ism, karta yoki bo‘lim"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="min-w-[220px]"
+                    />
+                </div>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="data-table devices-table min-w-full">
+                    <thead>
+                        <tr>
+                            <th className="devices-table__checkbox">
+                                <Checkbox
+                                    checked={allVisibleSelected}
+                                    indeterminate={someVisibleSelected}
+                                    onChange={(e) => toggleAll(e.target.checked)}
+                                    disabled={!visible.length}
+                                />
+                            </th>
+                            <th className="w-12">№</th>
+                            <th>F.I.Sh.</th>
+                            <th>Karta</th>
+                            <th>Bo&apos;lim</th>
+                            <th>Holat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {visible.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="py-10 text-center text-sm text-ink-muted">
+                                    Bu qurilmaga hali xodim biriktirilmagan.
+                                </td>
+                            </tr>
+                        ) : visible.map((employee, index) => (
+                            <tr key={employee.id}>
+                                <td className="devices-table__checkbox">
+                                    <Checkbox
+                                        checked={selectedIds.includes(employee.id)}
+                                        onChange={(e) => toggleOne(employee.id, e.target.checked)}
+                                    />
+                                </td>
+                                <td className="font-medium text-ink-subtle">{from + index}</td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        className="font-medium text-brand-600 transition hover:text-brand-700 hover:underline"
+                                        onClick={() => router.visit(route('admin.employees.show', employee.id))}
+                                    >
+                                        {employee.name}
+                                    </button>
+                                </td>
+                                <td className="font-medium">{employee.card}</td>
+                                <td className="font-medium">{employee.department?.name || '—'}</td>
+                                <td>
+                                    {employee.sync_error ? (
+                                        <StatusTag tone="danger" title={employee.sync_error}>
+                                            Xato
+                                        </StatusTag>
+                                    ) : employee.is_synced ? (
+                                        <StatusTag tone="success">
+                                            Sinxron
+                                            {employee.synced_at ? ` · ${employee.synced_at}` : ''}
+                                        </StatusTag>
+                                    ) : (
+                                        <StatusTag tone="warning">Sinxronlanmagan</StatusTag>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
+                <p className="text-sm text-ink-muted">
+                    Tanlangan:
+                    {' '}
+                    <span className="font-semibold text-ink">{selectedIds.length}</span>
+                    {' · '}
+                    {filtered.length === 0 ? '0' : `${from}–${to}`}
+                    {' / '}
+                    {filtered.length}
+                </p>
+                {filtered.length > pageSize ? (
+                    <Pagination
+                        size="small"
+                        current={currentPage}
+                        pageSize={pageSize}
+                        total={filtered.length}
+                        showSizeChanger={false}
+                        onChange={setPage}
+                    />
+                ) : null}
+            </div>
+        </div>
+    );
 }
 
 function DeviceQuickActions({ device }) {
@@ -156,6 +388,15 @@ function DeviceQuickActions({ device }) {
                 onClick={() => run('sync')}
             >
                 Sinxronlash
+            </Button>
+
+            <Button
+                icon={<CloudDownloadOutlined />}
+                loading={busy === 'pull'}
+                disabled={Boolean(busy) && busy !== 'pull'}
+                onClick={() => run('pull')}
+            >
+                Xodimlarni tortish
             </Button>
 
             <Button
@@ -320,6 +561,8 @@ export default function Show({ device }) {
                         </div>
                     </div>
                 </div>
+
+                <DeviceEmployeesPanel deviceId={device.id} employees={device.employees ?? []} />
             </ShowPage>
         </AdminLayout>
     );

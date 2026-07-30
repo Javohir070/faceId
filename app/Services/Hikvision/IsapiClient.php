@@ -133,4 +133,37 @@ class IsapiClient
             ->attach('img', $imageBytes, $filename)
             ->put($url);
     }
+
+    /**
+     * Rasm yoki boshqa binary javob uchun (Accept: application/json majburiy emas).
+     *
+     * @param  array<string, string>  $headers
+     */
+    public function download(Device $device, string $absoluteUrl, array $headers = []): Response
+    {
+        $options = [
+            'auth' => [$device->user, $device->password, 'digest'],
+            'connect_timeout' => config('hikvision.connect_timeout', 5),
+            'timeout' => config('hikvision.timeout', 10),
+        ];
+
+        if ($device->use_https) {
+            $options['verify'] = (bool) config('hikvision.verify_ssl', false);
+        }
+
+        $client = Http::withOptions($options)->withHeaders(array_merge([
+            'Accept' => '*/*',
+        ], $headers));
+
+        $response = $client->get($absoluteUrl);
+
+        Log::debug('Hikvision ISAPI download', [
+            'device_id' => $device->id,
+            'url' => $absoluteUrl,
+            'status' => $response->status(),
+            'content_type' => $response->header('Content-Type'),
+        ]);
+
+        return $response;
+    }
 }

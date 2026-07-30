@@ -62,6 +62,10 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // Spatie laravel-backup: Windows da mysqldump PATH da bo'lmasa to'liq papka kerak
+            'dump' => [
+                'dump_binary_path' => env('MYSQL_DUMP_BINARY_PATH', 'C:/xampp/mysql/bin'),
+            ],
         ],
 
         'mariadb' => [

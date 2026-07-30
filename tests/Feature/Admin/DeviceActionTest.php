@@ -64,4 +64,66 @@ class DeviceActionTest extends TestCase
             ->post(route('admin.devices.connect', $device))
             ->assertForbidden();
     }
+
+    public function test_authorized_user_can_pull_employees_from_device(): void
+    {
+        Http::fake([
+            '*UserInfo/Search*' => Http::response([
+                'UserInfoSearch' => [
+                    'responseStatusStrg' => 'OK',
+                    'UserInfo' => [
+                        [
+                            'employeeNo' => '9001',
+                            'name' => 'Pulled User',
+                            'Valid' => [
+                                'beginTime' => '2026-01-01T00:00:00',
+                                'endTime' => '2030-12-31T23:59:59',
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+            '*FDSearch*' => Http::response('', 404),
+            '*picture*' => Http::response('', 404),
+        ]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+            'is_online' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.devices.pull-employees', $device))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('employees', [
+            'card' => '9001',
+            'name' => 'Pulled User',
+        ]);
+        $this->assertTrue($device->employees()->where('card', '9001')->exists());
+    }
+
+    public function test_pull_employees_rejects_offline_device(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+            'is_online' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.devices.pull-employees', $device))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+    }
 }

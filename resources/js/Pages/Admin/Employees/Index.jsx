@@ -1,3 +1,7 @@
+import { Link, router } from '@inertiajs/react';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Input, Select } from 'antd';
+import { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
@@ -5,15 +9,140 @@ import Pagination from '../../../Components/Pagination';
 import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
 
-export default function Index({ employees }) {
+const faceOptions = [
+    { value: '1', label: 'Yuz bor' },
+    { value: '0', label: "Yuz yo'q" },
+];
+
+export default function Index({
+    employees,
+    filters = {},
+    departments = [],
+    schedules = [],
+    devices = [],
+}) {
+    const [form, setForm] = useState({
+        search: filters.search ?? '',
+        department_id: filters.department_id ?? null,
+        schedule_id: filters.schedule_id ?? null,
+        device_id: filters.device_id ?? null,
+        has_face: filters.has_face ?? null,
+    });
+
+    const updateField = (key, value) => {
+        setForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const submitFilters = () => {
+        const payload = Object.fromEntries(
+            Object.entries(form).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+        );
+
+        router.get(route('admin.employees.index'), payload, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    const resetFilters = () => {
+        setForm({
+            search: '',
+            department_id: null,
+            schedule_id: null,
+            device_id: null,
+            has_face: null,
+        });
+
+        router.get(route('admin.employees.index'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     return (
         <AdminLayout title="Xodimlar">
             <PageHeader
                 title="Xodimlar"
                 subtitle="Xodimlar, kartalar, yuz rasmlari va bo'limlarni boshqaring."
-                createHref={route('admin.employees.create')}
-                createLabel="Xodim qo'shish"
+                actions={(
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                            href={route('admin.employees.pull')}
+                            className="inline-flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
+                        >
+                            Qurilmadan tortish
+                        </Link>
+                        <Button
+                            type="primary"
+                            size="large"
+                            className="!h-11 shrink-0 !rounded-lg !px-5 !font-bold"
+                            icon={<PlusOutlined />}
+                            onClick={() => router.visit(route('admin.employees.create'))}
+                        >
+                            Xodim qo&apos;shish
+                        </Button>
+                    </div>
+                )}
             />
+
+            <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                    <Input
+                        allowClear
+                        placeholder="Qidiruv (ism / karta)"
+                        value={form.search}
+                        onChange={(e) => updateField('search', e.target.value)}
+                        onPressEnter={submitFilters}
+                    />
+                    <Select
+                        allowClear
+                        showSearch
+                        placeholder="Bo'lim"
+                        optionFilterProp="label"
+                        value={form.department_id}
+                        options={departments.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(value) => updateField('department_id', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        showSearch
+                        placeholder="Jadval"
+                        optionFilterProp="label"
+                        value={form.schedule_id}
+                        options={schedules.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(value) => updateField('schedule_id', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        showSearch
+                        placeholder="Qurilma"
+                        optionFilterProp="label"
+                        value={form.device_id}
+                        options={devices.map((item) => ({ value: item.id, label: item.name }))}
+                        onChange={(value) => updateField('device_id', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        placeholder="Yuz"
+                        value={form.has_face}
+                        options={faceOptions}
+                        onChange={(value) => updateField('has_face', value ?? null)}
+                        className="w-full"
+                    />
+                    <div className="flex gap-2">
+                        <Button type="primary" className="flex-1 !font-bold" onClick={submitFilters}>
+                            Filtrlash
+                        </Button>
+                        <Button className="!font-semibold" onClick={resetFilters}>
+                            Tozalash
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <TableShell
                 empty={employees.data.length === 0}
                 createHref={route('admin.employees.create')}
@@ -32,7 +161,9 @@ export default function Index({ employees }) {
                             <th className="w-16">N#</th>
                             <th>F.I.Sh.</th>
                             <th>Karta</th>
-                            <th>Bo'lim</th>
+                            <th>Jins</th>
+                            <th>Lavozim</th>
+                            <th>Bo&apos;lim</th>
                             <th>Jadval</th>
                             <th>Yuz</th>
                             <th>Amal qilish</th>
@@ -45,6 +176,8 @@ export default function Index({ employees }) {
                                 <td className="font-medium text-ink-subtle">{(employees.from ?? 1) + index}</td>
                                 <td className="font-bold text-ink">{employee.name}</td>
                                 <td className="font-medium">{employee.card}</td>
+                                <td className="font-medium">{employee.gender_label || '—'}</td>
+                                <td className="font-medium">{employee.position || '—'}</td>
                                 <td className="font-medium">{employee.department?.name || '—'}</td>
                                 <td className="font-medium">{employee.schedule?.name || '—'}</td>
                                 <td>

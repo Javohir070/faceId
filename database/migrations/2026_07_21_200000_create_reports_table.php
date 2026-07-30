@@ -14,18 +14,10 @@ return new class extends Migration
             $table->foreignId('employee_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('device_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('access_controller_event_id')->nullable()
-                ->constrained('access_controller_events')->nullOnDelete();
 
             $table->string('employee_name');
-            $table->string('department_name')->nullable();
-            $table->string('device_name')->nullable();
-            $table->string('employee_no')->nullable();
-            $table->string('card_no')->nullable();
-            $table->string('type', 16);
+            $table->unsignedTinyInteger('type');
             $table->timestamp('occurred_at');
-            $table->string('verify_mode')->nullable();
-            $table->string('picture')->nullable();
 
             $table->timestamps();
 

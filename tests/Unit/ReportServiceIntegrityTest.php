@@ -52,7 +52,7 @@ class ReportServiceIntegrityTest extends TestCase
 
         $this->assertNotNull($first);
         $this->assertTrue($first->is($second));
-        $this->assertSame(1, Report::query()->where('access_controller_event_id', $event->id)->count());
+        $this->assertSame(1, Report::query()->where('employee_id', $employee->id)->where('device_id', $device->id)->count());
         $this->assertTrue($event->employee->is($employee));
         $this->assertTrue($event->device->is($device));
     }
