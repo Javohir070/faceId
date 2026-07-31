@@ -102,6 +102,9 @@ Route::middleware('auth')->group(function () {
         Route::get('reports', [ReportController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['reports'])
             ->name('reports.index');
+        Route::get('reports/export', [ReportController::class, 'export'])
+            ->middleware('permission:'.$menuPermissions['reports'])
+            ->name('reports.export');
         Route::resource('users', UserController::class)
             ->middleware('permission:'.$menuPermissions['users']);
         Route::resource('roles', RoleController::class)

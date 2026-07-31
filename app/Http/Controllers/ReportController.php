@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ReportsExport;
 use App\Http\Requests\PullReportEventsRequest;
 use App\Models\Category;
 use App\Models\Department;
@@ -16,6 +17,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
@@ -124,6 +127,15 @@ class ReportController extends Controller
                 'date_to' => $endTime->toDateString(),
             ])
             ->with('success', $message);
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $filters = $request->validate($this->filterRules());
+
+        $query = $this->filteredReportsQuery($filters);
+
+        return Excel::download(new ReportsExport($query), 'hisobotlar.xlsx');
     }
 
     /**

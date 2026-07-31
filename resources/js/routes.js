@@ -39,6 +39,7 @@ const routeBuilders = {
     'admin.employees.remove-devices': (id) => `/admin/employees/${id}/remove-devices`,
 
     'admin.reports.index': () => '/admin/reports',
+    'admin.reports.export': () => '/admin/reports/export',
     'admin.reports.pull': () => '/admin/reports/pull',
     'admin.reports.pull.store': () => '/admin/reports/pull',
 
