@@ -16,10 +16,12 @@ return new class extends Migration
         }
 
         if ($this->reportsTableIsCorrupt()) {
-            Schema::drop('reports');
-            $this->createReportsTable();
-
-            return;
+            throw new \RuntimeException(
+                'reports jadvali mavjud, lekin undan o‘qib bo‘lmadi (buzilgan, qulflangan yoki ulanish '.
+                'muammosi bo‘lishi mumkin). Ma’lumot yo‘qotmaslik uchun migratsiya avtomatik davom etmaydi — '.
+                'jadvalni qo‘lda tekshiring (masalan: SELECT COUNT(*) FROM reports) va sabab aniq bo‘lgach '.
+                'migratsiyani qayta ishga tushiring.'
+            );
         }
 
         $dropColumns = collect(['department_name', 'device_name'])
