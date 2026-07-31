@@ -59,6 +59,16 @@ export default function Index({
         });
     };
 
+    const exportHref = () => {
+        const payload = Object.fromEntries(
+            Object.entries(filters).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+        );
+        const query = new URLSearchParams(payload).toString();
+        const base = route('admin.employees.export');
+
+        return query ? `${base}?${query}` : base;
+    };
+
     return (
         <AdminLayout title="Xodimlar">
             <PageHeader
@@ -66,6 +76,12 @@ export default function Index({
                 subtitle="Xodimlar, kartalar, yuz rasmlari va bo'limlarni boshqaring."
                 actions={(
                     <div className="flex flex-wrap items-center gap-2">
+                        <a
+                            href={exportHref()}
+                            className="inline-flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
+                        >
+                            Excel yuklab olish
+                        </a>
                         <Link
                             href={route('admin.employees.pull')}
                             className="inline-flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
