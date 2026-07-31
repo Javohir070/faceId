@@ -66,6 +66,16 @@ export default function Index({
         });
     };
 
+    const exportHref = () => {
+        const payload = Object.fromEntries(
+            Object.entries(filters).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+        );
+        const query = new URLSearchParams(payload).toString();
+        const base = route('admin.reports.export');
+
+        return query ? `${base}?${query}` : base;
+    };
+
     const from = reports.from ?? (reports.data.length ? 1 : 0);
     const to = reports.to ?? reports.data.length;
     const total = reports.total ?? reports.data.length;
@@ -76,12 +86,20 @@ export default function Index({
                 title="Hisobotlar"
                 subtitle="Xodimlarning kirish va chiqish yozuvlari."
                 actions={(
-                    <Link
-                        href={route('admin.reports.pull')}
-                        className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700"
-                    >
-                        Qurilmadan tortish
-                    </Link>
+                    <div className="flex gap-3">
+                        <a
+                            href={exportHref()}
+                            className="inline-flex h-10 items-center rounded-lg border border-line bg-surface px-4 text-sm font-bold text-ink hover:bg-surface-muted"
+                        >
+                            Excel yuklab olish
+                        </a>
+                        <Link
+                            href={route('admin.reports.pull')}
+                            className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700"
+                        >
+                            Qurilmadan tortish
+                        </Link>
+                    </div>
                 )}
             />
 
