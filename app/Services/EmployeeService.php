@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Face;
 use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,15 @@ class EmployeeService
     public function getSchedulesForForm(): Collection
     {
         return $this->scheduleRepository->allOrdered();
+    }
+
+    /**
+     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @return Builder<Employee>
+     */
+    public function getFilteredQuery(array $filters = []): Builder
+    {
+        return $this->employeeRepository->filteredQuery($filters);
     }
 
     public function create(array $data): Employee

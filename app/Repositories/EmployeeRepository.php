@@ -5,13 +5,15 @@ namespace App\Repositories;
 use App\Interfaces\EmployeeRepositoryInterface;
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
     /**
      * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @return Builder<Employee>
      */
-    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
+    public function filteredQuery(array $filters = []): Builder
     {
         $query = Employee::query()
             ->with(['department:id,name', 'schedule:id,name', 'face:id,employee_id']);
@@ -47,8 +49,15 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             $query->whereDoesntHave('face');
         }
 
-        return $query
-            ->latest()
+        return $query->latest();
+    }
+
+    /**
+     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     */
+    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
+    {
+        return $this->filteredQuery($filters)
             ->paginate($perPage)
             ->withQueryString();
     }

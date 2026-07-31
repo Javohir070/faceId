@@ -4,9 +4,16 @@ namespace App\Interfaces;
 
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 interface EmployeeRepositoryInterface
 {
+    /**
+     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @return Builder<Employee>
+     */
+    public function filteredQuery(array $filters = []): Builder;
+
     /**
      * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      */
