@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\EmployeesExport;
 use App\Http\Requests\PullEmployeesRequest;
 use App\Http\Requests\RemoveEmployeeDevicesRequest;
 use App\Http\Requests\StoreEmployeeRequest;
@@ -17,6 +18,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EmployeeController extends Controller
 {
@@ -28,13 +31,7 @@ class EmployeeController extends Controller
 
     public function index(Request $request): Response
     {
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
-            'device_id' => ['nullable', 'integer', 'exists:devices,id'],
-            'has_face' => ['nullable', 'in:0,1'],
-        ]);
+        $filters = $request->validate($this->filterRules());
 
         $employees = $this->employeeService->paginate(12, $filters);
 
@@ -178,5 +175,28 @@ class EmployeeController extends Controller
         return redirect()
             ->route('admin.employees.index')
             ->with('success', 'Xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $filters = $request->validate($this->filterRules());
+
+        $query = $this->employeeService->getFilteredQuery($filters);
+
+        return Excel::download(new EmployeesExport($query), 'xodimlar.xlsx');
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    private function filterRules(): array
+    {
+        return [
+            'search' => ['nullable', 'string', 'max:100'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
+            'device_id' => ['nullable', 'integer', 'exists:devices,id'],
+            'has_face' => ['nullable', 'in:0,1'],
+        ];
     }
 }

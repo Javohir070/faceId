@@ -36,6 +36,7 @@ const routeBuilders = {
     ...resource('admin.employees', '/admin/employees'),
     'admin.employees.pull': () => '/admin/employees/pull',
     'admin.employees.pull.store': () => '/admin/employees/pull',
+    'admin.employees.export': () => '/admin/employees/export',
     'admin.employees.remove-devices': (id) => `/admin/employees/${id}/remove-devices`,
 
     'admin.reports.index': () => '/admin/reports',
