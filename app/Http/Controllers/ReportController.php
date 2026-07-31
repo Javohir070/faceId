@@ -11,6 +11,7 @@ use App\Models\Report;
 use App\Models\Schedule;
 use App\Services\Hikvision\HikvisionEventPullService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,54 +25,9 @@ class ReportController extends Controller
 
     public function index(Request $request): Response
     {
-        $filters = $request->validate([
-            'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'device_id' => ['nullable', 'integer', 'exists:devices,id'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-            'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
-            'type' => ['nullable', 'integer', 'in:1,2'],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
-        ]);
+        $filters = $request->validate($this->filterRules());
 
-        $query = Report::query()
-            ->with(['department:id,name', 'device:id,name'])
-            ->latest('occurred_at');
-
-        if (! empty($filters['employee_id'])) {
-            $query->where('employee_id', $filters['employee_id']);
-        }
-
-        if (! empty($filters['department_id'])) {
-            $query->where('department_id', $filters['department_id']);
-        }
-
-        if (! empty($filters['device_id'])) {
-            $query->where('device_id', $filters['device_id']);
-        }
-
-        if (! empty($filters['category_id'])) {
-            $query->whereHas('device', fn ($deviceQuery) => $deviceQuery->where('category_id', $filters['category_id']));
-        }
-
-        if (! empty($filters['schedule_id'])) {
-            $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('schedule_id', $filters['schedule_id']));
-        }
-
-        if (! empty($filters['type'])) {
-            $query->where('type', (int) $filters['type']);
-        }
-
-        if (! empty($filters['date_from'])) {
-            $query->where('occurred_at', '>=', $filters['date_from'].' 00:00:00');
-        }
-
-        if (! empty($filters['date_to'])) {
-            $query->where('occurred_at', '<=', $filters['date_to'].' 23:59:59');
-        }
-
-        $reports = $query
+        $reports = $this->filteredReportsQuery($filters)
             ->paginate(25)
             ->withQueryString();
 
@@ -168,5 +124,67 @@ class ReportController extends Controller
                 'date_to' => $endTime->toDateString(),
             ])
             ->with('success', $message);
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    private function filterRules(): array
+    {
+        return [
+            'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'device_id' => ['nullable', 'integer', 'exists:devices,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
+            'type' => ['nullable', 'integer', 'in:1,2'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Report>
+     */
+    private function filteredReportsQuery(array $filters): Builder
+    {
+        $query = Report::query()
+            ->with(['department:id,name', 'device:id,name'])
+            ->latest('occurred_at');
+
+        if (! empty($filters['employee_id'])) {
+            $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (! empty($filters['department_id'])) {
+            $query->where('department_id', $filters['department_id']);
+        }
+
+        if (! empty($filters['device_id'])) {
+            $query->where('device_id', $filters['device_id']);
+        }
+
+        if (! empty($filters['category_id'])) {
+            $query->whereHas('device', fn ($deviceQuery) => $deviceQuery->where('category_id', $filters['category_id']));
+        }
+
+        if (! empty($filters['schedule_id'])) {
+            $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('schedule_id', $filters['schedule_id']));
+        }
+
+        if (! empty($filters['type'])) {
+            $query->where('type', (int) $filters['type']);
+        }
+
+        if (! empty($filters['date_from'])) {
+            $query->where('occurred_at', '>=', $filters['date_from'].' 00:00:00');
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->where('occurred_at', '<=', $filters['date_to'].' 23:59:59');
+        }
+
+        return $query;
     }
 }
