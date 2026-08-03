@@ -24,6 +24,10 @@ Schedule::command('employees:notify-expiry')
     ->dailyAt('08:00')
     ->withoutOverlapping();
 
+Schedule::command('telegram:daily-digest')
+    ->dailyAt('08:30')
+    ->withoutOverlapping();
+
 // Spatie laravel-backup (02:00–03:00 oralig'idan qochiladi — DST muammosi)
 Schedule::command('backup:clean')
     ->daily()

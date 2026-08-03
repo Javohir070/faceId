@@ -6,13 +6,16 @@ use App\Models\User;
 use App\Services\Telegram\TelegramNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Spatie\Permission\Models\Role;
+use Tests\Concerns\CreatesTelegramAdmin;
 use Tests\TestCase;
 
 class TelegramNotifierTest extends TestCase
 {
+    use CreatesTelegramAdmin;
     use RefreshDatabase;
 
-    public function test_notify_all_linked_users_sends_to_each_chat(): void
+    public function test_notify_sends_only_to_super_admin_with_matching_prefs(): void
     {
         config(['telegram.token' => 'test-token']);
 
@@ -20,11 +23,16 @@ class TelegramNotifierTest extends TestCase
             'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
         ]);
 
-        User::factory()->create(['telegram_chat_id' => '111']);
-        User::factory()->create(['telegram_chat_id' => '222']);
-        User::factory()->create(['telegram_chat_id' => null]);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111', 'telegram_notify_prefs' => 'all']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '222', 'telegram_notify_prefs' => 'device']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '333', 'telegram_notify_prefs' => 'expiry']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '444', 'telegram_notify_prefs' => 'none']);
 
-        $sent = app(TelegramNotifier::class)->notifyAllLinkedUsers('Salom');
+        Role::findOrCreate('user', 'web');
+        $plain = User::factory()->create(['telegram_chat_id' => '555', 'telegram_notify_prefs' => 'all']);
+        $plain->assignRole('user');
+
+        $sent = app(TelegramNotifier::class)->notifyAllLinkedUsers('Salom', TelegramNotifier::CATEGORY_DEVICE);
 
         $this->assertSame(2, $sent);
         Http::assertSentCount(2);
@@ -36,7 +44,7 @@ class TelegramNotifierTest extends TestCase
 
         Http::fake();
 
-        User::factory()->create(['telegram_chat_id' => '111']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
 
         $sent = app(TelegramNotifier::class)->notifyAllLinkedUsers('Salom');
 

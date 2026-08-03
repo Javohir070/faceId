@@ -3,13 +3,14 @@
 namespace Tests\Feature\Telegram;
 
 use App\Models\Employee;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\CreatesTelegramAdmin;
 use Tests\TestCase;
 
 class NotifyEmployeeExpiryCommandTest extends TestCase
 {
+    use CreatesTelegramAdmin;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -22,7 +23,7 @@ class NotifyEmployeeExpiryCommandTest extends TestCase
         Http::fake([
             'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
         ]);
-        User::factory()->create(['telegram_chat_id' => '111']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
     }
 
     public function test_warns_once_when_expiry_within_warn_days(): void

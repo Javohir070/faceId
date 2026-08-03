@@ -25,6 +25,9 @@ class SetTelegramWebhookCommand extends Command
 
         if (! $bot->setWebhook($url, $secret)) {
             $this->error('Webhook o‘rnatilmadi');
+            if (filled($bot->lastError)) {
+                $this->line($bot->lastError);
+            }
 
             return self::FAILURE;
         }

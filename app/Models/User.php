@@ -20,11 +20,20 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+    public const TELEGRAM_PREFS_ALL = 'all';
+
+    public const TELEGRAM_PREFS_DEVICE = 'device';
+
+    public const TELEGRAM_PREFS_EXPIRY = 'expiry';
+
+    public const TELEGRAM_PREFS_NONE = 'none';
+
     protected $fillable = [
         'name',
         'email',
         'password',
         'telegram_chat_id',
+        'telegram_notify_prefs',
     ];
 
     /**

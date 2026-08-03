@@ -98,11 +98,25 @@ class HikvisionDeviceService
 
             Cache::forget($this->pingFailureCacheKey($device));
 
+            $wasOffline = ! (bool) $device->is_online;
+
             $device->forceFill([
                 'is_online' => true,
                 'last_connected_at' => now(),
                 'last_ping_at' => now(),
             ])->save();
+
+            if ($wasOffline) {
+                app(TelegramNotifier::class)->notifyAllLinkedUsers(
+                    sprintf(
+                        "✅ Qurilma qayta online\nNomi: %s\nIP: %s\nTur: %s",
+                        $device->name,
+                        $device->ip_address,
+                        $device->typeLabel(),
+                    ),
+                    TelegramNotifier::CATEGORY_DEVICE,
+                );
+            }
 
             return true;
         } catch (\Throwable $exception) {
@@ -127,7 +141,8 @@ class HikvisionDeviceService
                         $device->name,
                         $device->ip_address,
                         $device->typeLabel(),
-                    )
+                    ),
+                    TelegramNotifier::CATEGORY_DEVICE,
                 );
             }
 

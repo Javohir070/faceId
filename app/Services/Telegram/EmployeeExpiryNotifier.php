@@ -34,7 +34,8 @@ class EmployeeExpiryNotifier
                         $employee->name,
                         $employee->card,
                         $employee->valid_to_dt?->format('Y-m-d H:i:s') ?? '—',
-                    )
+                    ),
+                    TelegramNotifier::CATEGORY_EXPIRY,
                 );
 
                 $employee->forceFill(['expiry_warned_at' => now()])->save();
@@ -52,7 +53,8 @@ class EmployeeExpiryNotifier
                         $employee->name,
                         $employee->card,
                         $employee->valid_to_dt?->format('Y-m-d H:i:s') ?? '—',
-                    )
+                    ),
+                    TelegramNotifier::CATEGORY_EXPIRY,
                 );
 
                 $employee->forceFill(['expiry_notified_at' => now()])->save();

@@ -10,8 +10,11 @@ class TelegramAuthHandler
 {
     private const CACHE_TTL_MINUTES = 15;
 
+    private const HELP_LINKED = "Buyruqlar:\n/status — holat\n/devices — oflayn qurilmalar\n/expiry — muddatlar\n/settings — xabar filtri\n/unlink — uzish";
+
     public function __construct(
         private readonly TelegramBotService $bot,
+        private readonly TelegramReportService $reports,
     ) {}
 
     /**
@@ -26,22 +29,56 @@ class TelegramAuthHandler
             return;
         }
 
-        if ($text === '/start' || str_starts_with($text, '/start ')) {
+        $command = strtolower(explode(' ', $text, 2)[0]);
+        $command = explode('@', $command)[0];
+
+        if ($command === '/start') {
             $this->handleStart($chatId);
 
             return;
         }
 
-        if ($text === '/unlink') {
+        if ($command === '/unlink') {
             $this->handleUnlink($chatId);
+
+            return;
+        }
+
+        $linked = User::query()->where('telegram_chat_id', $chatId)->first();
+
+        if ($linked !== null && in_array($command, ['/status', '/devices', '/expiry', '/settings', '/help'], true)) {
+            if (! $linked->hasRole('super-admin')) {
+                $this->bot->sendMessage($chatId, 'Bu buyruqlar faqat super-admin uchun.');
+
+                return;
+            }
+
+            match ($command) {
+                '/status' => $this->bot->sendMessage($chatId, $this->reports->statusText()),
+                '/devices' => $this->bot->sendMessage($chatId, $this->reports->offlineDevicesText()),
+                '/expiry' => $this->bot->sendMessage($chatId, $this->reports->expiryText()),
+                '/settings' => $this->handleSettingsPrompt($chatId),
+                '/help' => $this->bot->sendMessage($chatId, self::HELP_LINKED),
+            };
 
             return;
         }
 
         $state = $this->getState($chatId);
 
+        if ($state !== null && ($state['step'] ?? null) === 'awaiting_settings' && $linked !== null) {
+            $this->handleSettingsChoice($chatId, $linked, $text);
+
+            return;
+        }
+
         if ($state === null) {
-            $this->bot->sendMessage($chatId, 'Boshlash uchun /start yuboring.');
+            $this->bot->sendMessage(
+                $chatId,
+                $linked !== null
+                    ? self::HELP_LINKED
+                    : 'Boshlash uchun /start yuboring.'
+            );
 
             return;
         }
@@ -63,10 +100,10 @@ class TelegramAuthHandler
 
         if ($user !== null) {
             $this->forgetState($chatId);
-            $this->bot->sendMessage(
-                $chatId,
-                "Ulangan: {$user->email}. Chiqish: /unlink"
-            );
+            $help = $user->hasRole('super-admin')
+                ? "\n\n".self::HELP_LINKED
+                : "\nChiqish: /unlink";
+            $this->bot->sendMessage($chatId, "Ulangan: {$user->email}.{$help}");
 
             return;
         }
@@ -83,6 +120,41 @@ class TelegramAuthHandler
 
         $this->forgetState($chatId);
         $this->bot->sendMessage($chatId, 'Telegram ulanish uzildi.');
+    }
+
+    private function handleSettingsPrompt(string $chatId): void
+    {
+        $this->putState($chatId, ['step' => 'awaiting_settings']);
+        $this->bot->sendMessage(
+            $chatId,
+            "Xabar filtri (raqam yoki kod yuboring):\n1) all — hammasi\n2) device — faqat qurilma\n3) expiry — faqat muddat\n4) none — o‘chirish"
+        );
+    }
+
+    private function handleSettingsChoice(string $chatId, User $user, string $text): void
+    {
+        $map = [
+            '1' => 'all',
+            'all' => 'all',
+            '2' => 'device',
+            'device' => 'device',
+            '3' => 'expiry',
+            'expiry' => 'expiry',
+            '4' => 'none',
+            'none' => 'none',
+        ];
+
+        $choice = $map[mb_strtolower(trim($text))] ?? null;
+
+        if ($choice === null) {
+            $this->bot->sendMessage($chatId, 'Noto‘g‘ri tanlov. 1–4 yoki all/device/expiry/none yuboring.');
+
+            return;
+        }
+
+        $user->forceFill(['telegram_notify_prefs' => $choice])->save();
+        $this->forgetState($chatId);
+        $this->bot->sendMessage($chatId, "Xabar filtri: {$choice}");
     }
 
     private function handleEmail(string $chatId, string $email): void
@@ -118,7 +190,12 @@ class TelegramAuthHandler
 
         $user->forceFill(['telegram_chat_id' => $chatId])->save();
         $this->forgetState($chatId);
-        $this->bot->sendMessage($chatId, 'Muvaffaqiyatli ulandingiz.');
+
+        $suffix = $user->hasRole('super-admin')
+            ? "\n\n".self::HELP_LINKED
+            : '';
+
+        $this->bot->sendMessage($chatId, 'Muvaffaqiyatli ulandingiz.'.$suffix);
     }
 
     /**
