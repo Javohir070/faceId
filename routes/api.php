@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\TelegramWebhookController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\WebhookController;
-
 Route::post('/webhooks/hikvision/events/{secret?}', [WebhookController::class, 'hikvision']);
+
+Route::post('/telegram/webhook', TelegramWebhookController::class)
+    ->middleware('telegram.webhook');
