@@ -9,7 +9,7 @@ class PullReportEventsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(config('menu_permissions.resources')['reports']) ?? false;
+        return $this->user()?->can(config('menu_permissions.resources')['reports-pull']) ?? false;
     }
 
     /**

@@ -3,6 +3,7 @@ import { Button, Input, Select, Space } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
+import EmployeeDevicesPanel from '../../../Components/EmployeeDevicesPanel';
 import FaceCaptureField from '../../../Components/FaceCaptureField';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
@@ -13,6 +14,8 @@ function generateCardNumber() {
 
 export default function Form({ employee, suggestedCard = '', departments = [], schedules = [] }) {
     const isEdit = !!employee;
+    const linkedDevices = employee?.devices ?? [];
+    const cardLocked = isEdit && linkedDevices.length > 0;
 
     const { data, setData, post, processing, errors } = useForm({
         name: employee?.name || '',
@@ -60,7 +63,14 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                                 />
                             </FormField>
 
-                            <FormField label="Karta" error={errors.card} required>
+                            <FormField
+                                label="Karta"
+                                error={errors.card}
+                                required
+                                hint={cardLocked
+                                    ? 'Karta raqamini o‘zgartirish uchun avval xodimni qurilmalardan o‘chiring.'
+                                    : undefined}
+                            >
                                 <Space.Compact className="w-full">
                                     <Input
                                         size="large"
@@ -69,6 +79,7 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                                         inputMode="numeric"
                                         maxLength={14}
                                         placeholder="1–14 xonali son"
+                                        disabled={cardLocked}
                                         onChange={(e) => {
                                             const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
                                             setData('card', digits);
@@ -78,6 +89,7 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                                         size="large"
                                         icon={<ReloadOutlined />}
                                         title="Yangi raqam generatsiya qilish"
+                                        disabled={cardLocked}
                                         onClick={() => setData('card', generateCardNumber())}
                                     />
                                 </Space.Compact>
@@ -180,6 +192,15 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                     </aside>
                 </div>
             </FormCard>
+
+            {isEdit ? (
+                <div className="mt-6">
+                    <EmployeeDevicesPanel
+                        employeeId={employee.id}
+                        devices={linkedDevices}
+                    />
+                </div>
+            ) : null}
         </AdminLayout>
     );
 }

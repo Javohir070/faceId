@@ -84,10 +84,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('schedules', ScheduleController::class)
             ->middleware('permission:'.$menuPermissions['schedules']);
         Route::get('employees/pull', [EmployeeController::class, 'pull'])
-            ->middleware('permission:'.$menuPermissions['employees'])
+            ->middleware('permission:'.$menuPermissions['employees-pull'])
             ->name('employees.pull');
         Route::post('employees/pull', [EmployeeController::class, 'pullStore'])
-            ->middleware('permission:'.$menuPermissions['employees'])
+            ->middleware('permission:'.$menuPermissions['employees-pull'])
             ->name('employees.pull.store');
         Route::get('employees/export', [EmployeeController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['employees'])
@@ -101,10 +101,10 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.remove-devices');
         Route::get('reports/pull', [ReportController::class, 'pull'])
-            ->middleware('permission:'.$menuPermissions['reports'])
+            ->middleware('permission:'.$menuPermissions['reports-pull'])
             ->name('reports.pull');
         Route::post('reports/pull', [ReportController::class, 'pullStore'])
-            ->middleware('permission:'.$menuPermissions['reports'])
+            ->middleware('permission:'.$menuPermissions['reports-pull'])
             ->name('reports.pull.store');
         Route::get('reports', [ReportController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['reports'])

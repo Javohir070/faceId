@@ -2,9 +2,9 @@ import {
     AppstoreOutlined,
     BankOutlined,
     CalendarOutlined,
-    CloudDownloadOutlined,
     ClusterOutlined,
     FileTextOutlined,
+    HistoryOutlined,
     HomeOutlined,
     IdcardOutlined,
     KeyOutlined,
@@ -12,6 +12,7 @@ import {
     SettingOutlined,
     SyncOutlined,
     TeamOutlined,
+    UserAddOutlined,
 } from '@ant-design/icons';
 import { route } from '../routes';
 
@@ -29,52 +30,24 @@ export const adminNavGroups = [
             { key: 'schedules', href: route('admin.schedules.index'), label: 'Jadvallar', icon: CalendarOutlined },
             {
                 key: 'employees-group',
+                permission: 'employees',
                 label: 'Xodimlar',
                 icon: IdcardOutlined,
-                children: [
-                    {
-                        key: 'employees',
-                        permission: 'employees',
-                        href: route('admin.employees.index'),
-                        label: "Ro'yxat",
-                        icon: IdcardOutlined,
-                    },
-                    {
-                        key: 'employees-pull',
-                        permission: 'employees',
-                        href: route('admin.employees.pull'),
-                        label: 'Xodim tortish',
-                        icon: CloudDownloadOutlined,
-                    },
-                    {
-                        key: 'notes',
-                        permission: 'notes',
-                        href: route('admin.notes.index'),
-                        label: 'Izohlar',
-                        icon: FileTextOutlined,
-                    },
-                ],
+                href: route('admin.employees.index'),
+            },
+            {
+                key: 'notes',
+                permission: 'notes',
+                href: route('admin.notes.index'),
+                label: 'Ish vaqtida ruxsatlar',
+                icon: FileTextOutlined,
             },
             {
                 key: 'reports-group',
                 label: 'Hisobotlar',
+                permission: 'reports',
+                href: route('admin.reports.index'),
                 icon: FileTextOutlined,
-                children: [
-                    {
-                        key: 'reports-index',
-                        permission: 'reports',
-                        href: route('admin.reports.index'),
-                        label: "Ro'yxat",
-                        icon: FileTextOutlined,
-                    },
-                    {
-                        key: 'reports-pull',
-                        permission: 'reports',
-                        href: route('admin.reports.pull'),
-                        label: 'Event tortish',
-                        icon: CloudDownloadOutlined,
-                    },
-                ],
             },
             {
                 key: 'settings',
@@ -84,6 +57,20 @@ export const adminNavGroups = [
                     { key: 'users', href: route('admin.users.index'), label: 'Foydalanuvchilar', icon: TeamOutlined },
                     { key: 'roles', href: route('admin.roles.index'), label: 'Rollar', icon: SafetyCertificateOutlined },
                     { key: 'permissions', href: route('admin.permissions.index'), label: 'Ruxsatlar', icon: KeyOutlined },
+                    {
+                        key: 'reports-pull',
+                        permission: 'reports-pull',
+                        href: route('admin.reports.pull'),
+                        label: 'Event tortish',
+                        icon: HistoryOutlined,
+                    },
+                    {
+                        key: 'employees-pull',
+                        permission: 'employees-pull',
+                        href: route('admin.employees.pull'),
+                        label: 'Xodim tortish',
+                        icon: UserAddOutlined,
+                    },
                 ],
             },
         ],

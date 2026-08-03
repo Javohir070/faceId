@@ -31,7 +31,14 @@ class RoleService
             ->prepend(config('menu_permissions.home'), 'home')
             ->values();
 
-        $settingsPermissions = collect(['Sozlamalar', 'Foydalanuvchilar', 'Rollar', 'Ruxsatlar']);
+        $settingsPermissions = collect([
+            'Sozlamalar',
+            'Foydalanuvchilar',
+            'Rollar',
+            'Ruxsatlar',
+            'Event tortish',
+            'Xodim tortish',
+        ]);
 
         $permissions = $this->permissionRepository->allOrdered();
 

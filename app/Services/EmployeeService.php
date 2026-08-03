@@ -102,7 +102,7 @@ class EmployeeService
 
     public function loadForEdit(Employee $employee): Employee
     {
-        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face']);
+        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face', 'devices']);
     }
 
     private function syncFace(Employee $employee, UploadedFile $file): Face

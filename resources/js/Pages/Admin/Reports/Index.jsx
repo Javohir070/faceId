@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Button, DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
@@ -22,6 +22,7 @@ export default function Index({
     categories,
     schedules,
 }) {
+    const can = usePage().props.can || {};
     const [form, setForm] = useState({
         employee_id: filters.employee_id ?? null,
         department_id: filters.department_id ?? null,
@@ -93,12 +94,14 @@ export default function Index({
                         >
                             Excel yuklab olish
                         </a>
-                        <Link
-                            href={route('admin.reports.pull')}
-                            className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700"
-                        >
-                            Qurilmadan tortish
-                        </Link>
+                        {can['reports-pull'] ? (
+                            <Link
+                                href={route('admin.reports.pull')}
+                                className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700"
+                            >
+                                Qurilmadan tortish
+                            </Link>
+                        ) : null}
                     </div>
                 )}
             />
