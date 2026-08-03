@@ -34,6 +34,7 @@ const routeBuilders = {
     ...resource('admin.departments', '/admin/departments'),
     ...resource('admin.schedules', '/admin/schedules'),
     ...resource('admin.employees', '/admin/employees'),
+    ...resource('admin.notes', '/admin/notes'),
     'admin.employees.pull': () => '/admin/employees/pull',
     'admin.employees.pull.store': () => '/admin/employees/pull',
     'admin.employees.export': () => '/admin/employees/export',

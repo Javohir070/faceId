@@ -7,6 +7,7 @@ use App\Http\Controllers\DeviceActionController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -93,6 +94,9 @@ Route::middleware('auth')->group(function () {
             ->name('employees.export');
         Route::resource('employees', EmployeeController::class)
             ->middleware('permission:'.$menuPermissions['employees']);
+        Route::resource('notes', NoteController::class)
+            ->except('show')
+            ->middleware('permission:'.$menuPermissions['notes']);
         Route::post('employees/{employee}/remove-devices', [EmployeeController::class, 'removeDevices'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.remove-devices');
