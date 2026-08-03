@@ -6,6 +6,7 @@ use App\Interfaces\CategoryRepositoryInterface;
 use App\Interfaces\DepartmentRepositoryInterface;
 use App\Interfaces\DeviceRepositoryInterface;
 use App\Interfaces\EmployeeRepositoryInterface;
+use App\Interfaces\NoteRepositoryInterface;
 use App\Interfaces\PermissionRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
@@ -14,6 +15,7 @@ use App\Repositories\CategoryRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\DeviceRepository;
 use App\Repositories\EmployeeRepository;
+use App\Repositories\NoteRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleRepository;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         DepartmentRepositoryInterface::class => DepartmentRepository::class,
         ScheduleRepositoryInterface::class => ScheduleRepository::class,
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
+        NoteRepositoryInterface::class => NoteRepository::class,
     ];
 
     public function register(): void
