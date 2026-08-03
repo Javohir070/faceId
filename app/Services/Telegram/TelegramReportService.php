@@ -2,8 +2,10 @@
 
 namespace App\Services\Telegram;
 
+use App\Enums\NoteType;
 use App\Models\Device;
 use App\Models\Employee;
+use App\Models\Note;
 use App\Models\Report;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -154,6 +156,16 @@ class TelegramReportService
             ->unique('employee_id')
             ->keyBy('employee_id');
 
+        $excusedLateIds = Note::query()
+            ->whereDate('dt', $start->toDateString())
+            ->where('type', NoteType::CameLate)
+            ->pluck('employee_id');
+
+        $excusedAbsentIds = Note::query()
+            ->whereDate('dt', $start->toDateString())
+            ->where('type', NoteType::Absent)
+            ->pluck('employee_id');
+
         $late = collect();
         $absent = collect();
 
@@ -168,15 +180,17 @@ class TelegramReportService
             $first = $firstEntries->get($employee->id);
 
             if ($first === null) {
-                $absent->push([
-                    'name' => $employee->name,
-                    'card' => $employee->card,
-                ]);
+                if (! $excusedAbsentIds->contains($employee->id)) {
+                    $absent->push([
+                        'name' => $employee->name,
+                        'card' => $employee->card,
+                    ]);
+                }
 
                 continue;
             }
 
-            if (Carbon::parse($first->occurred_at)->gt($deadline)) {
+            if (Carbon::parse($first->occurred_at)->gt($deadline) && ! $excusedLateIds->contains($employee->id)) {
                 $late->push([
                     'name' => $employee->name,
                     'card' => $employee->card,

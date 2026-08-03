@@ -46,6 +46,13 @@ export const adminNavGroups = [
                         label: 'Xodim tortish',
                         icon: CloudDownloadOutlined,
                     },
+                    {
+                        key: 'notes',
+                        permission: 'notes',
+                        href: route('admin.notes.index'),
+                        label: 'Izohlar',
+                        icon: FileTextOutlined,
+                    },
                 ],
             },
             {

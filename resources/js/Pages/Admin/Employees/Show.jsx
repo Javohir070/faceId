@@ -183,7 +183,57 @@ function EmployeeDevicesPanel({ employeeId, devices }) {
     );
 }
 
-export default function Show({ employee }) {
+function EmployeeNotesPanel({ employeeId, notes }) {
+    const createHref = `${route('admin.notes.create')}?employee_id=${employeeId}`;
+
+    return (
+        <div className="mt-5 rounded-xl border border-line bg-surface shadow-ambient">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+                <h2 className="text-base font-extrabold text-ink">Izohlar</h2>
+                <Button type="primary" className="!font-bold" href={createHref}>
+                    Izoh qo‘shish
+                </Button>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="data-table min-w-full">
+                    <thead>
+                        <tr>
+                            <th className="w-16">№</th>
+                            <th>Tip</th>
+                            <th>Sana</th>
+                            <th>Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {notes.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="py-10 text-center text-sm text-ink-muted">
+                                    Xodim uchun izohlar mavjud emas.
+                                </td>
+                            </tr>
+                        ) : notes.map((note, index) => (
+                            <tr key={note.id}>
+                                <td className="font-medium text-ink-subtle">{index + 1}</td>
+                                <td className="whitespace-nowrap font-semibold text-ink">
+                                    {note.type_label}
+                                </td>
+                                <td className="whitespace-nowrap font-medium text-ink-muted">
+                                    {note.dt || '—'}
+                                </td>
+                                <td className="max-w-xl whitespace-normal font-medium text-ink-muted">
+                                    {note.note || '—'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+export default function Show({ employee, notes = [] }) {
     return (
         <AdminLayout title="Xodim">
             <ShowPage
@@ -219,6 +269,8 @@ export default function Show({ employee }) {
                         devices={employee.devices ?? []}
                     />
                 </div>
+
+                <EmployeeNotesPanel employeeId={employee.id} notes={notes} />
             </ShowPage>
         </AdminLayout>
     );

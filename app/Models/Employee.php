@@ -101,6 +101,11 @@ class Employee extends Model
         return $this->hasMany(Report::class);
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
     /**
      * Generate a unique 8-digit card number.
      */
