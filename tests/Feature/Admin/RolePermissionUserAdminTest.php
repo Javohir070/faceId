@@ -63,6 +63,7 @@ class RolePermissionUserAdminTest extends TestCase
                 'email' => 'new-user@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
+                'department_id' => \App\Models\Department::factory()->create()->id,
                 'roles' => ['editor'],
             ])
             ->assertRedirect(route('admin.users.index'));

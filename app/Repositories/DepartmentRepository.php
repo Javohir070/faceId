@@ -19,6 +19,7 @@ class DepartmentRepository implements DepartmentRepositoryInterface
     public function allOrdered(): Collection
     {
         return Department::query()
+            ->visibleTo(auth()->user())
             ->orderBy('name')
             ->get();
     }

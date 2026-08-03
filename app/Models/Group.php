@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\GroupFactory;
+use App\Models\Scopes\BelongsToDepartmentScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,11 @@ class Group extends Model
         'department_id',
         'parent_id',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BelongsToDepartmentScope);
+    }
 
     public function department(): BelongsTo
     {

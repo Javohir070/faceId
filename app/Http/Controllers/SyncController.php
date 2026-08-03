@@ -66,7 +66,7 @@ class SyncController extends Controller
             'devices' => $devices,
             'employees' => $employees,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

@@ -51,7 +51,7 @@ class ReportController extends Controller
                 'type' => isset($filters['type']) ? (int) $filters['type'] : null,
             ],
             'employees' => Employee::query()->orderBy('name')->get(['id', 'name']),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
             'devices' => Device::query()->ordered()->get(['id', 'name']),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'schedules' => Schedule::query()->orderBy('name')->get(['id', 'name']),

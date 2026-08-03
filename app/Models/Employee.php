@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\EmployeeFactory;
+use App\Models\Scopes\BelongsToDepartmentScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -52,6 +53,8 @@ class Employee extends Model
 
     protected static function booted(): void
     {
+        static::addGlobalScope(new BelongsToDepartmentScope);
+
         static::updating(function (Employee $employee): void {
             if (! $employee->isDirty('valid_to_dt')) {
                 return;
@@ -120,7 +123,7 @@ class Employee extends Model
         for ($i = 0; $i < $attempts; $i++) {
             $card = (string) random_int(10000000, 99999999);
 
-            if (! static::query()->where('card', $card)->exists()) {
+            if (! static::query()->withoutGlobalScopes()->where('card', $card)->exists()) {
                 return $card;
             }
         }

@@ -1,19 +1,22 @@
 import { useForm } from '@inertiajs/react';
-import { Checkbox, Input } from 'antd';
+import { Checkbox, Input, Select } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
-export default function Form({ user, roles = [] }) {
+export default function Form({ user, roles = [], departments = [] }) {
     const isEdit = !!user;
     const { data, setData, post, put, processing, errors } = useForm({
         name: user?.name || '',
         email: user?.email || '',
         password: '',
         password_confirmation: '',
+        department_id: user?.department_id || null,
         roles: user?.roles || [],
     });
+
+    const isSuperAdmin = data.roles.includes('super-admin');
 
     const toggleRole = (name) => {
         setData(
@@ -34,7 +37,7 @@ export default function Form({ user, roles = [] }) {
         <AdminLayout title={isEdit ? 'Foydalanuvchini tahrirlash' : "Foydalanuvchi qo'shish"}>
             <FormCard
                 title={isEdit ? 'Foydalanuvchini tahrirlash' : "Yangi foydalanuvchi"}
-                subtitle="Ism, email, parol va rollarni belgilang."
+                subtitle="Ism, email, parol, bo‘lim va rollarni belgilang."
                 backHref={route('admin.users.index')}
                 onSubmit={submit}
                 processing={processing}
@@ -54,6 +57,22 @@ export default function Form({ user, roles = [] }) {
                         value={data.email}
                         status={errors.email ? 'error' : undefined}
                         onChange={(e) => setData('email', e.target.value)}
+                    />
+                </FormField>
+                <FormField
+                    label="Bo‘lim"
+                    error={errors.department_id}
+                    required={!isSuperAdmin}
+                    hint={isSuperAdmin ? 'super-admin uchun ixtiyoriy (barcha bo‘limlar).' : null}
+                >
+                    <Select
+                        allowClear={isSuperAdmin}
+                        placeholder="Bo‘limni tanlang"
+                        value={data.department_id}
+                        status={errors.department_id ? 'error' : undefined}
+                        options={departments.map((d) => ({ value: d.id, label: d.name }))}
+                        onChange={(value) => setData('department_id', value ?? null)}
+                        className="w-full"
                     />
                 </FormField>
                 <div className="grid gap-4 md:grid-cols-2">

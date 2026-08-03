@@ -26,6 +26,7 @@ class GroupRepository implements GroupRepositoryInterface
     public function treeForIndex(?int $departmentId = null): array
     {
         $departments = Department::query()
+            ->visibleTo(auth()->user())
             ->when($departmentId !== null, fn ($query) => $query->where('id', $departmentId))
             ->orderBy('name')
             ->get(['id', 'name']);

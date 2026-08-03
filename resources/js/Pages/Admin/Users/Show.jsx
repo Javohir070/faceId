@@ -14,16 +14,26 @@ export default function Show({ user }) {
                 deleteHref={route('admin.users.destroy', user.id)}
                 maxWidth="max-w-2xl"
             >
-                <div>
-                    <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-ink-subtle">
-                        Rollar
-                    </h2>
-                    <div className="flex flex-wrap gap-2">
-                        {user.roles?.length
-                            ? user.roles.map((role) => (
-                                <StatusTag key={role.id} tone="info">{role.name}</StatusTag>
-                            ))
-                            : <span className="text-sm font-semibold text-ink-subtle">—</span>}
+                <div className="space-y-6">
+                    <div>
+                        <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-ink-subtle">
+                            Bo‘lim
+                        </h2>
+                        <p className="text-sm font-semibold text-ink">
+                            {user.department?.name || '—'}
+                        </p>
+                    </div>
+                    <div>
+                        <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-ink-subtle">
+                            Rollar
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                            {user.roles?.length
+                                ? user.roles.map((role) => (
+                                    <StatusTag key={role.id} tone="info">{role.name}</StatusTag>
+                                ))
+                                : <span className="text-sm font-semibold text-ink-subtle">—</span>}
+                        </div>
                     </div>
                 </div>
             </ShowPage>

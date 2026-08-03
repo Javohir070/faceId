@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Department;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -18,8 +19,20 @@ class UserController extends Controller
 
     public function index(): Response
     {
+        $users = $this->userService->paginate(12);
+
+        $users->getCollection()->transform(function (User $user): array {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department?->only(['id', 'name']),
+                'roles' => $user->roles->map->only(['id', 'name'])->values(),
+            ];
+        });
+
         return Inertia::render('Admin/Users/Index', [
-            'users' => $this->userService->paginate(12),
+            'users' => $users,
         ]);
     }
 
@@ -27,6 +40,7 @@ class UserController extends Controller
     {
         return Inertia::render('Admin/Users/Form', [
             'roles' => $this->userService->getRolesForForm()->map->only(['id', 'name'])->values(),
+            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -53,6 +67,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'created_at' => $user->created_at,
+                'department' => $user->department?->only(['id', 'name']),
                 'roles' => $user->roles->map->only(['id', 'name'])->values(),
                 'permissions' => $user->permissions->map->only(['id', 'name'])->values(),
             ],
@@ -68,9 +83,11 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'department_id' => $user->department_id,
                 'roles' => $user->roles->pluck('name')->values(),
             ],
             'roles' => $this->userService->getRolesForForm()->map->only(['id', 'name'])->values(),
+            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

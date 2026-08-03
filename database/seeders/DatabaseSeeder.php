@@ -59,13 +59,21 @@ class DatabaseSeeder extends Seeder
         );
         $admin->syncRoles(['super-admin']);
 
+        $defaultDepartment = \App\Models\Department::query()->firstOrCreate(
+            ['name' => 'Umumiy'],
+        );
+
         $testUser = User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
+                'department_id' => $defaultDepartment->id,
             ],
         );
+        if ($testUser->department_id === null) {
+            $testUser->update(['department_id' => $defaultDepartment->id]);
+        }
         $testUser->syncRoles(['user']);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

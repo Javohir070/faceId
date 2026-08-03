@@ -16,7 +16,8 @@ class NoteRepository implements NoteRepositoryInterface
     public function filteredQuery(array $filters = []): Builder
     {
         $query = Note::query()
-            ->with(['employee:id,name']);
+            ->with(['employee:id,name'])
+            ->whereHas('employee');
 
         if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);

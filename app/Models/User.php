@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -32,6 +33,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'department_id',
         'telegram_chat_id',
         'telegram_notify_prefs',
     ];
@@ -59,8 +61,18 @@ class User extends Authenticatable
         ];
     }
 
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function devices(): HasMany
     {
         return $this->hasMany(Device::class);
+    }
+
+    public function isDepartmentScoped(): bool
+    {
+        return ! $this->hasRole('super-admin');
     }
 }

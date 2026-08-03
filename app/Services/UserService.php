@@ -75,11 +75,11 @@ class UserService
 
     public function loadForShow(User $user): User
     {
-        return $this->userRepository->loadRelations($user, ['roles', 'permissions']);
+        return $this->userRepository->loadRelations($user, ['roles', 'permissions', 'department']);
     }
 
     public function loadForEdit(User $user): User
     {
-        return $this->userRepository->loadRelations($user, ['roles']);
+        return $this->userRepository->loadRelations($user, ['roles', 'department']);
     }
 }

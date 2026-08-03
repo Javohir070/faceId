@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\MergesScopedDepartmentId;
 use App\Models\Group;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,9 +10,16 @@ use Illuminate\Validation\Validator;
 
 class StoreGroupRequest extends FormRequest
 {
+    use MergesScopedDepartmentId;
+
     public function authorize(): bool
     {
         return $this->user()?->can(config('menu_permissions.resources')['groups']) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->mergeScopedDepartmentId();
     }
 
     /**

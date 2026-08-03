@@ -11,7 +11,7 @@ class UserRepository implements UserRepositoryInterface
     public function paginate(int $perPage = 12): LengthAwarePaginator
     {
         return User::query()
-            ->with('roles')
+            ->with(['roles', 'department:id,name'])
             ->latest()
             ->paginate($perPage);
     }

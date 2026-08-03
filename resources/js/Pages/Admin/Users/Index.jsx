@@ -33,6 +33,7 @@ export default function Index({ users }) {
                             <th className="w-16">N#</th>
                             <th>Foydalanuvchi</th>
                             <th>Elektron pochta</th>
+                            <th>Bo‘lim</th>
                             <th>Rollar</th>
                             <th className="text-right">Amallar</th>
                         </tr>
@@ -55,6 +56,7 @@ export default function Index({ users }) {
                                         </div>
                                     </td>
                                     <td className="font-medium">{user.email}</td>
+                                    <td className="font-medium">{user.department?.name || '—'}</td>
                                     <td>
                                         <div className="flex flex-wrap gap-1.5">
                                             {(user.roles || []).length > 0 ? (

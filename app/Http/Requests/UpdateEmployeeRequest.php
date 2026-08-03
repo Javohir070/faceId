@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\MergesScopedDepartmentId;
 use App\Models\Employee;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateEmployeeRequest extends FormRequest
 {
+    use MergesScopedDepartmentId;
+
     public function authorize(): bool
     {
         return $this->user()?->can('Xodimlar') ?? false;
@@ -15,6 +18,8 @@ class UpdateEmployeeRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->mergeScopedDepartmentId();
+
         if ($this->input('group_id') === '' || $this->input('group_id') === null) {
             $this->merge(['group_id' => null]);
         }

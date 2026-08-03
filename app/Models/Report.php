@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\ReportFactory;
+use App\Models\Scopes\BelongsToDepartmentScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +39,11 @@ class Report extends Model
             'type' => 'integer',
             'occurred_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BelongsToDepartmentScope);
     }
 
     public function employee(): BelongsTo
