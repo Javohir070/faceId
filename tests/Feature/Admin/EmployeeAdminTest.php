@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\NoteType;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Face;
+use App\Models\Note;
 use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -169,6 +171,39 @@ class EmployeeAdminTest extends TestCase
             'device_id' => $device->id,
             'employee_id' => $employee->id,
         ]);
+    }
+
+    public function test_employee_show_lists_notes_newest_first_with_type_labels(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+        $employee = Employee::factory()->create();
+
+        Note::factory()->create([
+            'employee_id' => $employee->id,
+            'type' => NoteType::CameLate,
+            'dt' => '2026-08-01',
+            'note' => 'Birinchi izoh.',
+        ]);
+        Note::factory()->create([
+            'employee_id' => $employee->id,
+            'type' => NoteType::Absent,
+            'dt' => '2026-08-03',
+            'note' => 'Eng yangi izoh.',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.employees.show', $employee))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Show')
+                ->has('notes', 2)
+                ->where('notes.0.type', NoteType::Absent->value)
+                ->where('notes.0.type_label', NoteType::Absent->label())
+                ->where('notes.0.dt', '2026-08-03')
+                ->where('notes.0.note', 'Eng yangi izoh.')
+                ->where('notes.1.type', NoteType::CameLate->value));
     }
 
     public function test_unauthorized_user_cannot_access_employees(): void

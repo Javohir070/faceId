@@ -11,6 +11,7 @@ use App\Http\Resources\EmployeeResource;
 use App\Models\Category;
 use App\Models\Device;
 use App\Models\Employee;
+use App\Models\Note;
 use App\Services\EmployeeService;
 use App\Services\Hikvision\EmployeePullService;
 use App\Services\Hikvision\EmployeeSyncService;
@@ -127,9 +128,19 @@ class EmployeeController extends Controller
     public function show(Request $request, Employee $employee): Response
     {
         $employee = $this->employeeService->loadForShow($employee);
+        $employee->load([
+            'notes' => fn ($query) => $query->orderByDesc('dt')->orderByDesc('id'),
+        ]);
 
         return Inertia::render('Admin/Employees/Show', [
             'employee' => EmployeeResource::make($employee)->toArray($request),
+            'notes' => $employee->notes->map(fn (Note $note): array => [
+                'id' => $note->id,
+                'type' => $note->type->value,
+                'type_label' => $note->type->label(),
+                'dt' => $note->dt->format('Y-m-d'),
+                'note' => $note->note,
+            ])->values(),
         ]);
     }
 
