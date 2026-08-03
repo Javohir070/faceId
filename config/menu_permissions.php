@@ -7,6 +7,7 @@ return [
         'categories' => 'Kategoriyalar',
         'devices' => 'Qurilmalar',
         'departments' => "Bo'limlar",
+        'groups' => 'Guruhlar',
         'schedules' => 'Jadvallar',
         'employees' => 'Xodimlar',
         'employees-pull' => 'Xodim tortish',

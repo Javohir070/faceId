@@ -406,6 +406,33 @@
     #admin-sidebar nav a[aria-current='page']:active {
         color: rgb(var(--color-brand-700));
     }
+
+    .groups-tree .ant-tree {
+        background: transparent;
+        font-family: inherit;
+    }
+
+    .groups-tree .ant-tree-treenode {
+        width: 100%;
+        padding: 2px 0;
+        align-items: center;
+    }
+
+    .groups-tree .ant-tree-node-content-wrapper {
+        flex: 1;
+        min-width: 0;
+        border-radius: 0.5rem;
+        transition: background-color 150ms ease;
+    }
+
+    .groups-tree .ant-tree-node-content-wrapper:hover {
+        background: rgb(var(--color-surface-muted));
+    }
+
+    .groups-tree .ant-tree-checkbox + span {
+        width: 100%;
+        min-width: 0;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

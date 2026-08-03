@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Face;
+use App\Models\Group;
 use App\Models\Note;
 use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,6 +69,7 @@ class EmployeeAdminTest extends TestCase
                 'gender' => 1,
                 'position' => 'Operator',
                 'department_id' => $department->id,
+                'group_id' => null,
                 'schedule_id' => $schedule->id,
                 'valid_from_dt' => '2026-01-01T09:00',
                 'valid_to_dt' => '2026-12-31T18:00',
@@ -81,6 +83,7 @@ class EmployeeAdminTest extends TestCase
         $this->assertSame(1, $employee->gender);
         $this->assertSame('Operator', $employee->position);
         $this->assertSame($department->id, $employee->department_id);
+        $this->assertNull($employee->group_id);
         $this->assertSame($schedule->id, $employee->schedule_id);
         $this->assertDatabaseHas('faces', ['employee_id' => $employee->id]);
         $this->assertNotEmpty($employee->face?->face);
@@ -362,5 +365,54 @@ class EmployeeAdminTest extends TestCase
                 ->component('Admin/Employees/Index')
                 ->has('employees.data', 1)
                 ->where('employees.data.0.card', '11112222'));
+    }
+
+    public function test_employee_can_be_saved_with_group_from_same_department(): void
+    {
+        Storage::fake('local');
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $department = Department::factory()->create();
+        $otherDepartment = Department::factory()->create();
+        $schedule = Schedule::factory()->create();
+        $group = Group::factory()->create(['department_id' => $department->id]);
+        $foreignGroup = Group::factory()->create(['department_id' => $otherDepartment->id]);
+        $face = UploadedFile::fake()->image('face.jpg', 200, 200);
+
+        $this->actingAs($admin)
+            ->post(route('admin.employees.store'), [
+                'name' => 'Grouped User',
+                'card' => '55556666',
+                'gender' => 1,
+                'department_id' => $department->id,
+                'group_id' => $foreignGroup->id,
+                'schedule_id' => $schedule->id,
+                'valid_from_dt' => '2026-01-01T09:00',
+                'valid_to_dt' => '2026-12-31T18:00',
+                'face' => $face,
+            ])
+            ->assertSessionHasErrors('group_id');
+
+        $this->actingAs($admin)
+            ->post(route('admin.employees.store'), [
+                'name' => 'Grouped User',
+                'card' => '55556666',
+                'gender' => 1,
+                'department_id' => $department->id,
+                'group_id' => $group->id,
+                'schedule_id' => $schedule->id,
+                'valid_from_dt' => '2026-01-01T09:00',
+                'valid_to_dt' => '2026-12-31T18:00',
+                'face' => $face,
+            ])
+            ->assertRedirect(route('admin.employees.index'));
+
+        $this->assertDatabaseHas('employees', [
+            'card' => '55556666',
+            'group_id' => $group->id,
+        ]);
     }
 }

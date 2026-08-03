@@ -59,6 +59,7 @@ class EmployeeResource extends JsonResource
             'valid_to_dt' => $this->valid_to_dt?->format('Y-m-d H:i'),
             'created_at' => $this->created_at,
             'department' => $this->department?->only(['id', 'name']),
+            'group' => $this->group?->only(['id', 'name']),
             'schedule' => $this->schedule?->only(['id', 'name']),
             'face_preview' => self::facePreviewUrl($this->face?->face),
             'devices' => $this->devices
@@ -89,6 +90,7 @@ class EmployeeResource extends JsonResource
             'position' => $this->position,
             'schedule_id' => $this->schedule_id,
             'department_id' => $this->department_id,
+            'group_id' => $this->group_id,
             'valid_from_dt' => $this->valid_from_dt?->format('Y-m-d\TH:i'),
             'valid_to_dt' => $this->valid_to_dt?->format('Y-m-d\TH:i'),
             'face_preview' => self::facePreviewUrl($this->face?->face),

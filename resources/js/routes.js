@@ -32,6 +32,8 @@ const routeBuilders = {
     'admin.sync.transfer-one': () => '/admin/sync/transfer-one',
 
     ...resource('admin.departments', '/admin/departments'),
+    ...resource('admin.groups', '/admin/groups'),
+    'admin.groups.bulk-destroy': () => '/admin/groups/bulk-destroy',
     ...resource('admin.schedules', '/admin/schedules'),
     ...resource('admin.employees', '/admin/employees'),
     ...resource('admin.notes', '/admin/notes'),

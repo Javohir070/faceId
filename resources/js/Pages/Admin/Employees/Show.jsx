@@ -85,6 +85,7 @@ export default function Show({ employee, notes = [] }) {
 
                         <dl>
                             <DetailRow label="Bo'lim">{employee.department?.name || '—'}</DetailRow>
+                            <DetailRow label="Guruh">{employee.group?.name || '—'}</DetailRow>
                             <DetailRow label="Lavozim">{employee.position || '—'}</DetailRow>
                             <DetailRow label="Jins">{employee.gender_label || '—'}</DetailRow>
                             <DetailRow label="Jadval">{employee.schedule?.name || '—'}</DetailRow>

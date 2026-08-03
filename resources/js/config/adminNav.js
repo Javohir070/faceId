@@ -1,9 +1,11 @@
 import {
+    ApartmentOutlined,
     AppstoreOutlined,
     BankOutlined,
+    BarChartOutlined,
     CalendarOutlined,
     ClusterOutlined,
-    FileTextOutlined,
+    FormOutlined,
     HistoryOutlined,
     HomeOutlined,
     IdcardOutlined,
@@ -27,6 +29,7 @@ export const adminNavGroups = [
             { key: 'devices', href: route('admin.devices.index'), label: 'Qurilmalar', icon: ClusterOutlined },
             { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
             { key: 'departments', href: route('admin.departments.index'), label: "Bo'limlar", icon: BankOutlined },
+            { key: 'groups', href: route('admin.groups.index'), label: 'Guruhlar', icon: ApartmentOutlined },
             { key: 'schedules', href: route('admin.schedules.index'), label: 'Jadvallar', icon: CalendarOutlined },
             {
                 key: 'employees-group',
@@ -40,14 +43,14 @@ export const adminNavGroups = [
                 permission: 'notes',
                 href: route('admin.notes.index'),
                 label: 'Ish vaqtida ruxsatlar',
-                icon: FileTextOutlined,
+                icon: FormOutlined,
             },
             {
                 key: 'reports-group',
                 label: 'Hisobotlar',
                 permission: 'reports',
                 href: route('admin.reports.index'),
-                icon: FileTextOutlined,
+                icon: BarChartOutlined,
             },
             {
                 key: 'settings',

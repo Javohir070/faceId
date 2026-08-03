@@ -13,6 +13,13 @@ class UpdateEmployeeRequest extends FormRequest
         return $this->user()?->can('Xodimlar') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('group_id') === '' || $this->input('group_id') === null) {
+            $this->merge(['group_id' => null]);
+        }
+    }
+
     /**
      * @return array<string, array<int, mixed>|string>
      */
@@ -41,6 +48,13 @@ class UpdateEmployeeRequest extends FormRequest
             'position' => ['nullable', 'string', 'max:255'],
             'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
+            'group_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('groups', 'id')->where(
+                    fn ($query) => $query->where('department_id', $this->integer('department_id')),
+                ),
+            ],
             'valid_from_dt' => ['required', 'date'],
             'valid_to_dt' => ['required', 'date', 'after_or_equal:valid_from_dt'],
             'face' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:1024'],
@@ -58,6 +72,7 @@ class UpdateEmployeeRequest extends FormRequest
             'card.unique' => 'Bu karta raqami allaqachon band.',
             'gender.required' => 'Jinsni tanlang.',
             'gender.in' => 'Jins noto‘g‘ri: 1 — Erkak, 2 — Ayol.',
+            'group_id.exists' => 'Guruh tanlangan bo‘limga tegishli emas.',
             'face.max' => 'Yuz rasmi hajmi 1 MB dan oshmasligi kerak.',
         ];
     }

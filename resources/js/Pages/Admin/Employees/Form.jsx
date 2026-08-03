@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Button, Input, Select, Space } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
+import { useMemo } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import EmployeeDevicesPanel from '../../../Components/EmployeeDevicesPanel';
@@ -12,7 +13,13 @@ function generateCardNumber() {
     return String(Math.floor(10000000 + Math.random() * 90000000));
 }
 
-export default function Form({ employee, suggestedCard = '', departments = [], schedules = [] }) {
+export default function Form({
+    employee,
+    suggestedCard = '',
+    departments = [],
+    schedules = [],
+    groups = [],
+}) {
     const isEdit = !!employee;
     const linkedDevices = employee?.devices ?? [];
     const cardLocked = isEdit && linkedDevices.length > 0;
@@ -23,6 +30,7 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
         gender: employee?.gender ?? null,
         position: employee?.position || '',
         department_id: employee?.department_id || null,
+        group_id: employee?.group_id || null,
         schedule_id: employee?.schedule_id || null,
         valid_from_dt: employee?.valid_from_dt || '',
         valid_to_dt: employee?.valid_to_dt || '',
@@ -30,6 +38,16 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
         remove_face: false,
         _method: isEdit ? 'put' : undefined,
     });
+
+    const groupOptions = useMemo(() => {
+        if (!data.department_id) {
+            return [];
+        }
+
+        return groups
+            .filter((group) => group.department_id === data.department_id)
+            .map((group) => ({ value: group.id, label: group.name }));
+    }, [groups, data.department_id]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -135,10 +153,40 @@ export default function Form({ employee, suggestedCard = '', departments = [], s
                                         value: department.id,
                                         label: department.name,
                                     }))}
-                                    onChange={(value) => setData('department_id', value)}
+                                    onChange={(value) => {
+                                        setData({
+                                            ...data,
+                                            department_id: value,
+                                            group_id: null,
+                                        });
+                                    }}
                                 />
                             </FormField>
 
+                            <FormField
+                                label="Guruh"
+                                error={errors.group_id}
+                                hint={data.department_id
+                                    ? 'Ixtiyoriy — shu bo‘limdagi guruh.'
+                                    : 'Avval bo‘limni tanlang.'}
+                            >
+                                <Select
+                                    allowClear
+                                    showSearch
+                                    className="w-full"
+                                    size="large"
+                                    placeholder="Guruh tanlang (ixtiyoriy)"
+                                    optionFilterProp="label"
+                                    value={data.group_id}
+                                    status={errors.group_id ? 'error' : undefined}
+                                    disabled={!data.department_id}
+                                    options={groupOptions}
+                                    onChange={(value) => setData('group_id', value ?? null)}
+                                />
+                            </FormField>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <FormField label="Jadval" error={errors.schedule_id} required>
                                 <Select
                                     className="w-full"

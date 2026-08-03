@@ -6,6 +6,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DeviceActionController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PermissionController;
@@ -81,6 +82,11 @@ Route::middleware('auth')->group(function () {
             ->name('sync.transfer-one');
         Route::resource('departments', DepartmentController::class)
             ->middleware('permission:'.$menuPermissions['departments']);
+        Route::post('groups/bulk-destroy', [GroupController::class, 'bulkDestroy'])
+            ->middleware('permission:'.$menuPermissions['groups'])
+            ->name('groups.bulk-destroy');
+        Route::resource('groups', GroupController::class)
+            ->middleware('permission:'.$menuPermissions['groups']);
         Route::resource('schedules', ScheduleController::class)
             ->middleware('permission:'.$menuPermissions['schedules']);
         Route::get('employees/pull', [EmployeeController::class, 'pull'])

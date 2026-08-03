@@ -113,6 +113,7 @@ class EmployeeController extends Controller
             'suggestedCard' => Employee::generateUniqueCard(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
+            'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
         ]);
     }
 
@@ -164,6 +165,7 @@ class EmployeeController extends Controller
             'employee' => EmployeeResource::make($employee)->toArray($request),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
+            'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
         ]);
     }
 

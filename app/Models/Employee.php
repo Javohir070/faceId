@@ -33,6 +33,7 @@ class Employee extends Model
         'expiry_warned_at',
         'expiry_notified_at',
         'department_id',
+        'group_id',
     ];
 
     /**
@@ -82,6 +83,11 @@ class Employee extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
     }
 
     public function face(): HasOne

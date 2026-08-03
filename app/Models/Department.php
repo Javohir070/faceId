@@ -19,6 +19,11 @@ class Department extends Model
         'name',
     ];
 
+    public function groups(): HasMany
+    {
+        return $this->hasMany(Group::class);
+    }
+
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);

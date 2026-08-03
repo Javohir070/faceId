@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
                 'categories' => $user->can($menuPermissions['categories']),
                 'devices' => $user->can($menuPermissions['devices']),
                 'departments' => $user->can($menuPermissions['departments']),
+                'groups' => $user->can($menuPermissions['groups']),
                 'schedules' => $user->can($menuPermissions['schedules']),
                 'employees' => $user->can($menuPermissions['employees']),
                 'employees-pull' => $user->can($menuPermissions['employees-pull']),

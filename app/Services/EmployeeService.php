@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Interfaces\DepartmentRepositoryInterface;
 use App\Interfaces\EmployeeRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
+use App\Models\Group;
 use App\Models\Employee;
 use App\Models\Face;
 use App\Services\Hikvision\EmployeeSyncService;
@@ -39,6 +40,13 @@ class EmployeeService
     public function getSchedulesForForm(): Collection
     {
         return $this->scheduleRepository->allOrdered();
+    }
+
+    public function getGroupsForForm(): Collection
+    {
+        return Group::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'department_id']);
     }
 
     /**
@@ -97,12 +105,12 @@ class EmployeeService
 
     public function loadForShow(Employee $employee): Employee
     {
-        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face', 'devices']);
+        return $this->employeeRepository->loadRelations($employee, ['department', 'group', 'schedule', 'face', 'devices']);
     }
 
     public function loadForEdit(Employee $employee): Employee
     {
-        return $this->employeeRepository->loadRelations($employee, ['department', 'schedule', 'face', 'devices']);
+        return $this->employeeRepository->loadRelations($employee, ['department', 'group', 'schedule', 'face', 'devices']);
     }
 
     private function syncFace(Employee $employee, UploadedFile $file): Face

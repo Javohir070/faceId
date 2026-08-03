@@ -6,6 +6,7 @@ use App\Interfaces\CategoryRepositoryInterface;
 use App\Interfaces\DepartmentRepositoryInterface;
 use App\Interfaces\DeviceRepositoryInterface;
 use App\Interfaces\EmployeeRepositoryInterface;
+use App\Interfaces\GroupRepositoryInterface;
 use App\Interfaces\NoteRepositoryInterface;
 use App\Interfaces\PermissionRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
@@ -15,6 +16,7 @@ use App\Repositories\CategoryRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\DeviceRepository;
 use App\Repositories\EmployeeRepository;
+use App\Repositories\GroupRepository;
 use App\Repositories\NoteRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
         CategoryRepositoryInterface::class => CategoryRepository::class,
         DeviceRepositoryInterface::class => DeviceRepository::class,
         DepartmentRepositoryInterface::class => DepartmentRepository::class,
+        GroupRepositoryInterface::class => GroupRepository::class,
         ScheduleRepositoryInterface::class => ScheduleRepository::class,
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
         NoteRepositoryInterface::class => NoteRepository::class,
