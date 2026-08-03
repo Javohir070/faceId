@@ -30,6 +30,8 @@ class Employee extends Model
         'schedule_id',
         'valid_from_dt',
         'valid_to_dt',
+        'expiry_warned_at',
+        'expiry_notified_at',
         'department_id',
     ];
 
@@ -42,7 +44,25 @@ class Employee extends Model
             'gender' => 'integer',
             'valid_from_dt' => 'datetime',
             'valid_to_dt' => 'datetime',
+            'expiry_warned_at' => 'datetime',
+            'expiry_notified_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (Employee $employee): void {
+            if (! $employee->isDirty('valid_to_dt')) {
+                return;
+            }
+
+            $newValidTo = $employee->valid_to_dt;
+
+            if ($newValidTo !== null && $newValidTo->isFuture()) {
+                $employee->expiry_warned_at = null;
+                $employee->expiry_notified_at = null;
+            }
+        });
     }
 
     public function genderLabel(): string
