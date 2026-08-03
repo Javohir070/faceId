@@ -10,7 +10,10 @@ class TelegramBotService
 {
     public ?string $lastError = null;
 
-    public function sendMessage(string $chatId, string $text): bool
+    /**
+     * @param  array<string, mixed>|null  $replyMarkup
+     */
+    public function sendMessage(string $chatId, string $text, ?array $replyMarkup = null): bool
     {
         $this->lastError = null;
         $token = (string) config('telegram.token');
@@ -22,12 +25,18 @@ class TelegramBotService
             return false;
         }
 
+        $payload = [
+            'chat_id' => $chatId,
+            'text' => $text,
+        ];
+
+        if ($replyMarkup !== null) {
+            $payload['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE);
+        }
+
         try {
             $response = $this->http()
-                ->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                    'chat_id' => $chatId,
-                    'text' => $text,
-                ]);
+                ->post("https://api.telegram.org/bot{$token}/sendMessage", $payload);
 
             if (! $response->successful() || ! ($response->json('ok') ?? false)) {
                 $this->lastError = $response->body();
@@ -48,6 +57,30 @@ class TelegramBotService
                 'message' => $e->getMessage(),
             ]);
 
+            return false;
+        }
+    }
+
+    public function answerCallbackQuery(string $callbackQueryId, ?string $text = null): bool
+    {
+        $token = (string) config('telegram.token');
+
+        if ($token === '' || $callbackQueryId === '') {
+            return false;
+        }
+
+        $payload = ['callback_query_id' => $callbackQueryId];
+
+        if ($text !== null && $text !== '') {
+            $payload['text'] = $text;
+        }
+
+        try {
+            $response = $this->http()
+                ->post("https://api.telegram.org/bot{$token}/answerCallbackQuery", $payload);
+
+            return $response->successful() && ($response->json('ok') ?? false);
+        } catch (\Throwable) {
             return false;
         }
     }

@@ -47,7 +47,7 @@ class TelegramReportService
             "Bugun: {$entries} kirish, {$exits} chiqish",
             "Muddat: {$expiring} yaqin, {$expired} tugagan",
             '',
-            'Buyruqlar: /devices /expiry /settings /status',
+            'Pastdagi tugmalar orqali davom eting.',
         ]);
     }
 

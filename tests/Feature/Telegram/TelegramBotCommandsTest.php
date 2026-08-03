@@ -76,14 +76,57 @@ class TelegramBotCommandsTest extends TestCase
         });
     }
 
-    public function test_settings_updates_prefs(): void
+    public function test_settings_updates_prefs_via_inline_button(): void
     {
         $user = $this->createTelegramSuperAdmin(['telegram_chat_id' => '999', 'telegram_notify_prefs' => 'all']);
 
-        $this->webhook($this->message('999', '/settings'))->assertOk();
-        $this->webhook($this->message('999', '2'))->assertOk();
+        $this->webhook([
+            'update_id' => 2,
+            'callback_query' => [
+                'id' => 'cb-1',
+                'from' => ['id' => 999],
+                'data' => 'pref:device',
+                'message' => [
+                    'message_id' => 10,
+                    'chat' => ['id' => 999, 'type' => 'private'],
+                    'text' => 'Sozlama',
+                ],
+            ],
+        ])->assertOk();
 
         $this->assertSame('device', $user->fresh()->telegram_notify_prefs);
+    }
+
+    public function test_status_via_inline_button_includes_keyboard(): void
+    {
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '999']);
+
+        $this->webhook([
+            'update_id' => 3,
+            'callback_query' => [
+                'id' => 'cb-2',
+                'from' => ['id' => 999],
+                'data' => 'cmd:status',
+                'message' => [
+                    'message_id' => 11,
+                    'chat' => ['id' => 999, 'type' => 'private'],
+                    'text' => 'Menyu',
+                ],
+            ],
+        ])->assertOk();
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), 'sendMessage')) {
+                return false;
+            }
+
+            $markup = $request['reply_markup'] ?? null;
+            $decoded = is_string($markup) ? json_decode($markup, true) : $markup;
+
+            return str_contains((string) $request['text'], 'Holat')
+                && is_array($decoded)
+                && isset($decoded['inline_keyboard']);
+        });
     }
 
     public function test_non_admin_cannot_use_status(): void

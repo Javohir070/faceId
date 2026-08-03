@@ -10,11 +10,7 @@ class TelegramWebhookController extends Controller
 {
     public function __invoke(Request $request, TelegramAuthHandler $handler): JsonResponse
     {
-        $message = $request->input('message');
-
-        if (is_array($message)) {
-            $handler->handle($message);
-        }
+        $handler->handleUpdate($request->all());
 
         return response()->json(['ok' => true]);
     }
