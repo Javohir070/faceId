@@ -4,6 +4,7 @@ namespace App\Services\Hikvision;
 
 use App\Exceptions\HikvisionConnectionException;
 use App\Models\Device;
+use App\Services\Telegram\TelegramNotifier;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -105,6 +106,7 @@ class HikvisionDeviceService
 
             return true;
         } catch (\Throwable $exception) {
+            $wasOnline = (bool) $device->is_online;
             $failures = $this->incrementPingFailures($device);
             $threshold = max((int) config('hikvision.ping_offline_after_failures', 5), 1);
 
@@ -117,6 +119,17 @@ class HikvisionDeviceService
             }
 
             $device->forceFill($updates)->save();
+
+            if ($wasOnline && ($updates['is_online'] ?? true) === false) {
+                app(TelegramNotifier::class)->notifyAllLinkedUsers(
+                    sprintf(
+                        "⚠️ Qurilma ishlamayapti (oflayn)\nNomi: %s\nIP: %s\nTur: %s",
+                        $device->name,
+                        $device->ip_address,
+                        $device->typeLabel(),
+                    )
+                );
+            }
 
             Log::warning('Hikvision: qurilma ping muvaffaqiyatsiz', [
                 'device_id' => $device->id,
