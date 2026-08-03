@@ -21,7 +21,7 @@ class EmployeePullPageTest extends TestCase
     public function test_authorized_user_can_view_employee_pull_page(): void
     {
         $admin = $this->createUserWithPermissions([
-            config('menu_permissions.resources')['employees'],
+            config('menu_permissions.resources')['employees-pull'],
         ]);
 
         Device::factory()->create(['name' => 'Terminal 1']);
@@ -58,7 +58,7 @@ class EmployeePullPageTest extends TestCase
         ]);
 
         $admin = $this->createUserWithPermissions([
-            config('menu_permissions.resources')['employees'],
+            config('menu_permissions.resources')['employees-pull'],
         ]);
 
         $device = Device::factory()->create([

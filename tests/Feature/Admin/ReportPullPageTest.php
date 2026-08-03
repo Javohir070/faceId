@@ -24,7 +24,7 @@ class ReportPullPageTest extends TestCase
     public function test_authorized_user_can_view_pull_page(): void
     {
         $admin = $this->createUserWithPermissions([
-            config('menu_permissions.resources')['reports'],
+            config('menu_permissions.resources')['reports-pull'],
         ]);
 
         Device::factory()->create(['name' => 'Kirish 1']);
@@ -61,7 +61,7 @@ class ReportPullPageTest extends TestCase
         ]);
 
         $admin = $this->createUserWithPermissions([
-            config('menu_permissions.resources')['reports'],
+            config('menu_permissions.resources')['reports-pull'],
         ]);
 
         $owner = User::factory()->create();

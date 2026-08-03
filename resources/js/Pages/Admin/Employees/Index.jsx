@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Input, Select } from 'antd';
 import { useState } from 'react';
@@ -21,6 +21,7 @@ export default function Index({
     schedules = [],
     devices = [],
 }) {
+    const can = usePage().props.can || {};
     const [form, setForm] = useState({
         search: filters.search ?? '',
         department_id: filters.department_id ?? null,
@@ -82,12 +83,14 @@ export default function Index({
                         >
                             Excel yuklab olish
                         </a>
-                        <Link
-                            href={route('admin.employees.pull')}
-                            className="inline-flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
-                        >
-                            Qurilmadan tortish
-                        </Link>
+                        {can['employees-pull'] ? (
+                            <Link
+                                href={route('admin.employees.pull')}
+                                className="inline-flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
+                            >
+                                Qurilmadan tortish
+                            </Link>
+                        ) : null}
                         <Button
                             type="primary"
                             size="large"

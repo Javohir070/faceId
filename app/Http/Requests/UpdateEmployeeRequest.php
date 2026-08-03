@@ -23,7 +23,20 @@ class UpdateEmployeeRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'card' => ['required', 'digits_between:1,14', Rule::unique('employees', 'card')->ignore($employee->id)],
+            'card' => [
+                'required',
+                'digits_between:1,14',
+                Rule::unique('employees', 'card')->ignore($employee->id),
+                function (string $attribute, mixed $value, \Closure $fail) use ($employee): void {
+                    if ((string) $value === (string) $employee->card) {
+                        return;
+                    }
+
+                    if ($employee->devices()->exists()) {
+                        $fail('Karta raqamini o‘zgartirish uchun avval xodimni barcha qurilmalardan o‘chiring.');
+                    }
+                },
+            ],
             'gender' => ['required', 'integer', Rule::in([1, 2])],
             'position' => ['nullable', 'string', 'max:255'],
             'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],

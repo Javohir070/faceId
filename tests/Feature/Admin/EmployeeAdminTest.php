@@ -161,6 +161,7 @@ class EmployeeAdminTest extends TestCase
                 ->has('employee.devices', 1));
 
         $this->actingAs($admin)
+            ->from(route('admin.employees.show', $employee))
             ->post(route('admin.employees.remove-devices', $employee), [
                 'device_ids' => [$device->id],
             ])
@@ -171,6 +172,114 @@ class EmployeeAdminTest extends TestCase
             'device_id' => $device->id,
             'employee_id' => $employee->id,
         ]);
+    }
+
+    public function test_employee_edit_includes_linked_devices(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+        ]);
+        $employee = Employee::factory()->create();
+        $employee->devices()->attach($device->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.employees.edit', $employee))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Employees/Form')
+                ->has('employee.devices', 1)
+                ->where('employee.devices.0.id', $device->id)
+                ->where('employee.devices.0.name', $device->name));
+    }
+
+    public function test_cannot_change_card_while_linked_to_devices(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+        ]);
+        $employee = Employee::factory()->create([
+            'card' => '11111111',
+            'department_id' => Department::factory(),
+            'schedule_id' => Schedule::factory(),
+        ]);
+        $employee->devices()->attach($device->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.employees.update', $employee), [
+                'name' => $employee->name,
+                'card' => '22222222',
+                'gender' => $employee->gender,
+                'position' => $employee->position,
+                'department_id' => $employee->department_id,
+                'schedule_id' => $employee->schedule_id,
+                'valid_from_dt' => $employee->valid_from_dt->format('Y-m-d\TH:i'),
+                'valid_to_dt' => $employee->valid_to_dt->format('Y-m-d\TH:i'),
+            ])
+            ->assertSessionHasErrors('card');
+
+        $this->assertSame('11111111', $employee->fresh()->card);
+    }
+
+    public function test_can_change_card_when_not_linked_to_devices(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $employee = Employee::factory()->create([
+            'card' => '11111111',
+            'department_id' => Department::factory(),
+            'schedule_id' => Schedule::factory(),
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.employees.update', $employee), [
+                'name' => $employee->name,
+                'card' => '22222222',
+                'gender' => $employee->gender,
+                'position' => $employee->position,
+                'department_id' => $employee->department_id,
+                'schedule_id' => $employee->schedule_id,
+                'valid_from_dt' => $employee->valid_from_dt->format('Y-m-d\TH:i'),
+                'valid_to_dt' => $employee->valid_to_dt->format('Y-m-d\TH:i'),
+            ])
+            ->assertRedirect(route('admin.employees.index'));
+
+        $this->assertSame('22222222', $employee->fresh()->card);
+    }
+
+    public function test_remove_devices_from_edit_redirects_back_to_edit(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+        ]);
+        $employee = Employee::factory()->create();
+        $employee->devices()->attach($device->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.employees.edit', $employee))
+            ->post(route('admin.employees.remove-devices', $employee), [
+                'device_ids' => [$device->id],
+            ])
+            ->assertRedirect(route('admin.employees.edit', $employee))
+            ->assertSessionHas('success');
     }
 
     public function test_employee_show_lists_notes_newest_first_with_type_labels(): void

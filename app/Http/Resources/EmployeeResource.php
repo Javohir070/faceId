@@ -92,6 +92,18 @@ class EmployeeResource extends JsonResource
             'valid_from_dt' => $this->valid_from_dt?->format('Y-m-d\TH:i'),
             'valid_to_dt' => $this->valid_to_dt?->format('Y-m-d\TH:i'),
             'face_preview' => self::facePreviewUrl($this->face?->face),
+            'devices' => $this->devices
+                ->sortBy('name')
+                ->values()
+                ->map(fn ($device): array => [
+                    'id' => $device->id,
+                    'name' => $device->name,
+                    'ip_address' => $device->ip_address,
+                    'is_synced' => filled($device->pivot->synced_at),
+                    'synced_at' => filled($device->pivot->synced_at)
+                        ? Carbon::parse($device->pivot->synced_at)->format('Y-m-d H:i')
+                        : null,
+                ]),
         ];
     }
 

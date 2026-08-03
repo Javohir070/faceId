@@ -9,7 +9,7 @@ class PullEmployeesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(config('menu_permissions.resources')['employees']) ?? false;
+        return $this->user()?->can(config('menu_permissions.resources')['employees-pull']) ?? false;
     }
 
     /**

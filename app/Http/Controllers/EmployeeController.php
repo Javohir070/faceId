@@ -152,7 +152,7 @@ class EmployeeController extends Controller
         );
 
         return redirect()
-            ->route('admin.employees.show', $employee)
+            ->back(fallback: route('admin.employees.show', $employee))
             ->with('success', 'Xodimni qurilmalardan o‘chirish navbatga qo‘yildi.');
     }
 
