@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Builder;
 interface EmployeeRepositoryInterface
 {
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      * @return Builder<Employee>
      */
     public function filteredQuery(array $filters = []): Builder;
 
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      */
     public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator;
 

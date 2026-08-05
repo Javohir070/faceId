@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      * @return Builder<Employee>
      */
     public function filteredQuery(array $filters = []): Builder
@@ -28,8 +28,29 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             });
         }
 
-        if (! empty($filters['department_id'])) {
-            $query->where('department_id', $filters['department_id']);
+        $departmentIds = array_values(array_unique(array_filter(array_map(
+            'intval',
+            $filters['department_ids'] ?? [],
+        ))));
+        $groupIds = array_values(array_unique(array_filter(array_map(
+            'intval',
+            $filters['group_ids'] ?? [],
+        ))));
+
+        if ($departmentIds !== [] || $groupIds !== []) {
+            $query->where(function (Builder $builder) use ($departmentIds, $groupIds): void {
+                if ($departmentIds !== []) {
+                    $builder->whereIn('department_id', $departmentIds);
+                }
+
+                if ($groupIds !== []) {
+                    if ($departmentIds !== []) {
+                        $builder->orWhereIn('group_id', $groupIds);
+                    } else {
+                        $builder->whereIn('group_id', $groupIds);
+                    }
+                }
+            });
         }
 
         if (! empty($filters['schedule_id'])) {
@@ -53,7 +74,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     }
 
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      */
     public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {

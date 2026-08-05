@@ -42,12 +42,14 @@ class EmployeeController extends Controller
             ),
             'filters' => [
                 'search' => $filters['search'] ?? null,
-                'department_id' => isset($filters['department_id']) ? (int) $filters['department_id'] : null,
+                'department_ids' => array_values(array_map('intval', $filters['department_ids'] ?? [])),
+                'group_ids' => array_values(array_map('intval', $filters['group_ids'] ?? [])),
                 'schedule_id' => isset($filters['schedule_id']) ? (int) $filters['schedule_id'] : null,
                 'device_id' => isset($filters['device_id']) ? (int) $filters['device_id'] : null,
                 'has_face' => $filters['has_face'] ?? null,
             ],
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
+            'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id', 'parent_id'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'devices' => Device::query()->ordered()->get(['id', 'name']),
         ]);
@@ -206,7 +208,10 @@ class EmployeeController extends Controller
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['integer', 'exists:departments,id'],
+            'group_ids' => ['nullable', 'array'],
+            'group_ids.*' => ['integer', 'exists:groups,id'],
             'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
             'device_id' => ['nullable', 'integer', 'exists:devices,id'],
             'has_face' => ['nullable', 'in:0,1'],

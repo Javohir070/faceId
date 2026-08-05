@@ -1,13 +1,18 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Input, Select } from 'antd';
-import { useState } from 'react';
+import { Button, Input, Select, TreeSelect } from 'antd';
+import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
+import {
+    buildOrgTreeData,
+    encodeOrgFilter,
+    parseOrgFilter,
+} from '../../../utils/orgTreeSelect';
 
 const faceOptions = [
     { value: '1', label: 'Yuz bor' },
@@ -18,25 +23,44 @@ export default function Index({
     employees,
     filters = {},
     departments = [],
+    groups = [],
     schedules = [],
     devices = [],
 }) {
     const can = usePage().props.can || {};
     const [form, setForm] = useState({
         search: filters.search ?? '',
-        department_id: filters.department_id ?? null,
+        department_ids: filters.department_ids ?? [],
+        group_ids: filters.group_ids ?? [],
         schedule_id: filters.schedule_id ?? null,
         device_id: filters.device_id ?? null,
         has_face: filters.has_face ?? null,
     });
 
+    const orgTreeData = useMemo(
+        () => buildOrgTreeData(departments, groups),
+        [departments, groups],
+    );
+
     const updateField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
+    const updateOrgFilter = (values) => {
+        setForm((prev) => ({
+            ...prev,
+            ...parseOrgFilter(values ?? []),
+        }));
+    };
+
     const submitFilters = () => {
         const payload = Object.fromEntries(
-            Object.entries(form).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+            Object.entries(form).filter(([, value]) => {
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+                return value !== null && value !== undefined && value !== '';
+            }),
         );
 
         router.get(route('admin.employees.index'), payload, {
@@ -48,7 +72,8 @@ export default function Index({
     const resetFilters = () => {
         setForm({
             search: '',
-            department_id: null,
+            department_ids: [],
+            group_ids: [],
             schedule_id: null,
             device_id: null,
             has_face: null,
@@ -62,12 +87,25 @@ export default function Index({
 
     const exportHref = () => {
         const payload = Object.fromEntries(
-            Object.entries(filters).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+            Object.entries(filters).filter(([, value]) => {
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+                return value !== null && value !== undefined && value !== '';
+            }),
         );
-        const query = new URLSearchParams(payload).toString();
+        const query = new URLSearchParams();
+        Object.entries(payload).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                value.forEach((item) => query.append(`${key}[]`, String(item)));
+                return;
+            }
+            query.set(key, String(value));
+        });
         const base = route('admin.employees.export');
+        const qs = query.toString();
 
-        return query ? `${base}?${query}` : base;
+        return qs ? `${base}?${qs}` : base;
     };
 
     return (
@@ -113,15 +151,20 @@ export default function Index({
                         onChange={(e) => updateField('search', e.target.value)}
                         onPressEnter={submitFilters}
                     />
-                    <Select
+                    <TreeSelect
                         allowClear
                         showSearch
-                        placeholder="Bo'lim"
-                        optionFilterProp="label"
-                        value={form.department_id}
-                        options={departments.map((item) => ({ value: item.id, label: item.name }))}
-                        onChange={(value) => updateField('department_id', value ?? null)}
+                        treeCheckable
+                        treeDefaultExpandAll
+                        showCheckedStrategy={TreeSelect.SHOW_PARENT}
+                        placeholder="Bo'lim / Guruh"
+                        treeNodeFilterProp="title"
+                        value={encodeOrgFilter(form.department_ids, form.group_ids)}
+                        treeData={orgTreeData}
+                        onChange={updateOrgFilter}
                         className="w-full"
+                        maxTagCount="responsive"
+                        popupMatchSelectWidth={360}
                     />
                     <Select
                         allowClear

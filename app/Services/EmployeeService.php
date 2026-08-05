@@ -25,7 +25,7 @@ class EmployeeService
     ) {}
 
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      */
     public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {
@@ -46,11 +46,11 @@ class EmployeeService
     {
         return Group::query()
             ->orderBy('name')
-            ->get(['id', 'name', 'department_id']);
+            ->get(['id', 'name', 'department_id', 'parent_id']);
     }
 
     /**
-     * @param  array{search?:?string, department_id?:?int, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      * @return Builder<Employee>
      */
     public function getFilteredQuery(array $filters = []): Builder

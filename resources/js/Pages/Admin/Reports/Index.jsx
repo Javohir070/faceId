@@ -1,23 +1,39 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Button, DatePicker, Select } from 'antd';
+import { Button, DatePicker, Select, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { EmptyState } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
+import {
+    buildOrgTreeData,
+    encodeOrgFilter,
+    parseOrgFilter,
+} from '../../../utils/orgTreeSelect';
 
 const typeOptions = [
     { value: 1, label: 'Kirish' },
     { value: 2, label: 'Chiqish' },
+    { value: 3, label: 'Kechikkan' },
+    { value: 4, label: 'Erta ketgan' },
+    { value: 5, label: 'Kelgan' },
+    { value: 6, label: 'Kelmagan' },
+    { value: 7, label: 'Ish vaqti' },
+    { value: 8, label: 'Individual' },
 ];
+
+const defaultDateFrom = () => dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss');
+const defaultDateTo = () => dayjs().hour(23).minute(59).second(0).format('YYYY-MM-DD HH:mm:ss');
 
 export default function Index({
     reports,
+    columns = [],
     filters,
     employees,
     departments,
+    groups = [],
     devices,
     categories,
     schedules,
@@ -25,22 +41,40 @@ export default function Index({
     const can = usePage().props.can || {};
     const [form, setForm] = useState({
         employee_id: filters.employee_id ?? null,
-        department_id: filters.department_id ?? null,
+        department_ids: filters.department_ids ?? [],
+        group_ids: filters.group_ids ?? [],
         device_id: filters.device_id ?? null,
         category_id: filters.category_id ?? null,
         schedule_id: filters.schedule_id ?? null,
         type: filters.type ?? null,
-        date_from: filters.date_from ?? null,
-        date_to: filters.date_to ?? null,
+        date_from: filters.date_from ?? defaultDateFrom(),
+        date_to: filters.date_to ?? defaultDateTo(),
     });
+
+    const orgTreeData = useMemo(
+        () => buildOrgTreeData(departments, groups),
+        [departments, groups],
+    );
 
     const updateField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
+    const updateOrgFilter = (values) => {
+        setForm((prev) => ({
+            ...prev,
+            ...parseOrgFilter(values ?? []),
+        }));
+    };
+
     const submitFilters = () => {
         const payload = Object.fromEntries(
-            Object.entries(form).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+            Object.entries(form).filter(([, value]) => {
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+                return value !== null && value !== undefined && value !== '';
+            }),
         );
 
         router.get(route('admin.reports.index'), payload, {
@@ -50,18 +84,25 @@ export default function Index({
     };
 
     const resetFilters = () => {
+        const dateFrom = defaultDateFrom();
+        const dateTo = defaultDateTo();
+
         setForm({
             employee_id: null,
-            department_id: null,
+            department_ids: [],
+            group_ids: [],
             device_id: null,
             category_id: null,
             schedule_id: null,
             type: null,
-            date_from: null,
-            date_to: null,
+            date_from: dateFrom,
+            date_to: dateTo,
         });
 
-        router.get(route('admin.reports.index'), {}, {
+        router.get(route('admin.reports.index'), {
+            date_from: dateFrom,
+            date_to: dateTo,
+        }, {
             preserveScroll: true,
             preserveState: true,
         });
@@ -69,12 +110,25 @@ export default function Index({
 
     const exportHref = () => {
         const payload = Object.fromEntries(
-            Object.entries(filters).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+            Object.entries(filters).filter(([, value]) => {
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+                return value !== null && value !== undefined && value !== '';
+            }),
         );
-        const query = new URLSearchParams(payload).toString();
+        const query = new URLSearchParams();
+        Object.entries(payload).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                value.forEach((item) => query.append(`${key}[]`, String(item)));
+                return;
+            }
+            query.set(key, String(value));
+        });
         const base = route('admin.reports.export');
+        const qs = query.toString();
 
-        return query ? `${base}?${query}` : base;
+        return qs ? `${base}?${qs}` : base;
     };
 
     const from = reports.from ?? (reports.data.length ? 1 : 0);
@@ -88,12 +142,6 @@ export default function Index({
                 subtitle="Xodimlarning kirish va chiqish yozuvlari."
                 actions={(
                     <div className="flex gap-3">
-                        <a
-                            href={exportHref()}
-                            className="inline-flex h-10 items-center rounded-lg border border-line bg-surface px-4 text-sm font-bold text-ink hover:bg-surface-muted"
-                        >
-                            Excel yuklab olish
-                        </a>
                         {can['reports-pull'] ? (
                             <Link
                                 href={route('admin.reports.pull')}
@@ -118,15 +166,20 @@ export default function Index({
                         onChange={(value) => updateField('employee_id', value ?? null)}
                         className="w-full"
                     />
-                    <Select
+                    <TreeSelect
                         allowClear
                         showSearch
-                        placeholder="Bo'lim"
-                        optionFilterProp="label"
-                        value={form.department_id}
-                        options={departments.map((item) => ({ value: item.id, label: item.name }))}
-                        onChange={(value) => updateField('department_id', value ?? null)}
+                        treeCheckable
+                        treeDefaultExpandAll
+                        showCheckedStrategy={TreeSelect.SHOW_PARENT}
+                        placeholder="Bo'lim / Guruh"
+                        treeNodeFilterProp="title"
+                        value={encodeOrgFilter(form.department_ids, form.group_ids)}
+                        treeData={orgTreeData}
+                        onChange={updateOrgFilter}
                         className="w-full"
+                        maxTagCount="responsive"
+                        popupMatchSelectWidth={360}
                     />
                     <Select
                         allowClear
@@ -167,20 +220,28 @@ export default function Index({
                         className="w-full"
                     />
                     <DatePicker
+                        showTime
                         className="w-full"
-                        placeholder="Sana dan"
+                        placeholder="Sana va vaqt dan"
                         value={form.date_from ? dayjs(form.date_from) : null}
-                        onChange={(value) => updateField('date_from', value ? value.format('YYYY-MM-DD') : null)}
+                        onChange={(value) => updateField('date_from', value ? value.format('YYYY-MM-DD HH:mm:ss') : null)}
                     />
                     <DatePicker
+                        showTime
                         className="w-full"
-                        placeholder="Sana gacha"
+                        placeholder="Sana va vaqt gacha"
                         value={form.date_to ? dayjs(form.date_to) : null}
-                        onChange={(value) => updateField('date_to', value ? value.format('YYYY-MM-DD') : null)}
+                        onChange={(value) => updateField('date_to', value ? value.format('YYYY-MM-DD HH:mm:ss') : null)}
                     />
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3 justify-end">
+                    <a
+                        href={exportHref()}
+                        className="inline-flex h-10 items-center rounded-lg border border-line bg-surface px-4 text-sm font-bold text-ink hover:bg-surface-muted"
+                    >
+                        Excel yuklab olish
+                    </a>
                     <Button onClick={resetFilters}>
                         Tozalash
                     </Button>
@@ -225,32 +286,20 @@ export default function Index({
                     <thead>
                         <tr>
                             <th className="w-12">№</th>
-                            <th>Ism</th>
-                            <th>Bo'lim</th>
-                            <th>Qurilma</th>
-                            <th>Tur</th>
-                            <th>Sana va vaqt</th>
+                            {columns.map((col) => (
+                                <th key={col.key}>{col.label}</th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {reports.data.map((report, index) => (
-                            <tr key={report.id}>
+                        {reports.data.map((row, index) => (
+                            <tr key={row.id ?? `${row.employee_name}-${row.date ?? row.occurred_at}-${index}`}>
                                 <td className="font-medium text-ink-subtle">{(from || 1) + index}</td>
-                                <td className="font-bold text-ink">{report.employee_name}</td>
-                                <td className="font-medium">{report.department_name || '—'}</td>
-                                <td className="font-medium">{report.device_name || '—'}</td>
-                                <td>
-                                    <span
-                                        className={
-                                            report.type === 2
-                                                ? 'font-semibold text-amber-600'
-                                                : 'font-semibold text-emerald-600'
-                                        }
-                                    >
-                                        {report.type_label}
-                                    </span>
-                                </td>
-                                <td className="font-medium text-ink-muted">{report.occurred_at}</td>
+                                {columns.map((col) => (
+                                    <td key={col.key} className="font-medium">
+                                        {row[col.key] ?? '—'}
+                                    </td>
+                                ))}
                             </tr>
                         ))}
                     </tbody>

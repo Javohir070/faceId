@@ -2,55 +2,54 @@
 
 namespace App\Exports;
 
-use App\Models\Report;
-use Illuminate\Database\Eloquent\Builder;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ReportsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
+class ReportsExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
     private int $rowNumber = 0;
 
     /**
-     * @param  Builder<Report>  $query
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @param  list<array{key: string, label: string}>  $columns
      */
-    public function __construct(private readonly Builder $query)
+    public function __construct(
+        private readonly Collection $rows,
+        private readonly array $columns,
+    ) {}
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function collection(): Collection
     {
+        return $this->rows;
     }
 
     /**
-     * @return Builder<Report>
-     */
-    public function query(): Builder
-    {
-        return $this->query;
-    }
-
-    /**
-     * @return array<int, string>
+     * @return list<string>
      */
     public function headings(): array
     {
-        return ['№', 'Ism', "Bo'lim", 'Qurilma', 'Tur', 'Sana va vaqt'];
+        return array_merge(['№'], array_column($this->columns, 'label'));
     }
 
     /**
-     * @param  Report  $report
-     * @return array<int, mixed>
+     * @param  array<string, mixed>  $row
+     * @return list<mixed>
      */
-    public function map($report): array
+    public function map($row): array
     {
         $this->rowNumber++;
 
-        return [
-            $this->rowNumber,
-            $report->employee_name,
-            $report->department?->name ?? '—',
-            $report->device?->name ?? '—',
-            $report->type_label,
-            $report->occurred_at?->format('Y-m-d H:i:s'),
-        ];
+        $values = [];
+        foreach ($this->columns as $column) {
+            $values[] = $row[$column['key']] ?? '—';
+        }
+
+        return array_merge([$this->rowNumber], $values);
     }
 }

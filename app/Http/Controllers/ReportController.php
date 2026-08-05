@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AttendanceReportType;
 use App\Exports\ReportsExport;
 use App\Http\Requests\PullReportEventsRequest;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
-use App\Models\Report;
+use App\Models\Group;
 use App\Models\Schedule;
 use App\Services\Hikvision\HikvisionEventPullService;
+use App\Services\ReportQueryService;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,34 +26,20 @@ class ReportController extends Controller
 {
     public function __construct(
         private readonly HikvisionEventPullService $eventPullService,
+        private readonly ReportQueryService $reportQueryService,
     ) {}
 
     public function index(Request $request): Response
     {
-        $filters = $request->validate($this->filterRules());
-
-        $reports = $this->filteredReportsQuery($filters)
-            ->paginate(25)
-            ->withQueryString();
-
-        $reports->getCollection()->transform(fn (Report $report): array => [
-            'id' => $report->id,
-            'employee_name' => $report->employee_name,
-            'department_name' => $report->department?->name,
-            'device_name' => $report->device?->name,
-            'type' => $report->type,
-            'type_label' => $report->type_label,
-            'occurred_at' => $report->occurred_at?->format('Y-m-d H:i:s'),
-        ]);
+        $filters = $this->validatedFilters($request);
 
         return Inertia::render('Admin/Reports/Index', [
-            'reports' => $reports,
-            'filters' => [
-                ...$filters,
-                'type' => isset($filters['type']) ? (int) $filters['type'] : null,
-            ],
+            'reports' => $this->reportQueryService->paginate($filters),
+            'columns' => $this->reportQueryService->columns($filters),
+            'filters' => $this->normalizeFilterPayload($filters),
             'employees' => Employee::query()->orderBy('name')->get(['id', 'name']),
             'departments' => Department::query()->visibleTo(auth()->user())->orderBy('name')->get(['id', 'name']),
+            'groups' => Group::query()->orderBy('name')->get(['id', 'name', 'department_id', 'parent_id']),
             'devices' => Device::query()->ordered()->get(['id', 'name']),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'schedules' => Schedule::query()->orderBy('name')->get(['id', 'name']),
@@ -131,11 +119,60 @@ class ReportController extends Controller
 
     public function export(Request $request): BinaryFileResponse
     {
+        $filters = $this->validatedFilters($request);
+
+        return Excel::download(
+            new ReportsExport(
+                $this->reportQueryService->forExport($filters),
+                $this->reportQueryService->columns($filters),
+            ),
+            'hisobotlar.xlsx',
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedFilters(Request $request): array
+    {
         $filters = $request->validate($this->filterRules());
 
-        $query = $this->filteredReportsQuery($filters);
+        $type = isset($filters['type']) ? AttendanceReportType::tryFrom((int) $filters['type']) : null;
 
-        return Excel::download(new ReportsExport($query), 'hisobotlar.xlsx');
+        if ($type?->requiresBoundedDates()) {
+            $from = isset($filters['date_from']) ? Carbon::parse($filters['date_from']) : now()->startOfDay();
+            $to = isset($filters['date_to']) ? Carbon::parse($filters['date_to']) : now()->endOfDay();
+
+            if ($from->diffInDays($to) > 93) {
+                throw ValidationException::withMessages([
+                    'date_to' => 'Maksimal oraliq 93 kun.',
+                ]);
+            }
+
+            $filters['date_from'] ??= $from->format('Y-m-d H:i:s');
+            $filters['date_to'] ??= $to->format('Y-m-d H:i:s');
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function normalizeFilterPayload(array $filters): array
+    {
+        return [
+            'employee_id' => isset($filters['employee_id']) ? (int) $filters['employee_id'] : null,
+            'department_ids' => array_values(array_map('intval', $filters['department_ids'] ?? [])),
+            'group_ids' => array_values(array_map('intval', $filters['group_ids'] ?? [])),
+            'device_id' => isset($filters['device_id']) ? (int) $filters['device_id'] : null,
+            'category_id' => isset($filters['category_id']) ? (int) $filters['category_id'] : null,
+            'schedule_id' => isset($filters['schedule_id']) ? (int) $filters['schedule_id'] : null,
+            'type' => isset($filters['type']) ? (int) $filters['type'] : null,
+            'date_from' => $filters['date_from'] ?? null,
+            'date_to' => $filters['date_to'] ?? null,
+        ];
     }
 
     /**
@@ -145,58 +182,16 @@ class ReportController extends Controller
     {
         return [
             'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['integer', 'exists:departments,id'],
+            'group_ids' => ['nullable', 'array'],
+            'group_ids.*' => ['integer', 'exists:groups,id'],
             'device_id' => ['nullable', 'integer', 'exists:devices,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
-            'type' => ['nullable', 'integer', 'in:1,2'],
+            'type' => ['nullable', 'integer', 'in:1,2,3,4,5,6,7,8'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $filters
-     * @return Builder<Report>
-     */
-    private function filteredReportsQuery(array $filters): Builder
-    {
-        $query = Report::query()
-            ->with(['department:id,name', 'device:id,name'])
-            ->latest('occurred_at');
-
-        if (! empty($filters['employee_id'])) {
-            $query->where('employee_id', $filters['employee_id']);
-        }
-
-        if (! empty($filters['department_id'])) {
-            $query->where('department_id', $filters['department_id']);
-        }
-
-        if (! empty($filters['device_id'])) {
-            $query->where('device_id', $filters['device_id']);
-        }
-
-        if (! empty($filters['category_id'])) {
-            $query->whereHas('device', fn ($deviceQuery) => $deviceQuery->where('category_id', $filters['category_id']));
-        }
-
-        if (! empty($filters['schedule_id'])) {
-            $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('schedule_id', $filters['schedule_id']));
-        }
-
-        if (! empty($filters['type'])) {
-            $query->where('type', (int) $filters['type']);
-        }
-
-        if (! empty($filters['date_from'])) {
-            $query->where('occurred_at', '>=', $filters['date_from'].' 00:00:00');
-        }
-
-        if (! empty($filters['date_to'])) {
-            $query->where('occurred_at', '<=', $filters['date_to'].' 23:59:59');
-        }
-
-        return $query;
     }
 }
