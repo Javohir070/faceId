@@ -12,9 +12,11 @@ use Illuminate\Support\Facades\Log;
 
 class HikvisionEventPullService
 {
-    private const MAX_RESULTS_PER_PAGE = 50;
+    /** Ko‘p Hikvision qurilmalar maxResults ni 30 ga kesadi. */
+    private const MAX_RESULTS_PER_PAGE = 30;
 
-    private const MAX_PAGES_PER_DEVICE = 100;
+    /** Bir qurilma / bir so‘rov uchun xavfsizlik limiti (sahifa emas — event soni). */
+    private const MAX_EVENTS_PER_DEVICE = 100000;
 
     public function __construct(
         private readonly IsapiClient $client,
@@ -61,19 +63,21 @@ class HikvisionEventPullService
 
     /**
      * @param  list<int>  $deviceIds
-     * @return array{imported:int, skipped:int, failed:int, devices:int}
+     * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, failed:int, devices:int, truncated:bool}
      */
     public function pullDevicesInRange(array $deviceIds, Carbon $startTime, Carbon $endTime): array
     {
         $imported = 0;
-        $skipped = 0;
+        $skippedDuplicate = 0;
+        $skippedInvalid = 0;
         $failed = 0;
         $devices = 0;
+        $truncated = false;
 
         Device::query()
             ->whereIn('id', $deviceIds)
             ->orderBy('id')
-            ->each(function (Device $device) use ($startTime, $endTime, &$imported, &$skipped, &$failed, &$devices): void {
+            ->each(function (Device $device) use ($startTime, $endTime, &$imported, &$skippedDuplicate, &$skippedInvalid, &$failed, &$devices, &$truncated): void {
                 if (! $device->hasIsapiCredentials()) {
                     $failed++;
 
@@ -85,7 +89,9 @@ class HikvisionEventPullService
                 try {
                     $result = $this->pullDeviceRange($device, $startTime->copy(), $endTime->copy());
                     $imported += $result['imported'];
-                    $skipped += $result['skipped'];
+                    $skippedDuplicate += $result['skipped_duplicate'];
+                    $skippedInvalid += $result['skipped_invalid'];
+                    $truncated = $truncated || $result['truncated'];
                 } catch (\Throwable $exception) {
                     $failed++;
                     Log::warning('Hikvision: sana oralig‘ida event tortib olishda xatolik', [
@@ -100,22 +106,38 @@ class HikvisionEventPullService
         Log::info('Hikvision: qo‘lda eventlar tortib olindi', [
             'devices' => $devices,
             'imported' => $imported,
-            'skipped' => $skipped,
+            'skipped_duplicate' => $skippedDuplicate,
+            'skipped_invalid' => $skippedInvalid,
             'failed' => $failed,
+            'truncated' => $truncated,
             'start' => $startTime->toDateTimeString(),
             'end' => $endTime->toDateTimeString(),
         ]);
 
-        return compact('imported', 'skipped', 'failed', 'devices');
+        return [
+            'imported' => $imported,
+            'skipped' => $skippedDuplicate + $skippedInvalid,
+            'skipped_duplicate' => $skippedDuplicate,
+            'skipped_invalid' => $skippedInvalid,
+            'failed' => $failed,
+            'devices' => $devices,
+            'truncated' => $truncated,
+        ];
     }
 
     /**
-     * @return array{imported:int, skipped:int}
+     * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, truncated:bool}
      */
     public function pullDevice(Device $device): array
     {
         if (! $device->hasIsapiCredentials()) {
-            return ['imported' => 0, 'skipped' => 0];
+            return [
+                'imported' => 0,
+                'skipped' => 0,
+                'skipped_duplicate' => 0,
+                'skipped_invalid' => 0,
+                'truncated' => false,
+            ];
         }
 
         $startTime = $this->lastPullStart($device);
@@ -129,48 +151,90 @@ class HikvisionEventPullService
     }
 
     /**
-     * @return array{imported:int, skipped:int}
+     * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, truncated:bool}
      */
     public function pullDeviceRange(Device $device, Carbon $startTime, Carbon $endTime): array
     {
         if ($endTime->lessThan($startTime)) {
-            return ['imported' => 0, 'skipped' => 0];
+            return [
+                'imported' => 0,
+                'skipped' => 0,
+                'skipped_duplicate' => 0,
+                'skipped_invalid' => 0,
+                'truncated' => false,
+            ];
         }
 
         $imported = 0;
-        $skipped = 0;
+        $skippedDuplicate = 0;
+        $skippedInvalid = 0;
         $position = 0;
+        $processed = 0;
+        $truncated = false;
+        $status = '';
+        // Hikvision pagination: bir xil searchID + o‘sib boruvchi searchResultPosition.
+        $searchId = sprintf('biocontrol-%d-%s', $device->id, $startTime->format('YmdHis'));
 
-        for ($page = 0; $page < self::MAX_PAGES_PER_DEVICE; $page++) {
-            $response = $this->fetchAcsEvents($device, $startTime, $endTime, $position);
+        while ($processed < self::MAX_EVENTS_PER_DEVICE) {
+            $response = $this->fetchAcsEvents($device, $startTime, $endTime, $position, $searchId);
             $payload = $response->json();
             $items = $this->normalizeInfoList(data_get($payload, 'AcsEvent.InfoList', []));
             $status = (string) data_get($payload, 'AcsEvent.responseStatusStrg', '');
+            $totalMatches = (int) data_get($payload, 'AcsEvent.totalMatches', 0);
 
             foreach ($items as $item) {
-                if ($this->importEventItem($device, $item)) {
+                $outcome = $this->importEventItem($device, $item);
+                if ($outcome === 'imported') {
                     $imported++;
+                } elseif ($outcome === 'duplicate') {
+                    $skippedDuplicate++;
                 } else {
-                    $skipped++;
+                    $skippedInvalid++;
                 }
+                $processed++;
             }
 
             $matchCount = count($items);
-            $position += $matchCount > 0 ? $matchCount : self::MAX_RESULTS_PER_PAGE;
+            if ($matchCount === 0 || $status !== 'MORE') {
+                break;
+            }
 
-            if ($status !== 'MORE' || $matchCount === 0) {
+            $position += $matchCount;
+
+            if ($totalMatches > 0 && $position >= $totalMatches) {
                 break;
             }
         }
 
-        return compact('imported', 'skipped');
+        if ($status === 'MORE' && $processed >= self::MAX_EVENTS_PER_DEVICE) {
+            $truncated = true;
+            Log::warning('Hikvision: event tortish limiti yetdi', [
+                'device_id' => $device->id,
+                'processed' => $processed,
+                'start' => $startTime->toDateTimeString(),
+                'end' => $endTime->toDateTimeString(),
+            ]);
+        }
+
+        return [
+            'imported' => $imported,
+            'skipped' => $skippedDuplicate + $skippedInvalid,
+            'skipped_duplicate' => $skippedDuplicate,
+            'skipped_invalid' => $skippedInvalid,
+            'truncated' => $truncated,
+        ];
     }
 
     /**
      * @return \Illuminate\Http\Client\Response
      */
-    private function fetchAcsEvents(Device $device, Carbon $startTime, Carbon $endTime, int $position)
-    {
+    private function fetchAcsEvents(
+        Device $device,
+        Carbon $startTime,
+        Carbon $endTime,
+        int $position,
+        string $searchId,
+    ) {
         try {
             $response = $this->client->request(
                 $device,
@@ -179,13 +243,15 @@ class HikvisionEventPullService
                 ['format' => 'json'],
                 [
                     'AcsEventCond' => [
-                        'searchID' => 'biocontrol-'.$device->id.'-'.$position,
+                        'searchID' => $searchId,
                         'searchResultPosition' => $position,
                         'maxResults' => self::MAX_RESULTS_PER_PAGE,
+                        // major=5: AccessControllerEvent; minor=0: barcha turlar
+                        // (identifikatorsiz eshik eventlari import qilinmaydi).
                         'major' => 5,
-                        'minor' => 75,
-                        'startTime' => $startTime->format('Y-m-d\TH:i:s'),
-                        'endTime' => $endTime->format('Y-m-d\TH:i:s'),
+                        'minor' => 0,
+                        'startTime' => $startTime->format('Y-m-d\TH:i:sP'),
+                        'endTime' => $endTime->format('Y-m-d\TH:i:sP'),
                     ],
                 ],
             );
@@ -222,34 +288,41 @@ class HikvisionEventPullService
 
     /**
      * @param  array<string, mixed>  $item
+     * @return 'imported'|'duplicate'|'invalid'
      */
-    private function importEventItem(Device $device, array $item): bool
+    private function importEventItem(Device $device, array $item): string
     {
         $employeeNo = (string) (data_get($item, 'employeeNoString') ?? data_get($item, 'employeeNo') ?? '');
+        $cardNo = (string) (data_get($item, 'cardNo') ?? '');
+        $name = (string) (data_get($item, 'name') ?? '');
 
-        if ($employeeNo === '') {
-            return false;
+        if ($employeeNo === '' && $cardNo !== '') {
+            $employeeNo = $cardNo;
+        }
+
+        if ($employeeNo === '' && $name === '') {
+            return 'invalid';
         }
 
         $eventTime = data_get($item, 'time') ?? data_get($item, 'dateTime');
 
         if (! $eventTime) {
-            return false;
+            return 'invalid';
         }
 
         $parsedTime = Carbon::parse($eventTime)->format('Y-m-d H:i:s');
 
-        if ($this->eventAlreadyStored($device, $employeeNo, $parsedTime)) {
-            return false;
+        if ($employeeNo !== '' && $this->eventAlreadyStored($device, $employeeNo, $parsedTime)) {
+            return 'duplicate';
         }
 
         $payload = [
             'ipAddress' => $device->ip_address,
             'dateTime' => Carbon::parse($eventTime)->toIso8601String(),
             'AccessControllerEvent' => [
-                'employeeNoString' => $employeeNo,
-                'cardNo' => data_get($item, 'cardNo'),
-                'name' => data_get($item, 'name'),
+                'employeeNoString' => $employeeNo !== '' ? $employeeNo : null,
+                'cardNo' => $cardNo !== '' ? $cardNo : null,
+                'name' => $name !== '' ? $name : null,
                 'majorEventType' => data_get($item, 'major'),
                 'subEventType' => data_get($item, 'minor'),
                 'currentVerifyMode' => data_get($item, 'currentVerifyMode', 'face'),
@@ -259,7 +332,7 @@ class HikvisionEventPullService
 
         $report = $this->reportService->createFromWebhookPayload($payload);
 
-        return $report !== null;
+        return $report !== null ? 'imported' : 'duplicate';
     }
 
     private function eventAlreadyStored(Device $device, string $employeeNo, string $eventTime): bool

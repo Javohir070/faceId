@@ -149,14 +149,28 @@ class EmployeeController extends Controller
 
     public function removeDevices(RemoveEmployeeDevicesRequest $request, Employee $employee): RedirectResponse
     {
-        $this->employeeSyncService->queueRemoveFromDevices(
-            $employee,
-            $request->validated('device_ids'),
-        );
+        $deviceIds = $request->validated('device_ids');
+        $result = $this->employeeSyncService->removeFromDevices($employee, $deviceIds);
 
-        return redirect()
-            ->back(fallback: route('admin.employees.show', $employee))
-            ->with('success', 'Xodimni qurilmalardan o‘chirish navbatga qo‘yildi.');
+        $redirect = redirect()->back(fallback: route('admin.employees.show', $employee));
+
+        if ($result['success'] === 0 && $result['failed'] === 0) {
+            return $redirect->with('error', 'Tanlangan qurilma topilmadi.');
+        }
+
+        if ($result['failed'] > 0 && $result['success'] === 0) {
+            return $redirect->with('error', 'Qurilmalardan o‘chirib bo‘lmadi. Qurilma ulanishi yoki login/parolni tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return $redirect->with('error', sprintf(
+                'Qisman o‘chirildi: %d muvaffaqiyatli, %d xato.',
+                $result['success'],
+                $result['failed'],
+            ));
+        }
+
+        return $redirect->with('success', 'Xodim tanlangan qurilmalardan o‘chirildi.');
     }
 
     public function edit(Request $request, Employee $employee): Response

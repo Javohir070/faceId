@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Jobs\Hikvision\ClearDeviceUsersJob;
+use App\Jobs\Hikvision\RemoveHikvisionUsersJob;
 use App\Models\Category;
 use App\Models\Device;
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
 
@@ -125,5 +129,69 @@ class DeviceActionTest extends TestCase
             ->post(route('admin.devices.pull-employees', $device))
             ->assertRedirect()
             ->assertSessionHas('error');
+    }
+
+    public function test_clear_removes_employees_immediately_without_queue(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+        Queue::fake();
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+            'is_online' => true,
+        ]);
+        $employee = Employee::factory()->create();
+        $device->employees()->attach($employee->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.devices.clear', $device))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Qurilmadagi xodimlar o‘chirildi.');
+
+        Queue::assertNotPushed(ClearDeviceUsersJob::class);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/ISAPI/AccessControl/UserInfo/Delete'));
+
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
+    }
+
+    public function test_remove_employees_runs_immediately_without_queue(): void
+    {
+        Http::fake(['*' => Http::response('', 200)]);
+        Queue::fake();
+
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['devices'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => $admin->id,
+            'category_id' => Category::factory(),
+            'is_online' => true,
+        ]);
+        $employee = Employee::factory()->create();
+        $device->employees()->attach($employee->id, ['synced_at' => now()]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.devices.remove-employees', $device), [
+                'employee_ids' => [$employee->id],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Tanlangan xodimlar qurilmadan o‘chirildi.');
+
+        Queue::assertNotPushed(RemoveHikvisionUsersJob::class);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/ISAPI/AccessControl/UserInfo/Delete'));
+
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
     }
 }

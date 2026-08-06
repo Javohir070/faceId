@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\NoteType;
+use App\Jobs\Hikvision\RemoveHikvisionUsersJob;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
@@ -14,6 +15,7 @@ use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\InteractsWithPermissions;
@@ -136,6 +138,7 @@ class EmployeeAdminTest extends TestCase
     public function test_employee_show_lists_devices_and_can_remove_from_device(): void
     {
         Http::fake(['*' => Http::response('', 200)]);
+        Queue::fake();
 
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['employees'],
@@ -147,6 +150,7 @@ class EmployeeAdminTest extends TestCase
         $device = Device::factory()->create([
             'user_id' => $admin->id,
             'category_id' => $category->id,
+            'is_online' => true,
         ]);
 
         $employee = Employee::factory()->create([
@@ -169,7 +173,10 @@ class EmployeeAdminTest extends TestCase
                 'device_ids' => [$device->id],
             ])
             ->assertRedirect(route('admin.employees.show', $employee))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', 'Xodim tanlangan qurilmalardan o‘chirildi.');
+
+        Queue::assertNotPushed(RemoveHikvisionUsersJob::class);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/ISAPI/AccessControl/UserInfo/Delete'));
 
         $this->assertDatabaseMissing('device_employee', [
             'device_id' => $device->id,
@@ -272,6 +279,7 @@ class EmployeeAdminTest extends TestCase
         $device = Device::factory()->create([
             'user_id' => $admin->id,
             'category_id' => Category::factory(),
+            'is_online' => true,
         ]);
         $employee = Employee::factory()->create();
         $employee->devices()->attach($device->id, ['synced_at' => now()]);
@@ -282,7 +290,12 @@ class EmployeeAdminTest extends TestCase
                 'device_ids' => [$device->id],
             ])
             ->assertRedirect(route('admin.employees.edit', $employee))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', 'Xodim tanlangan qurilmalardan o‘chirildi.');
+
+        $this->assertDatabaseMissing('device_employee', [
+            'device_id' => $device->id,
+            'employee_id' => $employee->id,
+        ]);
     }
 
     public function test_employee_show_lists_notes_newest_first_with_type_labels(): void

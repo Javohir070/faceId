@@ -232,7 +232,7 @@ class CategoryDeviceAdminTest extends TestCase
                 'employee_ids' => [$employee->id],
             ])
             ->assertRedirect(route('admin.devices.show', $device))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', 'Tanlangan xodimlar qurilmadan o‘chirildi.');
 
         $this->assertDatabaseMissing('device_employee', [
             'device_id' => $device->id,

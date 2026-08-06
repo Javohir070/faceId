@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import {
     CaretDownOutlined,
     CaretUpOutlined,
+    LoadingOutlined,
     MoreOutlined,
 } from '@ant-design/icons';
 import { App as AntApp, Button, Checkbox, Dropdown, Input, Select } from 'antd';
@@ -38,7 +39,21 @@ function SortableHeader({ children }) {
     );
 }
 
-function runDeviceAction(deviceId, action, { modal, onDone }) {
+function postDeviceAction(url, { setBusy, action, resolve, reject }) {
+    setBusy(action);
+    router.post(url, {}, {
+        preserveScroll: true,
+        onSuccess: resolve,
+        onError: reject,
+        onFinish: () => setBusy(null),
+    });
+}
+
+function runDeviceAction(deviceId, action, { modal, setBusy, busy }) {
+    if (busy) {
+        return;
+    }
+
     const routes = {
         connect: route('admin.devices.connect', deviceId),
         disconnect: route('admin.devices.disconnect', deviceId),
@@ -56,121 +71,122 @@ function runDeviceAction(deviceId, action, { modal, onDone }) {
         return;
     }
 
-    const submit = () => {
-        router.post(url, {}, {
-            preserveScroll: true,
-            onFinish: onDone,
-        });
-    };
-
-    if (action === 'clear') {
-        modal.confirm({
+    const confirmConfigs = {
+        clear: {
             title: 'Qurilmani tozalash',
             content: 'Barcha xodimlar ushbu qurilmadan o‘chiriladi. Davom etasizmi?',
             okText: 'Ha, tozalash',
-            cancelText: 'Bekor qilish',
             okButtonProps: { danger: true },
-            onOk: submit,
-        });
-
-        return;
-    }
-
-    if (action === 'restart') {
-        modal.confirm({
+        },
+        restart: {
             title: 'Qurilmani qayta yuklash',
             content: 'Qurilma qayta yuklanadi. Davom etasizmi?',
             okText: 'Ha, qayta yuklash',
-            cancelText: 'Bekor qilish',
-            onOk: submit,
-        });
-
-        return;
-    }
-
-    if (action === 'sync') {
-        modal.confirm({
+        },
+        sync: {
             title: 'Xodimlarni sinxronlash',
             content: 'Faqat ushbu qurilmaga ulangan xodimlar qayta yuboriladi. Davom etasizmi?',
             okText: 'Ha, sinxronlash',
-            cancelText: 'Bekor qilish',
-            onOk: submit,
-        });
-
-        return;
-    }
-
-    if (action === 'pull') {
-        modal.confirm({
+        },
+        pull: {
             title: 'Xodimlarni tortish',
             content: 'Qurilmadagi xodimlar bazaga yuklanadi. Bir xil karta (employeeNo) dublikat yaratilmaydi. Davom etasizmi?',
             okText: 'Ha, tortish',
+        },
+    };
+
+    const confirm = confirmConfigs[action];
+
+    if (confirm) {
+        modal.confirm({
+            ...confirm,
             cancelText: 'Bekor qilish',
-            onOk: submit,
+            onOk: () => new Promise((resolve, reject) => {
+                postDeviceAction(url, {
+                    setBusy, action, resolve, reject,
+                });
+            }),
         });
 
         return;
     }
 
-    submit();
+    postDeviceAction(url, {
+        setBusy,
+        action,
+        resolve: () => {},
+        reject: () => {},
+    });
 }
 
 function DeviceActionsMenu({ device }) {
     const { modal } = AntApp.useApp();
+    const [busy, setBusy] = useState(null);
+
+    const run = (action) => runDeviceAction(device.id, action, { modal, setBusy, busy });
 
     const items = [
         {
             key: 'disconnect',
             label: 'Uzish',
-            disabled: !device.is_connected,
-            onClick: () => runDeviceAction(device.id, 'disconnect', { modal }),
+            disabled: !device.is_connected || Boolean(busy),
+            onClick: () => run('disconnect'),
         },
         {
             key: 'connect',
             label: 'Ulash',
-            disabled: device.is_connected,
-            onClick: () => runDeviceAction(device.id, 'connect', { modal }),
+            disabled: device.is_connected || Boolean(busy),
+            onClick: () => run('connect'),
         },
         {
             key: 'ping',
-            label: 'Tekshirish (ping)',
-            onClick: () => runDeviceAction(device.id, 'ping', { modal }),
+            label: busy === 'ping' ? 'Tekshirilmoqda…' : 'Tekshirish (ping)',
+            disabled: Boolean(busy),
+            onClick: () => run('ping'),
         },
         {
             key: 'open',
-            label: 'Ochish',
-            onClick: () => runDeviceAction(device.id, 'open', { modal }),
+            label: busy === 'open' ? 'Yuborilmoqda…' : 'Ochish',
+            disabled: Boolean(busy),
+            onClick: () => run('open'),
         },
         {
             key: 'restart',
-            label: 'Qayta yuklash',
-            onClick: () => runDeviceAction(device.id, 'restart', { modal }),
+            label: busy === 'restart' ? 'Yuklanmoqda…' : 'Qayta yuklash',
+            disabled: Boolean(busy),
+            onClick: () => run('restart'),
         },
         {
             key: 'clear',
-            label: 'Tozalash',
-            onClick: () => runDeviceAction(device.id, 'clear', { modal }),
+            label: busy === 'clear' ? 'Tozalanmoqda…' : 'Tozalash',
+            disabled: Boolean(busy),
+            danger: true,
+            onClick: () => run('clear'),
         },
         {
             key: 'sync',
-            label: 'Sinxronlash',
-            onClick: () => runDeviceAction(device.id, 'sync', { modal }),
+            label: busy === 'sync' ? 'Sinxronlanmoqda…' : 'Sinxronlash',
+            disabled: Boolean(busy),
+            onClick: () => run('sync'),
         },
         {
             key: 'pull',
-            label: 'Xodimlarni tortish',
-            onClick: () => runDeviceAction(device.id, 'pull', { modal }),
+            label: busy === 'pull' ? 'Tortilmoqda…' : 'Xodimlarni tortish',
+            disabled: Boolean(busy),
+            onClick: () => run('pull'),
         },
     ];
 
     return (
-        <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+        <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight" disabled={Boolean(busy)}>
             <button
                 type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line bg-surface text-ink-muted transition hover:bg-surface-muted hover:text-ink"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line bg-surface text-ink-muted transition hover:bg-surface-muted hover:text-ink disabled:cursor-wait disabled:opacity-60"
                 aria-label="Amallar"
+                disabled={Boolean(busy)}
+                aria-busy={Boolean(busy)}
             >
-                <MoreOutlined aria-hidden="true" />
+                {busy ? <LoadingOutlined aria-hidden="true" /> : <MoreOutlined aria-hidden="true" />}
             </button>
         </Dropdown>
     );

@@ -7,6 +7,7 @@ import {
     PlusOutlined,
 } from '@ant-design/icons';
 import { App as AntApp, Button, Empty, Tooltip } from 'antd';
+import { useState } from 'react';
 
 export function BackLink({ href, label = 'Orqaga' }) {
     return (
@@ -64,8 +65,13 @@ export default function PageHeader({
 
 export function DeleteButton({ href, confirmMessage = "O'chirishni tasdiqlaysizmi?" }) {
     const { modal } = AntApp.useApp();
+    const [deleting, setDeleting] = useState(false);
 
     const confirmDelete = () => {
+        if (deleting) {
+            return;
+        }
+
         modal.confirm({
             title: 'Yozuvni o‘chirish',
             content: confirmMessage,
@@ -73,10 +79,12 @@ export function DeleteButton({ href, confirmMessage = "O'chirishni tasdiqlaysizm
             cancelText: 'Bekor qilish',
             okButtonProps: { danger: true },
             onOk: () => new Promise((resolve, reject) => {
+                setDeleting(true);
                 router.delete(href, {
                     preserveScroll: true,
                     onSuccess: resolve,
                     onError: reject,
+                    onFinish: () => setDeleting(false),
                 });
             }),
         });
@@ -86,8 +94,10 @@ export function DeleteButton({ href, confirmMessage = "O'chirishni tasdiqlaysizm
         <Tooltip title="O‘chirish">
             <button
                 type="button"
-                className="table-action-delete"
+                className="table-action-delete disabled:cursor-wait disabled:opacity-60"
                 aria-label="O‘chirish"
+                disabled={deleting}
+                aria-busy={deleting}
                 onClick={confirmDelete}
             >
                 <DeleteOutlined aria-hidden="true" />

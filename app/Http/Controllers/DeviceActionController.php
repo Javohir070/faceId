@@ -81,9 +81,33 @@ class DeviceActionController extends Controller
 
     public function clear(Device $device): RedirectResponse
     {
-        $this->employeeSyncService->queueClearDeviceUsers($device);
+        if (! $device->hasIsapiCredentials()) {
+            return back()->with('error', 'Qurilmada login/parol sozlanmagan.');
+        }
 
-        return back()->with('success', 'Qurilmadagi xodimlarni o‘chirish navbatga qo‘yildi.');
+        if (! $device->is_online) {
+            return back()->with('error', 'Qurilma ulanmagan. Avval ulash yoki ping qiling, keyin tozalang.');
+        }
+
+        $result = $this->employeeSyncService->clearDeviceUsers($device);
+
+        if ($result['success'] === 0 && $result['failed'] === 0) {
+            return back()->with('error', 'Qurilmada o‘chiriladigan xodim topilmadi.');
+        }
+
+        if ($result['failed'] > 0 && $result['success'] === 0) {
+            return back()->with('error', 'Qurilmadagi xodimlarni o‘chirib bo‘lmadi. Ulanish yoki login/parolni tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return back()->with('error', sprintf(
+                'Qisman tozalandi: %d muvaffaqiyatli, %d xato.',
+                $result['success'],
+                $result['failed'],
+            ));
+        }
+
+        return back()->with('success', 'Qurilmadagi xodimlar o‘chirildi.');
     }
 
     public function syncEmployees(Device $device): RedirectResponse
@@ -169,11 +193,35 @@ class DeviceActionController extends Controller
 
     public function removeEmployees(RemoveDeviceEmployeesRequest $request, Device $device): RedirectResponse
     {
-        $this->employeeSyncService->queueRemoveEmployeesFromDevice(
+        if (! $device->hasIsapiCredentials()) {
+            return back()->with('error', 'Qurilmada login/parol sozlanmagan.');
+        }
+
+        if (! $device->is_online) {
+            return back()->with('error', 'Qurilma ulanmagan. Avval ulash yoki ping qiling, keyin o‘chiring.');
+        }
+
+        $result = $this->employeeSyncService->removeEmployeesFromDevice(
             $device,
             $request->validated('employee_ids'),
         );
 
-        return back()->with('success', 'Tanlangan xodimlarni qurilmadan o‘chirish navbatga qo‘yildi.');
+        if ($result['success'] === 0 && $result['failed'] === 0) {
+            return back()->with('error', 'Tanlangan xodim topilmadi.');
+        }
+
+        if ($result['failed'] > 0 && $result['success'] === 0) {
+            return back()->with('error', 'Xodimlarni qurilmadan o‘chirib bo‘lmadi. Ulanish yoki login/parolni tekshiring.');
+        }
+
+        if ($result['failed'] > 0) {
+            return back()->with('error', sprintf(
+                'Qisman o‘chirildi: %d muvaffaqiyatli, %d xato.',
+                $result['success'],
+                $result['failed'],
+            ));
+        }
+
+        return back()->with('success', 'Tanlangan xodimlar qurilmadan o‘chirildi.');
     }
 }

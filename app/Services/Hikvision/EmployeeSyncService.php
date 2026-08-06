@@ -75,6 +75,36 @@ class EmployeeSyncService
         }
     }
 
+    /**
+     * @param  list<int>  $employeeIds
+     * @return array{success:int, failed:int}
+     */
+    public function removeEmployeesFromDevice(Device $device, array $employeeIds): array
+    {
+        if ($employeeIds === []) {
+            return ['success' => 0, 'failed' => 0];
+        }
+
+        $employees = Employee::query()
+            ->whereIn('id', $employeeIds)
+            ->whereHas(
+                'devices',
+                fn ($query) => $query->where('devices.id', $device->id),
+            )
+            ->get();
+
+        $success = 0;
+        $failed = 0;
+
+        foreach ($employees as $employee) {
+            $result = $this->removeFromDevices($employee, [$device->id]);
+            $success += $result['success'];
+            $failed += $result['failed'];
+        }
+
+        return ['success' => $success, 'failed' => $failed];
+    }
+
     public function queueRemoveEmployee(Employee $employee, ?Device $device = null): void
     {
         $deviceIds = $device !== null

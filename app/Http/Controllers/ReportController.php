@@ -88,11 +88,16 @@ class ReportController extends Controller
         );
 
         $message = sprintf(
-            'Tortib olish yakunlandi: %d yangi, %d takror (o‘tkazib yuborildi), %d qurilma xato.',
+            'Tortib olish yakunlandi: %d yangi, %d takror, %d identifikatorsiz (o‘tkazildi), %d qurilma xato.',
             $result['imported'],
-            $result['skipped'],
+            $result['skipped_duplicate'],
+            $result['skipped_invalid'],
             $result['failed'],
         );
+
+        if ($result['truncated']) {
+            $message .= ' Diqqat: juda ko‘p event — ba’zilari olinmagan bo‘lishi mumkin. Sana oralig‘ini qisqartiring.';
+        }
 
         if ($result['imported'] === 0 && $result['failed'] > 0) {
             return redirect()
