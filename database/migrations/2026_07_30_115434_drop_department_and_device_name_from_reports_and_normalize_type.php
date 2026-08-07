@@ -104,6 +104,16 @@ return new class extends Migration
             return;
         }
 
+        // create_reports_table allaqachon unsignedTinyInteger yaratgan.
+        // String 'entry'/'exit' bilan WHERE — MySQL STRICT rejimida INTEGER ustunda 1292 xato beradi.
+        if ($this->reportsTypeColumnIsNumeric()) {
+            DB::table('reports')
+                ->whereNotIn('type', [1, 2])
+                ->update(['type' => 1]);
+
+            return;
+        }
+
         DB::table('reports')->where('type', 'entry')->update(['type' => '1']);
         DB::table('reports')->where('type', 'exit')->update(['type' => '2']);
         DB::table('reports')
@@ -117,6 +127,13 @@ return new class extends Migration
         } elseif ($driver === 'pgsql') {
             DB::statement('ALTER TABLE reports ALTER COLUMN type TYPE SMALLINT USING type::smallint');
         }
+    }
+
+    private function reportsTypeColumnIsNumeric(): bool
+    {
+        $type = strtolower((string) Schema::getColumnType('reports', 'type'));
+
+        return str_contains($type, 'int') || $type === 'numeric' || $type === 'decimal';
     }
 
     private function reportsTableIsCorrupt(): bool
