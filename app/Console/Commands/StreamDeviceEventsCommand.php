@@ -19,6 +19,10 @@ class StreamDeviceEventsCommand extends Command
 
     private const LIVE_PULL_RETRY_SECONDS = 30;
 
+    private const MANAGER_HEARTBEAT_KEY = 'hikvision.alert_stream.manager.heartbeat';
+
+    private const MANAGER_HEARTBEAT_STALE_SECONDS = 20;
+
     /** @var array<int, Process> */
     private array $workers = [];
 
@@ -54,6 +58,15 @@ class StreamDeviceEventsCommand extends Command
 
     private function runManager(HikvisionEventPullService $eventPullService): int
     {
+        // Qurilma bitta alertStream ulanishini qabul qiladi — ikkinchi manager faqat 404 oladi.
+        $lastHeartbeat = (int) Cache::get(self::MANAGER_HEARTBEAT_KEY, 0);
+
+        if (time() - $lastHeartbeat < self::MANAGER_HEARTBEAT_STALE_SECONDS) {
+            $this->error('alertStream manager allaqachon boshqa terminalda ishlayapti. Avval uni to‘xtating.');
+
+            return self::FAILURE;
+        }
+
         $this->info('Hikvision alertStream manager ishga tushdi (bazadagi qurilmalar).');
 
         $livePull = (bool) config('hikvision.live_pull_enabled', true);
@@ -64,6 +77,8 @@ class StreamDeviceEventsCommand extends Command
         $nextWorkerCheckAt = 0;
 
         while (true) {
+            Cache::put(self::MANAGER_HEARTBEAT_KEY, time(), 300);
+
             if (time() < $nextWorkerCheckAt) {
                 $this->pullLiveEvents($eventPullService);
                 sleep($tickSeconds);
