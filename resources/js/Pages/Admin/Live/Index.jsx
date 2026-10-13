@@ -17,6 +17,7 @@ import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 
 const POLL_MS = 3000;
+const TYPE_EXIT = 2;
 
 const WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
 const MONTHS = [
@@ -125,11 +126,21 @@ function StatTile({ tile, value }) {
     );
 }
 
+function TypeIcon({ pass }) {
+    return pass.type === TYPE_EXIT
+        ? <LogoutOutlined aria-hidden="true" />
+        : <LoginOutlined aria-hidden="true" />;
+}
+
 function Welcome({ pass }) {
+    const isExit = pass?.type === TYPE_EXIT;
+
     return (
-        <section className="lm-welcome" aria-live="polite">
+        <section className={`lm-welcome${isExit ? ' lm-welcome--exit' : ''}`} aria-live="polite">
             <p className="lm-welcome-kicker">
-                Xush kelibsiz<span aria-hidden="true">·</span>Welcome
+                {isExit ? 'Xayr' : 'Xush kelibsiz'}
+                <span aria-hidden="true">·</span>
+                {isExit ? 'Goodbye' : 'Welcome'}
             </p>
 
             {pass ? (
@@ -150,15 +161,15 @@ function Welcome({ pass }) {
                                 {pass.group_name}
                             </span>
                         ) : null}
-                        <span className="lm-chip lm-chip--entry">
-                            <LoginOutlined aria-hidden="true" />
-                            {[pass.device_name, pass.time].filter(Boolean).join(' · ')}
+                        <span className={`lm-chip ${isExit ? 'lm-chip--exit' : 'lm-chip--entry'}`}>
+                            <TypeIcon pass={pass} />
+                            {[pass.type_label, pass.device_name, pass.time].filter(Boolean).join(' · ')}
                         </span>
                     </div>
                 </div>
             ) : (
                 <p className="lm-welcome-empty">
-                    Hozircha kirish qayd etilmagan. Face ID orqali o‘tgan xodim shu yerda paydo bo‘ladi.
+                    Bugun hali o‘tish qayd etilmagan. Face ID orqali o‘tgan xodim shu yerda paydo bo‘ladi.
                 </p>
             )}
         </section>
@@ -172,9 +183,13 @@ function RecentRow({ pass, latest }) {
             <div className="lm-row-text">
                 <p className="lm-row-name">{pass.employee_name}</p>
                 <p className="lm-row-sub">
-                    {[pass.position, pass.department_name].filter(Boolean).join(' · ') || pass.device_name || '—'}
+                    {[pass.position, pass.department_name, pass.device_name].filter(Boolean).join(' · ') || '—'}
                 </p>
             </div>
+            <span className={`lm-row-type ${pass.type === TYPE_EXIT ? 'lm-row-type--exit' : 'lm-row-type--entry'}`}>
+                <TypeIcon pass={pass} />
+                {pass.type_label}
+            </span>
             <span className="lm-row-time">{pass.time}</span>
         </li>
     );
@@ -242,10 +257,10 @@ export default function Index({ passes = [], stats = {} }) {
                 <main className="lm-main">
                     <Welcome pass={passes[0]} />
 
-                    <section className="lm-recent" aria-label="So‘nggi kirganlar">
+                    <section className="lm-recent" aria-label="So‘nggi o‘tganlar">
                         <div className="lm-recent-head">
-                            <h2 className="lm-recent-title">So‘nggi kirganlar</h2>
-                            <span className="lm-recent-sub">Recent arrivals</span>
+                            <h2 className="lm-recent-title">So‘nggi o‘tganlar</h2>
+                            <span className="lm-recent-sub">Recent passes</span>
                         </div>
                         {passes.length > 0 ? (
                             <ul className="lm-recent-list">

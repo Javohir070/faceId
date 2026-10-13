@@ -336,6 +336,19 @@
     color: var(--lm-green);
 }
 
+.lm-chip--exit .anticon {
+    color: var(--lm-yellow);
+}
+
+.lm-welcome--exit {
+    border-color: color-mix(in srgb, var(--lm-yellow) 70%, transparent);
+}
+
+.lm-welcome--exit .lm-hero-avatar {
+    border-color: var(--lm-yellow);
+    box-shadow: 0 0 0 0.75em rgba(251, 191, 36, 0.12);
+}
+
 .lm-welcome-empty {
     max-width: 30em;
     margin: 1.5em 0 0;
@@ -439,6 +452,23 @@
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.lm-row-type {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.4em;
+    font-size: 0.8125em;
+    font-weight: 800;
+}
+
+.lm-row-type--entry {
+    color: var(--lm-green);
+}
+
+.lm-row-type--exit {
+    color: var(--lm-yellow);
 }
 
 .lm-row-time {

@@ -20,7 +20,7 @@ class LiveMonitorTest extends TestCase
     // 1x1 PNG
     private const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-    public function test_authorized_user_sees_latest_passes_newest_first(): void
+    public function test_authorized_user_sees_todays_entries_and_exits_newest_first(): void
     {
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['live'],
@@ -40,7 +40,7 @@ class LiveMonitorTest extends TestCase
         Report::factory()->forEmployee($withFace)->forDevice($device)->create([
             'occurred_at' => now()->subSeconds(10),
         ]);
-        // Chiqish va kechagi kirish ro‘yxat/ko‘rsatkichga ta’sir qilmasligi kerak.
+        // Chiqish ham ro‘yxatda; eski kunlar ro‘yxat/ko‘rsatkichga ta’sir qilmaydi.
         Report::factory()->forEmployee($withoutFace)->exit()->create([
             'occurred_at' => now()->subSeconds(5),
         ]);
@@ -53,13 +53,15 @@ class LiveMonitorTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Live/Index')
-                ->has('passes', 3)
-                ->where('passes.0.employee_name', 'Ali Valiyev')
-                ->where('passes.0.device_name', 'Kirish 1')
-                ->where('passes.0.type_label', 'Kirish')
-                ->where('passes.0.face_url', route('admin.live.face', $withFace->id))
-                ->where('passes.2.employee_name', 'Vali Aliyeva')
-                ->where('passes.2.face_url', null)
+                ->has('passes', 4)
+                ->where('passes.0.employee_name', 'Vali Aliyeva')
+                ->where('passes.0.type', Report::TYPE_EXIT)
+                ->where('passes.0.type_label', 'Chiqish')
+                ->where('passes.0.face_url', null)
+                ->where('passes.1.employee_name', 'Ali Valiyev')
+                ->where('passes.1.device_name', 'Kirish 1')
+                ->where('passes.1.type_label', 'Kirish')
+                ->where('passes.1.face_url', route('admin.live.face', $withFace->id))
                 ->where('stats.entered', 2)
                 ->where('stats.exited', 1)
                 ->where('stats.male', 1)

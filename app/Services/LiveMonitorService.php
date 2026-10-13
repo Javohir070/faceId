@@ -10,7 +10,8 @@ use Illuminate\Support\Collection;
 class LiveMonitorService
 {
     /**
-     * Bugungi oxirgi kirishlar — eng yangisi birinchi. Bo‘lim scope Report modelida qo‘llanadi.
+     * Bugungi oxirgi o‘tishlar (kirish va chiqish) — eng yangisi birinchi. Bo‘lim scope Report modelida qo‘llanadi.
+     * Tartib bazaga tushish ketma-ketligi bo‘yicha: qurilma soati noto‘g‘ri bo‘lsa ham ro‘yxat aralashmaydi.
      * Qurilma ulanganda eski (oflayn to‘plangan) hodisalarni ham yuboradi — ular monitorga chiqmaydi.
      *
      * @return Collection<int, array<string, mixed>>
@@ -18,7 +19,6 @@ class LiveMonitorService
     public function recentPasses(int $limit = 7): Collection
     {
         return Report::query()
-            ->entry()
             ->whereBetween('occurred_at', [now()->startOfDay(), now()->endOfDay()])
             ->with([
                 // Yuz rasmi (longText) yuklanmaydi — faqat bor/yo‘qligi.
@@ -29,7 +29,6 @@ class LiveMonitorService
                 'employee.group:id,name',
                 'device:id,name',
             ])
-            ->latest('occurred_at')
             ->latest('id')
             ->limit($limit)
             ->get()
