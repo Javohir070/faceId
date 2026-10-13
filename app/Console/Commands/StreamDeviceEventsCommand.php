@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Device;
 use App\Services\Hikvision\HikvisionAlertStreamService;
+use App\Services\Hikvision\HikvisionEventPullService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Process\Process;
@@ -16,11 +17,17 @@ class StreamDeviceEventsCommand extends Command
 
     protected $description = 'Bazadagi Hikvision qurilmalaridan real vaqtda alertStream eventlarini qabul qiladi';
 
+    private const LIVE_PULL_RETRY_SECONDS = 30;
+
     /** @var array<int, Process> */
     private array $workers = [];
 
+    /** @var array<int, int> Jonli tortish xato bergan qurilma => qayta urinish vaqti (timestamp) */
+    private array $livePullRetryAt = [];
+
     public function handle(
         HikvisionAlertStreamService $alertStreamService,
+        HikvisionEventPullService $eventPullService,
     ): int {
         $deviceId = $this->option('device');
         $manualDevice = $deviceId !== null && $deviceId !== '';
@@ -42,14 +49,30 @@ class StreamDeviceEventsCommand extends Command
             return self::FAILURE;
         }
 
-        return $this->runManager();
+        return $this->runManager($eventPullService);
     }
 
-    private function runManager(): int
+    private function runManager(HikvisionEventPullService $eventPullService): int
     {
         $this->info('Hikvision alertStream manager ishga tushdi (bazadagi qurilmalar).');
 
+        $livePull = (bool) config('hikvision.live_pull_enabled', true);
+        $workerCheckSeconds = max((int) config('hikvision.alert_stream_reconnect_seconds', 5), 1);
+        $tickSeconds = $livePull
+            ? max((int) config('hikvision.live_pull_interval_seconds', 2), 1)
+            : $workerCheckSeconds;
+        $nextWorkerCheckAt = 0;
+
         while (true) {
+            if (time() < $nextWorkerCheckAt) {
+                $this->pullLiveEvents($eventPullService);
+                sleep($tickSeconds);
+
+                continue;
+            }
+
+            $nextWorkerCheckAt = time() + $workerCheckSeconds;
+
             $devices = Device::streamableFromDatabase();
             $activeIds = [];
 
@@ -63,6 +86,9 @@ class StreamDeviceEventsCommand extends Command
                 if (isset($this->workers[$device->id]) && $this->workers[$device->id]->isRunning()) {
                     continue;
                 }
+
+                // Worker majburan to‘xtatilgan bo‘lsa (Ctrl+C) qulfi qolib ketadi — manager o‘z workerini qayta ochadi.
+                Cache::lock($this->workerLockKey($device->id))->forceRelease();
 
                 $process = new Process([
                     PHP_BINARY,
@@ -94,8 +120,58 @@ class StreamDeviceEventsCommand extends Command
                 }
             }
 
-            sleep(max((int) config('hikvision.alert_stream_reconnect_seconds', 5), 1));
+            if ($livePull) {
+                $this->pullLiveEvents($eventPullService);
+            }
+
+            sleep($tickSeconds);
         }
+    }
+
+    /**
+     * Onlayn qurilmalardan bugungi yangi eventlarni tortadi (alertStream kechikkanda zaxira).
+     */
+    private function pullLiveEvents(HikvisionEventPullService $eventPullService): void
+    {
+        if (! config('hikvision.live_pull_enabled', true)) {
+            return;
+        }
+
+        $devices = Device::streamableFromDatabase()->where('is_online', true);
+
+        foreach ($devices as $device) {
+            if (($this->livePullRetryAt[$device->id] ?? 0) > time()) {
+                continue;
+            }
+
+            try {
+                $result = $eventPullService->pullToday($device);
+                unset($this->livePullRetryAt[$device->id]);
+
+                if ($result['imported'] > 0) {
+                    $this->line(sprintf(
+                        '[%s] #%d (%s) jonli tortish: %d yangi event.',
+                        now()->format('H:i:s'),
+                        $device->id,
+                        $device->ip_address,
+                        $result['imported'],
+                    ));
+                }
+            } catch (\Throwable $exception) {
+                // Javob bermayotgan qurilma har tikda timeout kutib, qolganlarini kechiktirmasin.
+                $this->livePullRetryAt[$device->id] = time() + self::LIVE_PULL_RETRY_SECONDS;
+                $this->warn(sprintf(
+                    'Qurilma #%d jonli tortish xatosi: %s',
+                    $device->id,
+                    $exception->getMessage(),
+                ));
+            }
+        }
+    }
+
+    private function workerLockKey(int $deviceId): string
+    {
+        return "hikvision.alert_stream.device.{$deviceId}";
     }
 
     private function runDeviceWorker(
@@ -103,7 +179,7 @@ class StreamDeviceEventsCommand extends Command
         int $deviceId,
     ): int {
         $reconnectDelay = max((int) config('hikvision.alert_stream_reconnect_seconds', 30), 5);
-        $lock = Cache::lock("hikvision.alert_stream.device.{$deviceId}", 86400);
+        $lock = Cache::lock($this->workerLockKey($deviceId), 86400);
 
         if (! $lock->get()) {
             $this->warn("Qurilma #{$deviceId} uchun alertStream worker allaqachon ishlayapti.");

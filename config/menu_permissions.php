@@ -13,6 +13,7 @@ return [
         'employees-pull' => 'Xodim tortish',
         'notes' => 'Izohlar',
         'sync' => 'Sinxronizatsiya',
+        'live' => 'Jonli kuzatuv',
         'reports' => 'Hisobotlar',
         'reports-pull' => 'Event tortish',
         'users' => 'Foydalanuvchilar',

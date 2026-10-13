@@ -8,6 +8,7 @@ use App\Models\Device;
 use App\Services\ReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 
 class HikvisionEventPullService
@@ -151,6 +152,30 @@ class HikvisionEventPullService
     }
 
     /**
+     * Faqat bugungi yangi eventlar — jonli monitor uchun tez-tez chaqiriladi.
+     * alertStream qurilmada to‘planib qolgan eski eventlarni yuborayotgan paytda ham
+     * bugungi o‘tishlar kechikmasligi uchun.
+     *
+     * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, truncated:bool}
+     */
+    public function pullToday(Device $device): array
+    {
+        $dayStart = now()->startOfDay();
+
+        $lastToday = AccessControllerEvent::query()
+            ->where('device_ip', $device->ip_address)
+            ->where('event_time', '>=', $dayStart)
+            ->max('event_time');
+
+        $startTime = $lastToday !== null
+            ? Carbon::parse($lastToday)->subSeconds(5)
+            : $dayStart;
+
+        // Qurilma soati serverdan oldinda bo‘lishi mumkin — yuqori chegara keng olinadi.
+        return $this->pullDeviceRange($device, $startTime, now()->addDay());
+    }
+
+    /**
      * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, truncated:bool}
      */
     public function pullDeviceRange(Device $device, Carbon $startTime, Carbon $endTime): array
@@ -226,7 +251,7 @@ class HikvisionEventPullService
     }
 
     /**
-     * @return \Illuminate\Http\Client\Response
+     * @return Response
      */
     private function fetchAcsEvents(
         Device $device,
@@ -270,7 +295,6 @@ class HikvisionEventPullService
     }
 
     /**
-     * @param  mixed  $items
      * @return list<array<string, mixed>>
      */
     private function normalizeInfoList(mixed $items): array

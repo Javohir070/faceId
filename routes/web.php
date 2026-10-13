@@ -8,6 +8,7 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LiveMonitorController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProfileController;
@@ -106,6 +107,12 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/{employee}/remove-devices', [EmployeeController::class, 'removeDevices'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.remove-devices');
+        Route::get('live', [LiveMonitorController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['live'])
+            ->name('live.index');
+        Route::get('live/faces/{employee}', [LiveMonitorController::class, 'face'])
+            ->middleware('permission:'.$menuPermissions['live'])
+            ->name('live.face');
         Route::get('reports/pull', [ReportController::class, 'pull'])
             ->middleware('permission:'.$menuPermissions['reports-pull'])
             ->name('reports.pull');

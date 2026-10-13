@@ -61,6 +61,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Jonli tortish (devices:stream-events manageri ichida)
+    |--------------------------------------------------------------------------
+    |
+    | alertStream birinchi ulanganda qurilma to‘planib qolgan eski eventlarni
+    | yuboradi va bugungilar kechikadi. Manager har N soniyada onlayn qurilmalardan
+    | faqat bugungi yangi eventlarni tortadi (dublikat ReportService da filtrlanadi).
+    |
+    */
+
+    'live_pull_enabled' => env('HIKVISION_LIVE_PULL_ENABLED', true),
+
+    'live_pull_interval_seconds' => max((int) env('HIKVISION_LIVE_PULL_INTERVAL', 2), 1),
+
+    /*
+    |--------------------------------------------------------------------------
     | ISAPI defaults
     |--------------------------------------------------------------------------
     */

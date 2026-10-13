@@ -11,6 +11,7 @@ import {
     IdcardOutlined,
     KeyOutlined,
     SafetyCertificateOutlined,
+    ScanOutlined,
     SettingOutlined,
     SyncOutlined,
     TeamOutlined,
@@ -25,6 +26,7 @@ export const adminNavGroups = [
         title: null,
         items: [
             { key: 'home', href: route('home.index'), label: 'Bosh sahifa', icon: HomeOutlined },
+            { key: 'live', href: route('admin.live.index'), label: 'Jonli kuzatuv', icon: ScanOutlined },
             { key: 'categories', href: route('admin.categories.index'), label: 'Kategoriyalar', icon: AppstoreOutlined },
             { key: 'devices', href: route('admin.devices.index'), label: 'Qurilmalar', icon: ClusterOutlined },
             { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
