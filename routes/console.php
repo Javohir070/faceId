@@ -44,6 +44,15 @@ Schedule::command('backup:monitor')
     ->at('03:00')
     ->withoutOverlapping();
 
-// alertStream — uzluksiz jarayon; schedule orqali ISHLATILMAYDI (har daqiqa yangi
-// manager ochilib qurilmani yuklaydi). Alohida terminalda ishga tushiring:
+// alertStream — uzluksiz jarayon; oddiy holda alohida terminalda ishga tushiriladi:
 // php artisan devices:stream-events
+//
+// Serverda (HIKVISION_ALERT_STREAM_AUTOSTART=true) scheduler managerni tirik ushlab turadi:
+// --ensure manager ishlayotgan bo‘lsa jim chiqadi, shu sabab har daqiqa yangi manager ochilmaydi.
+// Busiz jonli monitor faqat devices:pull-events ga qoladi va eventlar daqiqalab kechikadi.
+// withoutOverlapping QO‘YILMAYDI: server o‘chib yonsa mutex 24 soat qolib, manager qayta turmaydi.
+Schedule::command('devices:stream-events --ensure')
+    ->everyMinute()
+    ->when(fn (): bool => (bool) config('hikvision.alert_stream_enabled', true)
+        && (bool) config('hikvision.alert_stream_autostart', false))
+    ->runInBackground();

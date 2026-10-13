@@ -13,7 +13,8 @@ class StreamDeviceEventsCommand extends Command
 {
     protected $signature = 'devices:stream-events
                             {--device= : Faqat shu qurilma ID si uchun stream}
-                            {--worker : Ichki worker rejimi (manager tomonidan ishga tushiriladi)}';
+                            {--worker : Ichki worker rejimi (manager tomonidan ishga tushiriladi)}
+                            {--ensure : Cron uchun: manager ishlayotgan bo‘lsa jim chiqadi, ishlamayotgan bo‘lsa ishga tushiradi}';
 
     protected $description = 'Bazadagi Hikvision qurilmalaridan real vaqtda alertStream eventlarini qabul qiladi';
 
@@ -21,7 +22,7 @@ class StreamDeviceEventsCommand extends Command
 
     private const MANAGER_HEARTBEAT_KEY = 'hikvision.alert_stream.manager.heartbeat';
 
-    private const MANAGER_HEARTBEAT_STALE_SECONDS = 20;
+    private const MANAGER_HEARTBEAT_STALE_SECONDS = 60;
 
     /** @var array<int, Process> */
     private array $workers = [];
@@ -62,6 +63,10 @@ class StreamDeviceEventsCommand extends Command
         $lastHeartbeat = (int) Cache::get(self::MANAGER_HEARTBEAT_KEY, 0);
 
         if (time() - $lastHeartbeat < self::MANAGER_HEARTBEAT_STALE_SECONDS) {
+            if ($this->option('ensure')) {
+                return self::SUCCESS;
+            }
+
             $this->error('alertStream manager allaqachon boshqa terminalda ishlayapti. Avval uni to‘xtating.');
 
             return self::FAILURE;
@@ -158,6 +163,9 @@ class StreamDeviceEventsCommand extends Command
             if (($this->livePullRetryAt[$device->id] ?? 0) > time()) {
                 continue;
             }
+
+            // Sekin javob beradigan qurilma tufayli manager "o‘lgan" deb hisoblanmasin.
+            Cache::put(self::MANAGER_HEARTBEAT_KEY, time(), 300);
 
             try {
                 $result = $eventPullService->pullToday($device);

@@ -53,6 +53,10 @@ return [
 
     'alert_stream_enabled' => env('HIKVISION_ALERT_STREAM_ENABLED', true),
 
+    // Serverda true: scheduler har daqiqa `devices:stream-events --ensure` ni chaqirib,
+    // manager o‘lgan bo‘lsa qayta ishga tushiradi. Lokalda false — terminalda qo‘lda ishlatiladi.
+    'alert_stream_autostart' => env('HIKVISION_ALERT_STREAM_AUTOSTART', false),
+
     'alert_stream_connect_timeout' => (int) env('HIKVISION_ALERT_STREAM_CONNECT_TIMEOUT', 15),
 
     'alert_stream_timeout' => (int) env('HIKVISION_ALERT_STREAM_TIMEOUT', 0),

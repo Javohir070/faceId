@@ -30,7 +30,7 @@ Artisan commands specific to this project:
 
 - `devices:ping` — background online/offline check (scheduled)
 - `devices:pull-events` — pull access events from devices (scheduled, backup channel)
-- `devices:stream-events` — long-running realtime alertStream listener; **run in its own terminal, never via the scheduler** (see the comment at the bottom of `routes/console.php`)
+- `devices:stream-events` — long-running realtime alertStream listener; **run in its own terminal**. The scheduler only ever starts it as `devices:stream-events --ensure` (a no-op while a manager is alive), and only when `HIKVISION_ALERT_STREAM_AUTOSTART=true` — never schedule it without `--ensure` (see the comment at the bottom of `routes/console.php`)
 - `devices:pull-employees {device?}` — import employees from a device
 - `employees:notify-expiry`, `telegram:daily-digest`, `telegram:set-webhook {url?}`
 

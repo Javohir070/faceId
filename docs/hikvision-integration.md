@@ -142,7 +142,14 @@ HIKVISION_EVENTS_PULL_ENABLED=false
 
 ### Ishga tushirish
 
-Scheduler (`php artisan schedule:work`) ishlayotganda manager avtomatik bazadagi barcha qurilmalar uchun worker ochadi.
+Manager ishlamasa jonli monitor faqat `devices:pull-events` ga qoladi va eventlar daqiqalab kechikib chiqadi.
+
+Serverda `.env` ga `HIKVISION_ALERT_STREAM_AUTOSTART=true` qo‘ying — scheduler (`schedule:run` cron) har daqiqa
+`devices:stream-events --ensure` ni chaqiradi: manager ishlayotgan bo‘lsa jim chiqadi, o‘lgan bo‘lsa 1–2 daqiqa ichida
+qayta ishga tushiradi. Supervisor/systemd bo‘lmagan serverlar uchun shu yetarli.
+
+Qurilma faqat **bitta** alertStream ulanishini qabul qiladi (ikkinchisi HTTP 404 oladi). Lokal kompyuterda manager
+ishlab tursa, server ulanishni ololmaydi — u holda eventlar jonli tortish (`HIKVISION_LIVE_PULL_INTERVAL`) orqali keladi.
 
 Qo‘lda:
 
@@ -154,7 +161,7 @@ php artisan devices:stream-events
 php artisan devices:stream-events --device=1
 ```
 
-Production uchun **Supervisor** yoki systemd orqali doimiy ishlatish kerak:
+Supervisor yoki systemd bor bo‘lsa, autostart o‘rniga shular orqali ham doimiy ishlatish mumkin:
 
 ```ini
 [program:biocontrol-alert-stream]
