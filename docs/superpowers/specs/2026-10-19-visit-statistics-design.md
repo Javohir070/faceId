@@ -12,17 +12,18 @@ Mahalliy/xorijiy hisobi uchun xodimga **davlat** maydoni qo‘shiladi.
 
 - Migration: `country` `char(2)`, `NOT NULL`, default `'UZ'`, `gender` dan keyin. Mavjud xodimlar va qurilmadan
   import qilinadiganlar (`EmployeePullService`) avtomatik `UZ` bo‘ladi — import kodiga tegilmaydi.
-- `config/countries.php` — ISO 3166-1 alpha-2 kodlar ro‘yxati (yagona manba).
+- `config/countries.php` — `ISO 3166-1 alpha-2 => o‘zbekcha nom` (yagona manba), ICU/CLDR dan bir marta
+  generatsiya qilingan; O‘zbekiston birinchi, qolgani o‘zbek alifbosi bo‘yicha. (Brauzer `Intl` dan voz kechildi:
+  ilova ichidagi Chromium o‘zbek ICU ma’lumotisiz inglizcha nom qaytardi.)
 - `Employee`: `fillable` ga `country`; `public const LOCAL_COUNTRY = 'UZ'`; `isForeign(): bool`.
 - `EmployeeFactory`: `'country' => 'UZ'`.
 - `StoreEmployeeRequest` / `UpdateEmployeeRequest`: `country` — `sometimes`, `required`, `string`,
   `Rule::in(config('countries'))`; xabarlar o‘zbekcha ("Davlatni tanlang.", "Davlat noto‘g‘ri."). Yuborilmasa
   saqlashda `UZ` (DB default), yangilashda o‘zgarmaydi — davlatsiz eski so‘rovlar buzilmaydi; forma har doim yuboradi.
-- `EmployeeController@create/edit`: `countries` prop (`config('countries')`).
-- `Admin/Employees/Form.jsx`: "Davlat" qidiruvli `Select`, standart `UZ`; nomlar brauzerda
-  `Intl.DisplayNames(['uz'], { type: 'region' })` orqali (250 ta nomni qo‘lda yozmaslik uchun), `UZ` ro‘yxat boshida.
-- `Admin/Employees/Show.jsx`: "Davlat" qatori.
-- Yordamchi: `resources/js/utils/countries.js` — `countryName(code)` (Intl, xato bo‘lsa kodning o‘zi).
+- `EmployeeController@create/edit`: `countries` prop — `[{value, label}]` (`config('countries')` tartibida).
+- `Employee::countryName()` va `EmployeeResource` `country_name` — nom serverdan keladi.
+- `Admin/Employees/Form.jsx`: "Davlat" qidiruvli `Select`, standart `UZ`; qidiruv apostrof turlarini e’tiborsiz qoldiradi.
+- `Admin/Employees/Show.jsx`: "Davlat" qatori (`country_name`).
 - Qilinmaydi: bayroqlar (Windows emoji bayroq ko‘rsatmaydi), Excel eksportiga ustun, ro‘yxat filtri.
 
 ## 2. Sahifa va marshrut

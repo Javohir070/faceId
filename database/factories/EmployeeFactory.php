@@ -23,6 +23,7 @@ class EmployeeFactory extends Factory
             'name' => fake()->name(),
             'card' => fake()->unique()->numerify('########'),
             'gender' => fake()->randomElement([Employee::GENDER_MALE, Employee::GENDER_FEMALE]),
+            'country' => Employee::LOCAL_COUNTRY,
             'position' => fake()->optional()->jobTitle(),
             'schedule_id' => Schedule::factory(),
             'department_id' => Department::factory(),

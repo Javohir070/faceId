@@ -88,6 +88,7 @@ export default function Show({ employee, notes = [] }) {
                             <DetailRow label="Guruh">{employee.group?.name || '—'}</DetailRow>
                             <DetailRow label="Lavozim">{employee.position || '—'}</DetailRow>
                             <DetailRow label="Jins">{employee.gender_label || '—'}</DetailRow>
+                            <DetailRow label="Davlat">{employee.country_name || '—'}</DetailRow>
                             <DetailRow label="Jadval">{employee.schedule?.name || '—'}</DetailRow>
                             <DetailRow label="Boshlanish">{employee.valid_from_dt || '—'}</DetailRow>
                             <DetailRow label="Tugash">{employee.valid_to_dt || '—'}</DetailRow>

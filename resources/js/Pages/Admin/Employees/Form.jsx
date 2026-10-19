@@ -13,12 +13,22 @@ function generateCardNumber() {
     return String(Math.floor(10000000 + Math.random() * 90000000));
 }
 
+// "o'zbekiston" deb yozilsa ham "Oʻzbekiston" topilsin: apostrof turlari qidiruvda hisobga olinmaydi.
+function normalizeSearch(text) {
+    return String(text || '').toLowerCase().replace(/['ʻʼ‘’`]/g, '');
+}
+
+function filterCountry(input, option) {
+    return normalizeSearch(option?.label).includes(normalizeSearch(input));
+}
+
 export default function Form({
     employee,
     suggestedCard = '',
     departments = [],
     schedules = [],
     groups = [],
+    countries = [],
 }) {
     const isEdit = !!employee;
     const linkedDevices = employee?.devices ?? [];
@@ -28,6 +38,7 @@ export default function Form({
         name: employee?.name || '',
         card: employee?.card || suggestedCard || generateCardNumber(),
         gender: employee?.gender ?? null,
+        country: employee?.country || 'UZ',
         position: employee?.position || '',
         department_id: employee?.department_id || null,
         group_id: employee?.group_id || null,
@@ -114,7 +125,7 @@ export default function Form({
                             </FormField>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-3">
                             <FormField label="Jins" error={errors.gender} required>
                                 <Select
                                     className="w-full"
@@ -127,6 +138,20 @@ export default function Form({
                                         { value: 2, label: 'Ayol' },
                                     ]}
                                     onChange={(value) => setData('gender', value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Davlat" error={errors.country} required>
+                                <Select
+                                    className="w-full"
+                                    size="large"
+                                    showSearch
+                                    filterOption={filterCountry}
+                                    placeholder="Davlat tanlang"
+                                    value={data.country}
+                                    status={errors.country ? 'error' : undefined}
+                                    options={countries}
+                                    onChange={(value) => setData('country', value)}
                                 />
                             </FormField>
 

@@ -33,6 +33,7 @@ class StoreEmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'card' => ['required', 'digits_between:1,14', Rule::unique('employees', 'card')],
             'gender' => ['required', 'integer', Rule::in([1, 2])],
+            'country' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('countries')))],
             'position' => ['nullable', 'string', 'max:255'],
             'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
@@ -59,6 +60,8 @@ class StoreEmployeeRequest extends FormRequest
             'card.unique' => 'Bu karta raqami allaqachon band.',
             'gender.required' => 'Jinsni tanlang.',
             'gender.in' => 'Jins noto‘g‘ri: 1 — Erkak, 2 — Ayol.',
+            'country.required' => 'Davlatni tanlang.',
+            'country.in' => 'Davlat noto‘g‘ri.',
             'group_id.exists' => 'Guruh tanlangan bo‘limga tegishli emas.',
             'face.max' => 'Yuz rasmi hajmi 1 MB dan oshmasligi kerak.',
         ];
