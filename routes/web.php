@@ -35,8 +35,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/biocontrol/devices/{device}', [BiocontrolController::class, 'index'])->name('site.biocontrol');
-    Route::get('/biocontrol/devices/{device}/http-host', [BiocontrolController::class, 'httpHost'])->name('site.http-host');
+    // Faqat o‘qiydigan diagnostika. Qurilmalar boshqa tizimlar bilan umumiy — HTTP Listening ni
+    // yozadigan GET endpoint olib tashlangan; webhook faqat "Ulash" (POST + huquq) orqali sozlanadi.
+    Route::get('/biocontrol/devices/{device}', [BiocontrolController::class, 'index'])
+        ->middleware('permission:'.config('menu_permissions.resources')['devices'])
+        ->name('site.biocontrol');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         $menuPermissions = config('menu_permissions.resources');
