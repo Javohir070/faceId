@@ -14,11 +14,12 @@ import {
     WomanOutlined,
 } from '@ant-design/icons';
 import { useState } from 'react';
+import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
-import { formatNumber, GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
+import { GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
 const POLL_MS = 3000;
 const LOCAL_COUNTRY = 'UZ';
@@ -101,7 +102,8 @@ function StatTile({ tile, value, active }) {
                 <p className="lm-stat-label">{tile.label}</p>
                 <p className="lm-stat-sub">{tile.sub}</p>
             </div>
-            <p className="lm-stat-value">{formatNumber(value)}</p>
+            <p className="lm-stat-value"><AnimatedNumber value={value ?? 0} /></p>
+            <BumpGlow value={value} />
         </div>
     );
 }
