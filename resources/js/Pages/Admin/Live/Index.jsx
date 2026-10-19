@@ -23,6 +23,10 @@ import { formatNumber, GROUP_TONES, initialsOf } from '../../../utils/liveFormat
 const POLL_MS = 3000;
 const TYPE_EXIT = 2;
 
+// Guruh plitkalari bitta qatordan oshmasin — aks holda 1080px ekranda mehmon kartasi siqilib, tashqariga chiqadi.
+// To‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
+const MAX_GROUP_TILES = 4;
+
 const statTiles = [
     { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined },
     { key: 'exited', label: 'Chiqqanlar', sub: 'Exited today', tone: 'yellow', icon: LogoutOutlined },
@@ -208,7 +212,7 @@ export default function Index({ passes = [], stats = {} }) {
                     {statTiles.map((tile) => (
                         <StatTile key={tile.key} tile={tile} value={stats[tile.key]} />
                     ))}
-                    {(stats.groups ?? []).map((group, index) => {
+                    {(stats.groups ?? []).slice(0, MAX_GROUP_TILES).map((group, index) => {
                         const tile = groupTile(group, index);
 
                         return <StatTile key={tile.key} tile={tile} value={group.entered} />;

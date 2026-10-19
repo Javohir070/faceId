@@ -144,7 +144,8 @@ function GenderPanel({ stats }) {
 
 function GroupsPanel({ stats }) {
     const groups = stats.groups ?? [];
-    const total = groups.reduce((sum, group) => sum + (group.entered ?? 0), 0);
+    // Foiz bugun kirganlarga nisbatan: guruhsiz xodimlar (qurilmadan kelganlar) bo‘lsa, chiziqda bo‘sh qism qoladi.
+    const total = stats.entered ?? 0;
     const toned = groups.map((group, index) => ({ ...group, tone: GROUP_TONES[index % GROUP_TONES.length] }));
 
     return (
