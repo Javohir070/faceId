@@ -5,6 +5,7 @@ import {
     ApartmentOutlined,
     ArrowLeftOutlined,
     BankOutlined,
+    BarChartOutlined,
     FullscreenExitOutlined,
     FullscreenOutlined,
     LoginOutlined,
@@ -12,18 +13,15 @@ import {
     ManOutlined,
     WomanOutlined,
 } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import LiveClock from '../../../Components/Live/LiveClock';
+import useFullscreen from '../../../hooks/useFullscreen';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
+import { formatNumber, GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
 const POLL_MS = 3000;
 const TYPE_EXIT = 2;
-
-const WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-const MONTHS = [
-    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
-];
 
 const statTiles = [
     { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined },
@@ -31,9 +29,6 @@ const statTiles = [
     { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: ManOutlined },
     { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
 ];
-
-// Guruhlar (OAV, Homiy, Ishtirokchi…) bazadan keladi — rang tartib bo‘yicha navbatlanadi.
-const GROUP_TONES = ['blue', 'yellow', 'pink', 'green'];
 
 function groupTile(group, index) {
     return {
@@ -43,53 +38,6 @@ function groupTile(group, index) {
         tone: GROUP_TONES[index % GROUP_TONES.length],
         icon: ApartmentOutlined,
     };
-}
-
-function initialsOf(name) {
-    return String(name || '')
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word.charAt(0).toUpperCase())
-        .join('') || '?';
-}
-
-function formatNumber(value) {
-    return String(value ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-function useNow() {
-    const [now, setNow] = useState(() => new Date());
-
-    useEffect(() => {
-        const id = window.setInterval(() => setNow(new Date()), 1000);
-
-        return () => window.clearInterval(id);
-    }, []);
-
-    return now;
-}
-
-function useFullscreen() {
-    const [active, setActive] = useState(false);
-
-    useEffect(() => {
-        const onChange = () => setActive(Boolean(document.fullscreenElement));
-
-        document.addEventListener('fullscreenchange', onChange);
-
-        return () => document.removeEventListener('fullscreenchange', onChange);
-    }, []);
-
-    const toggle = () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen?.();
-        } else {
-            document.documentElement.requestFullscreen?.().catch(() => {});
-        }
-    };
-
-    return [active, toggle];
 }
 
 function Avatar({ pass, className }) {
@@ -106,19 +54,6 @@ function Avatar({ pass, className }) {
                 </span>
             )}
         </span>
-    );
-}
-
-function Clock() {
-    const now = useNow();
-    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const date = `${now.getDate()}-${MONTHS[now.getMonth()]}, ${now.getFullYear()} · ${WEEKDAYS[now.getDay()]}`;
-
-    return (
-        <div className="lm-clock">
-            <p className="lm-clock-time">{time}</p>
-            <p className="lm-clock-date">{date}</p>
-        </div>
     );
 }
 
@@ -241,6 +176,14 @@ export default function Index({ passes = [], stats = {} }) {
                             >
                                 <ArrowLeftOutlined aria-hidden="true" />
                             </Link>
+                            <Link
+                                href={route('admin.live.stats')}
+                                className="lm-tool"
+                                aria-label="Tashrif statistikasi"
+                                title="Tashrif statistikasi"
+                            >
+                                <BarChartOutlined aria-hidden="true" />
+                            </Link>
                             <button
                                 type="button"
                                 className="lm-tool"
@@ -257,7 +200,7 @@ export default function Index({ passes = [], stats = {} }) {
                             <span className="lm-live-dot" aria-hidden="true" />
                             JONLI · LIVE
                         </span>
-                        <Clock />
+                        <LiveClock />
                     </div>
                 </header>
 

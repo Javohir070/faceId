@@ -27,6 +27,7 @@ export const adminNavGroups = [
         items: [
             { key: 'home', href: route('home.index'), label: 'Bosh sahifa', icon: HomeOutlined },
             { key: 'live', href: route('admin.live.index'), label: 'Jonli kuzatuv', icon: ScanOutlined },
+            { key: 'live-stats', permission: 'live', href: route('admin.live.stats'), label: 'Tashrif statistikasi', icon: BarChartOutlined },
             { key: 'categories', href: route('admin.categories.index'), label: 'Kategoriyalar', icon: AppstoreOutlined },
             { key: 'devices', href: route('admin.devices.index'), label: 'Qurilmalar', icon: ClusterOutlined },
             { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
