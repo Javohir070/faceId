@@ -266,11 +266,30 @@ class HikvisionDeviceService
     {
         [$webhookUrl, $host, $serverPort, $path] = $this->resolveWebhookTarget();
 
+        // Qurilma loopback manzilga event yubora olmaydi: yozilsa faqat qurilmadagi mavjud
+        // HTTP Listening sozlamasi (masalan, boshqa tizimniki) o‘chib ketadi.
+        if ($this->isLoopbackHost($host)) {
+            Log::warning('Hikvision: webhook sozlanmadi — manzil qurilma yeta olmaydigan (loopback)', [
+                'device_id' => $device->id,
+                'host' => $host,
+            ]);
+
+            return false;
+        }
+
         if ($this->setupWebhookWithXml($device, $host, $serverPort, $path, $webhookUrl)) {
             return true;
         }
 
         return $this->setupWebhookWithJson($device, $host, $serverPort, $path, $webhookUrl);
+    }
+
+    private function isLoopbackHost(string $host): bool
+    {
+        $host = strtolower(trim($host, '[]'));
+
+        return in_array($host, ['localhost', '0.0.0.0', '::1'], true)
+            || str_starts_with($host, '127.');
     }
 
     private function setupWebhookWithXml(
