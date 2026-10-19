@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\Face;
+use App\Models\Group;
 use App\Models\Report;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class LiveMonitorService
@@ -39,7 +41,7 @@ class LiveMonitorService
     /**
      * Bugungi ko‘rsatkichlar — o‘tishlar emas, takrorlanmas xodimlar soni.
      *
-     * @return array{entered:int, exited:int, male:int, female:int}
+     * @return array{entered:int, exited:int, male:int, female:int, groups:list<array{id:int, name:string, entered:int}>}
      */
     public function todayStats(): array
     {
@@ -62,7 +64,36 @@ class LiveMonitorService
             'exited' => $people(Report::TYPE_EXIT),
             'male' => $enteredByGender(Employee::GENDER_MALE),
             'female' => $enteredByGender(Employee::GENDER_FEMALE),
+            'groups' => $this->enteredByGroup($range),
         ];
+    }
+
+    /**
+     * Har bir guruhdan bugun kirgan xodimlar soni (OAV, Homiy, Ishtirokchi va h.k.).
+     * Bugun hech kim kirmagan guruh ham 0 bilan qaytadi — monitordagi plitkalar kun davomida o‘zgarmaydi.
+     *
+     * @param  array{0:CarbonInterface, 1:CarbonInterface}  $range
+     * @return list<array{id:int, name:string, entered:int}>
+     */
+    private function enteredByGroup(array $range): array
+    {
+        $entered = Employee::query()
+            ->whereNotNull('group_id')
+            ->whereHas('reports', fn ($query) => $query->entry()->whereBetween('occurred_at', $range))
+            ->groupBy('group_id')
+            ->selectRaw('group_id, count(*) as total')
+            ->pluck('total', 'group_id');
+
+        return Group::query()
+            ->orderBy('id')
+            ->get(['id', 'name'])
+            ->map(fn (Group $group): array => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'entered' => (int) ($entered[$group->id] ?? 0),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Face;
+use App\Models\Group;
 use App\Models\Report;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -66,6 +67,68 @@ class LiveMonitorTest extends TestCase
                 ->where('stats.exited', 1)
                 ->where('stats.male', 1)
                 ->where('stats.female', 1));
+    }
+
+    public function test_stats_count_todays_entered_people_per_group(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['live'],
+        ]);
+
+        $department = Department::factory()->create();
+        $media = Group::factory()->create(['name' => 'OAV (Media)', 'department_id' => $department->id]);
+        $sponsor = Group::factory()->create(['name' => 'Homiy', 'department_id' => $department->id]);
+        $participant = Group::factory()->create(['name' => 'Ishtirokchi', 'department_id' => $department->id]);
+
+        $journalist = Employee::factory()->create(['department_id' => $department->id, 'group_id' => $media->id]);
+        $guest = Employee::factory()->create(['department_id' => $department->id, 'group_id' => $participant->id]);
+        $leaver = Employee::factory()->create(['department_id' => $department->id, 'group_id' => $participant->id]);
+        $withoutGroup = Employee::factory()->create(['department_id' => $department->id, 'group_id' => null]);
+
+        Report::factory()->forEmployee($journalist)->entry()->create(['occurred_at' => now()->subSeconds(50)]);
+        // Bir kunda ikki marta kirgan odam bir marta sanaladi.
+        Report::factory()->forEmployee($guest)->entry()->create(['occurred_at' => now()->subSeconds(40)]);
+        Report::factory()->forEmployee($guest)->entry()->create(['occurred_at' => now()->subSeconds(30)]);
+        // Faqat chiqqan yoki kecha kirgan odam bugungi kirganlarga qo‘shilmaydi.
+        Report::factory()->forEmployee($leaver)->exit()->create(['occurred_at' => now()->subSeconds(20)]);
+        Report::factory()->forEmployee($leaver)->entry()->create(['occurred_at' => now()->subDays(2)]);
+        Report::factory()->forEmployee($withoutGroup)->entry()->create(['occurred_at' => now()->subSeconds(10)]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.live.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.entered', 3)
+                ->where('stats.groups', [
+                    ['id' => $media->id, 'name' => 'OAV (Media)', 'entered' => 1],
+                    ['id' => $sponsor->id, 'name' => 'Homiy', 'entered' => 0],
+                    ['id' => $participant->id, 'name' => 'Ishtirokchi', 'entered' => 1],
+                ]));
+    }
+
+    public function test_department_user_sees_only_own_department_groups(): void
+    {
+        $own = Department::factory()->create();
+        $other = Department::factory()->create();
+        $user = $this->createDepartmentUserWithPermissions($own->id, [
+            config('menu_permissions.resources')['live'],
+        ]);
+
+        $ownGroup = Group::factory()->create(['name' => 'Ishtirokchi', 'department_id' => $own->id]);
+        $otherGroup = Group::factory()->create(['name' => 'Homiy', 'department_id' => $other->id]);
+        $ownEmployee = Employee::factory()->create(['department_id' => $own->id, 'group_id' => $ownGroup->id]);
+        $otherEmployee = Employee::factory()->create(['department_id' => $other->id, 'group_id' => $otherGroup->id]);
+
+        Report::factory()->forEmployee($ownEmployee)->entry()->create(['occurred_at' => now()->subSecond()]);
+        Report::factory()->forEmployee($otherEmployee)->entry()->create(['occurred_at' => now()->subSecond()]);
+
+        $this->actingAs($user)
+            ->get(route('admin.live.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.groups', [
+                    ['id' => $ownGroup->id, 'name' => 'Ishtirokchi', 'entered' => 1],
+                ]));
     }
 
     public function test_unauthorized_user_cannot_access_live_page(): void

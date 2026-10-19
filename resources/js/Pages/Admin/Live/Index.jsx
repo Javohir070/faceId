@@ -32,6 +32,19 @@ const statTiles = [
     { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
 ];
 
+// Guruhlar (OAV, Homiy, Ishtirokchi…) bazadan keladi — rang tartib bo‘yicha navbatlanadi.
+const GROUP_TONES = ['blue', 'yellow', 'pink', 'green'];
+
+function groupTile(group, index) {
+    return {
+        key: `group-${group.id}`,
+        label: group.name,
+        sub: 'Bugun kirgan',
+        tone: GROUP_TONES[index % GROUP_TONES.length],
+        icon: ApartmentOutlined,
+    };
+}
+
 function initialsOf(name) {
     return String(name || '')
         .trim()
@@ -252,6 +265,11 @@ export default function Index({ passes = [], stats = {} }) {
                     {statTiles.map((tile) => (
                         <StatTile key={tile.key} tile={tile} value={stats[tile.key]} />
                     ))}
+                    {(stats.groups ?? []).map((group, index) => {
+                        const tile = groupTile(group, index);
+
+                        return <StatTile key={tile.key} tile={tile} value={group.entered} />;
+                    })}
                 </section>
 
                 <main className="lm-main">
