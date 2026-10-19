@@ -183,6 +183,7 @@
 .lm-tone--pink { --lm-tone: var(--lm-pink); }
 
 .lm-stat {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 1em;
@@ -570,6 +571,84 @@
 .lm-avatar-initials {
     font-weight: 800;
     letter-spacing: 0.02em;
+}
+
+/* Son aylanishi (Figma "Value prev" / "Value") va ramka yorishi — yangi kirish bo‘lganda */
+.lm-odometer {
+    display: inline-grid;
+    overflow: hidden;
+    vertical-align: bottom;
+}
+
+.lm-odometer > span {
+    grid-area: 1 / 1;
+}
+
+.lm-stat-value .lm-odometer {
+    justify-items: end;
+}
+
+.lm-odometer-in {
+    animation: lm-odo-in 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lm-odometer-prev {
+    animation: lm-odo-out 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lm-glow {
+    position: absolute;
+    inset: -1px;
+    border: 2px solid var(--glow-tone, var(--lm-tone, var(--lm-blue)));
+    border-radius: inherit;
+    pointer-events: none;
+    animation: lm-glow 1.6s ease-out forwards;
+}
+
+@keyframes lm-odo-in {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes lm-odo-out {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+}
+
+@keyframes lm-glow {
+    0% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--glow-tone, var(--lm-tone, var(--lm-blue))) 50%, transparent);
+    }
+    100% {
+        opacity: 0;
+        box-shadow: 0 0 1.5em 0.4em transparent;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lm-odometer-in,
+    .lm-odometer-prev,
+    .lm-glow {
+        animation: none;
+    }
+
+    .lm-odometer-prev,
+    .lm-glow {
+        display: none;
+    }
 }
 
 @keyframes lm-enter {

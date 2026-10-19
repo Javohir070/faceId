@@ -14,8 +14,10 @@ import {
     UserOutlined,
     WomanOutlined,
 } from '@ant-design/icons';
+import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
+import useIncrease from '../../../hooks/useIncrease';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 import { formatNumber, formatPercent, GROUP_TONES, initialsOf, share } from '../../../utils/liveFormat';
@@ -32,6 +34,9 @@ function PanelTitle({ title, sub }) {
 }
 
 function KpiCard({ tone, icon: Icon, label, sub, value, note, noteTone = false }) {
+    // Figma: yangi o‘tishdan keyin izoh oldida "▲ +1 hozirgina" (10 soniya).
+    const bump = useIncrease(value);
+
     return (
         <article className={`vs-kpi vs-tone--${tone}`}>
             <div className="vs-kpi-head">
@@ -43,8 +48,17 @@ function KpiCard({ tone, icon: Icon, label, sub, value, note, noteTone = false }
                     <p className="vs-kpi-sub">{sub}</p>
                 </div>
             </div>
-            <p className="vs-kpi-value">{formatNumber(value)}</p>
-            <p className={`vs-kpi-note${noteTone ? ' vs-kpi-note--tone' : ''}`}>{note}</p>
+            <p className="vs-kpi-value"><AnimatedNumber value={value ?? 0} /></p>
+            <p className={`vs-kpi-note${noteTone ? ' vs-kpi-note--tone' : ''}`}>
+                {bump ? (
+                    <>
+                        <span className="vs-kpi-bump">▲ +{formatNumber(bump.delta)} hozirgina</span>
+                        {'  ·  '}
+                    </>
+                ) : null}
+                {note}
+            </p>
+            <BumpGlow value={value} />
         </article>
     );
 }
@@ -66,7 +80,7 @@ function OriginPanel({ stats }) {
             <PanelTitle title="Mahalliy va xorijiy" sub="Local & international guests" />
             <div className="vs-donut" style={{ background: ring }}>
                 <div className="vs-donut-center">
-                    <p className="vs-donut-total">{formatNumber(entered)}</p>
+                    <p className="vs-donut-total"><AnimatedNumber value={entered} /></p>
                     <p className="vs-donut-sub">bugun kirgan</p>
                 </div>
             </div>
@@ -75,8 +89,9 @@ function OriginPanel({ stats }) {
                     <li key={row.key} className={`vs-legend-row vs-tone--${row.tone}`}>
                         <span className="vs-dot" aria-hidden="true" />
                         <span className="vs-legend-label">{row.label}</span>
-                        <span className="vs-legend-value">{formatNumber(row.value)}</span>
+                        <span className="vs-legend-value"><AnimatedNumber value={row.value ?? 0} /></span>
                         <span className="vs-legend-pct">{formatPercent(row.value, entered)}</span>
+                        <BumpGlow value={row.value} />
                     </li>
                 ))}
             </ul>
@@ -97,7 +112,8 @@ function GenderCard({ tone, icon: Icon, label, sub, value, total }) {
                 </div>
                 <span className="vs-pill">{formatPercent(value, total)}</span>
             </div>
-            <p className="vs-gender-value">{formatNumber(value)}</p>
+            <p className="vs-gender-value"><AnimatedNumber value={value ?? 0} /></p>
+            <BumpGlow value={value} />
         </article>
     );
 }
@@ -130,11 +146,11 @@ function GenderPanel({ stats }) {
                 <div className="vs-inside-values">
                     <span className="vs-inside-item vs-tone--blue">
                         <span className="vs-dot" aria-hidden="true" />
-                        Erkak <strong>{formatNumber(stats.inside_male)}</strong>
+                        Erkak <strong><AnimatedNumber value={stats.inside_male ?? 0} /></strong>
                     </span>
                     <span className="vs-inside-item vs-tone--pink">
                         <span className="vs-dot" aria-hidden="true" />
-                        Ayol <strong>{formatNumber(stats.inside_female)}</strong>
+                        Ayol <strong><AnimatedNumber value={stats.inside_female ?? 0} /></strong>
                     </span>
                 </div>
             </div>
@@ -172,9 +188,10 @@ function GroupsPanel({ stats }) {
                                 <p className="vs-group-sub">Bugun kirgan</p>
                             </div>
                             <div className="vs-group-numbers">
-                                <p className="vs-group-value">{formatNumber(group.entered)}</p>
+                                <p className="vs-group-value"><AnimatedNumber value={group.entered ?? 0} /></p>
                                 <p className="vs-group-pct">{formatPercent(group.entered, total)}</p>
                             </div>
+                            <BumpGlow value={group.entered} />
                         </li>
                     ))}
                 </ul>

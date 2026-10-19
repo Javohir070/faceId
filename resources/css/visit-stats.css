@@ -184,6 +184,31 @@
     color: var(--vs-tone);
 }
 
+/* "▲ +1 hozirgina" — yangi o‘tishdan keyin 10 soniya */
+.vs-kpi-bump {
+    color: var(--vs-tone);
+    font-weight: 700;
+    animation: lm-enter 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Yorish (.lm-glow) kartaning o‘z rangida */
+.vs-kpi,
+.vs-legend-row,
+.vs-gender-card,
+.vs-group-row {
+    position: relative;
+}
+
+.visit-stats .lm-glow {
+    --glow-tone: var(--vs-tone);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vs-kpi-bump {
+        animation: none;
+    }
+}
+
 /* Panellar */
 .vs-panels {
     display: grid;
