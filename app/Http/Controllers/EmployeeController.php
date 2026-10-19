@@ -116,6 +116,7 @@ class EmployeeController extends Controller
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
+            'countries' => collect(config('countries'))->map(fn (string $label, string $value): array => ['value' => $value, 'label' => $label])->values(),
         ]);
     }
 
@@ -182,6 +183,7 @@ class EmployeeController extends Controller
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
+            'countries' => collect(config('countries'))->map(fn (string $label, string $value): array => ['value' => $value, 'label' => $label])->values(),
         ]);
     }
 

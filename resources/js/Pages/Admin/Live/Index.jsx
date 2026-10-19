@@ -4,79 +4,67 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ApartmentOutlined,
     ArrowLeftOutlined,
-    BankOutlined,
+    BarChartOutlined,
     FullscreenExitOutlined,
     FullscreenOutlined,
+    GlobalOutlined,
+    HomeOutlined,
     LoginOutlined,
-    LogoutOutlined,
     ManOutlined,
     WomanOutlined,
 } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import LiveClock from '../../../Components/Live/LiveClock';
+import useFullscreen from '../../../hooks/useFullscreen';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
+import { formatNumber, GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
 const POLL_MS = 3000;
-const TYPE_EXIT = 2;
+const LOCAL_COUNTRY = 'UZ';
+const GENDER_MALE = 1;
+const GENDER_FEMALE = 2;
 
-const WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-const MONTHS = [
-    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
-];
+// Figma "Kirish monitori": 1-qator — Kirganlar + 3 ta guruh (OAV, Homiy, Ishtirokchi), 2-qator — kelib chiqish va jins.
+// Guruhlar ko‘payib ketsa ham 1080px ekranda mehmon kartasi siqilmasin; to‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
+const GROUP_SLOTS = 3;
 
-const statTiles = [
-    { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined },
-    { key: 'exited', label: 'Chiqqanlar', sub: 'Exited today', tone: 'yellow', icon: LogoutOutlined },
+const enteredTile = { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined };
+
+const breakdownTiles = [
+    { key: 'local', label: 'Mahalliy', sub: 'Local', tone: 'blue', icon: HomeOutlined },
+    { key: 'foreign', label: 'Xorijiy', sub: 'International', tone: 'yellow', icon: GlobalOutlined },
     { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: ManOutlined },
     { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
 ];
 
-function initialsOf(name) {
-    return String(name || '')
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word.charAt(0).toUpperCase())
-        .join('') || '?';
+function isForeign(pass) {
+    return Boolean(pass?.country) && pass.country !== LOCAL_COUNTRY;
 }
 
-function formatNumber(value) {
-    return String(value ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+function organizationOf(pass) {
+    return pass.position || pass.department_name || '';
 }
 
-function useNow() {
-    const [now, setNow] = useState(() => new Date());
+/** Oxirgi kirgan mehmon qo‘shilgan plitkalar ajratib ko‘rsatiladi (Figma'dagi rangli ramka). */
+function activeTileKeys(pass) {
+    if (!pass) {
+        return new Set();
+    }
 
-    useEffect(() => {
-        const id = window.setInterval(() => setNow(new Date()), 1000);
+    const keys = new Set(['entered', isForeign(pass) ? 'foreign' : 'local']);
 
-        return () => window.clearInterval(id);
-    }, []);
+    if (pass.gender === GENDER_MALE) {
+        keys.add('male');
+    } else if (pass.gender === GENDER_FEMALE) {
+        keys.add('female');
+    }
 
-    return now;
-}
+    if (pass.group_id) {
+        keys.add(`group-${pass.group_id}`);
+    }
 
-function useFullscreen() {
-    const [active, setActive] = useState(false);
-
-    useEffect(() => {
-        const onChange = () => setActive(Boolean(document.fullscreenElement));
-
-        document.addEventListener('fullscreenchange', onChange);
-
-        return () => document.removeEventListener('fullscreenchange', onChange);
-    }, []);
-
-    const toggle = () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen?.();
-        } else {
-            document.documentElement.requestFullscreen?.().catch(() => {});
-        }
-    };
-
-    return [active, toggle];
+    return keys;
 }
 
 function Avatar({ pass, className }) {
@@ -96,24 +84,16 @@ function Avatar({ pass, className }) {
     );
 }
 
-function Clock() {
-    const now = useNow();
-    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const date = `${now.getDate()}-${MONTHS[now.getMonth()]}, ${now.getFullYear()} · ${WEEKDAYS[now.getDay()]}`;
-
-    return (
-        <div className="lm-clock">
-            <p className="lm-clock-time">{time}</p>
-            <p className="lm-clock-date">{date}</p>
-        </div>
-    );
+// Bayroq o‘rni: Windows emoji bayroqlarni ko‘rsatmaydi, shuning uchun davlat kodi.
+function CountryCode({ code }) {
+    return code ? <span className="lm-flag" aria-hidden="true">{code}</span> : null;
 }
 
-function StatTile({ tile, value }) {
+function StatTile({ tile, value, active }) {
     const Icon = tile.icon;
 
     return (
-        <div className={`lm-stat lm-stat--${tile.tone}`}>
+        <div className={`lm-stat lm-tone--${tile.tone}${active ? ' lm-stat--active' : ''}`}>
             <span className="lm-stat-icon" aria-hidden="true">
                 <Icon />
             </span>
@@ -126,33 +106,28 @@ function StatTile({ tile, value }) {
     );
 }
 
-function TypeIcon({ pass }) {
-    return pass.type === TYPE_EXIT
-        ? <LogoutOutlined aria-hidden="true" />
-        : <LoginOutlined aria-hidden="true" />;
-}
-
 function Welcome({ pass }) {
-    const isExit = pass?.type === TYPE_EXIT;
+    const foreign = isForeign(pass);
+    const organization = pass ? organizationOf(pass) : '';
 
     return (
-        <section className={`lm-welcome${isExit ? ' lm-welcome--exit' : ''}`} aria-live="polite">
+        <section className={`lm-welcome${foreign ? ' lm-welcome--foreign' : ''}`} aria-live="polite">
             <p className="lm-welcome-kicker">
-                {isExit ? 'Xayr' : 'Xush kelibsiz'}
+                Xush kelibsiz
                 <span aria-hidden="true">·</span>
-                {isExit ? 'Goodbye' : 'Welcome'}
+                Welcome
             </p>
 
             {pass ? (
                 <div key={pass.id} className="lm-welcome-body">
                     <Avatar pass={pass} className="lm-hero-avatar" />
                     <h2 className="lm-hero-name">{pass.employee_name}</h2>
-                    {pass.position ? <p className="lm-hero-sub">{pass.position}</p> : null}
+                    {organization ? <p className="lm-hero-sub">{organization}</p> : null}
                     <div className="lm-chips">
-                        {pass.department_name ? (
+                        {pass.country_name ? (
                             <span className="lm-chip">
-                                <BankOutlined aria-hidden="true" />
-                                {pass.department_name}
+                                <CountryCode code={pass.country} />
+                                {pass.country_name}
                             </span>
                         ) : null}
                         {pass.group_name ? (
@@ -161,35 +136,37 @@ function Welcome({ pass }) {
                                 {pass.group_name}
                             </span>
                         ) : null}
-                        <span className={`lm-chip ${isExit ? 'lm-chip--exit' : 'lm-chip--entry'}`}>
-                            <TypeIcon pass={pass} />
-                            {[pass.type_label, pass.device_name, pass.time].filter(Boolean).join(' · ')}
+                        <span className="lm-chip lm-chip--entry">
+                            <LoginOutlined aria-hidden="true" />
+                            {[pass.device_name, pass.time].filter(Boolean).join(' · ')}
                         </span>
                     </div>
                 </div>
             ) : (
                 <p className="lm-welcome-empty">
-                    Bugun hali o‘tish qayd etilmagan. Face ID orqali o‘tgan xodim shu yerda paydo bo‘ladi.
+                    Bugun hali kirish qayd etilmagan. Face ID orqali kirgan xodim shu yerda paydo bo‘ladi.
                 </p>
             )}
         </section>
     );
 }
 
-function RecentRow({ pass, latest }) {
+function RecentRow({ pass, groupTone }) {
+    const foreign = isForeign(pass);
+
     return (
-        <li className={`lm-row${latest ? ' lm-row--latest' : ''}`}>
+        <li className={`lm-row${foreign ? ' lm-row--foreign' : ''}`}>
             <Avatar pass={pass} className="lm-row-avatar" />
             <div className="lm-row-text">
-                <p className="lm-row-name">{pass.employee_name}</p>
-                <p className="lm-row-sub">
-                    {[pass.position, pass.department_name, pass.device_name].filter(Boolean).join(' · ') || '—'}
+                <p className="lm-row-name">
+                    <span className="lm-row-name-text">{pass.employee_name}</span>
+                    {pass.group_name ? (
+                        <span className={`lm-tag lm-tone--${groupTone ?? 'blue'}`}>{pass.group_name}</span>
+                    ) : null}
                 </p>
+                <p className="lm-row-sub">{organizationOf(pass) || '—'}</p>
             </div>
-            <span className={`lm-row-type ${pass.type === TYPE_EXIT ? 'lm-row-type--exit' : 'lm-row-type--entry'}`}>
-                <TypeIcon pass={pass} />
-                {pass.type_label}
-            </span>
+            <CountryCode code={pass.country} />
             <span className="lm-row-time">{pass.time}</span>
         </li>
     );
@@ -201,6 +178,12 @@ export default function Index({ passes = [], stats = {} }) {
     const [fullscreen, toggleFullscreen] = useFullscreen();
 
     useInertiaPoll(['passes', 'stats'], POLL_MS);
+
+    const groups = stats.groups ?? [];
+    const visibleGroups = groups.slice(0, GROUP_SLOTS);
+    const groupTones = new Map(groups.map((group, index) => [group.id, GROUP_TONES[index % GROUP_TONES.length]]));
+    const active = activeTileKeys(passes[0]);
+    const entered = <StatTile tile={enteredTile} value={stats.entered} active={active.has('entered')} />;
 
     return (
         <>
@@ -228,6 +211,14 @@ export default function Index({ passes = [], stats = {} }) {
                             >
                                 <ArrowLeftOutlined aria-hidden="true" />
                             </Link>
+                            <Link
+                                href={route('admin.live.stats')}
+                                className="lm-tool"
+                                aria-label="Tashrif statistikasi"
+                                title="Tashrif statistikasi"
+                            >
+                                <BarChartOutlined aria-hidden="true" />
+                            </Link>
                             <button
                                 type="button"
                                 className="lm-tool"
@@ -244,28 +235,50 @@ export default function Index({ passes = [], stats = {} }) {
                             <span className="lm-live-dot" aria-hidden="true" />
                             JONLI · LIVE
                         </span>
-                        <Clock />
+                        <LiveClock />
                     </div>
                 </header>
 
                 <section className="lm-stats" aria-label="Bugungi ko‘rsatkichlar">
-                    {statTiles.map((tile) => (
-                        <StatTile key={tile.key} tile={tile} value={stats[tile.key]} />
-                    ))}
+                    {visibleGroups.length > 0 ? (
+                        <div className="lm-stats-row" style={{ '--lm-cols': 1 + visibleGroups.length }}>
+                            {entered}
+                            {visibleGroups.map((group) => (
+                                <StatTile
+                                    key={group.id}
+                                    tile={{
+                                        label: group.name,
+                                        sub: 'Bugun kirgan',
+                                        tone: groupTones.get(group.id),
+                                        icon: ApartmentOutlined,
+                                    }}
+                                    value={group.entered}
+                                    active={active.has(`group-${group.id}`)}
+                                />
+                            ))}
+                        </div>
+                    ) : null}
+                    {/* Guruh yo‘q bo‘lsa — Kirganlar ham shu qatorda (5 ta plitka), qator chala qolmasin. */}
+                    <div className="lm-stats-row" style={{ '--lm-cols': breakdownTiles.length + (visibleGroups.length > 0 ? 0 : 1) }}>
+                        {visibleGroups.length > 0 ? null : entered}
+                        {breakdownTiles.map((tile) => (
+                            <StatTile key={tile.key} tile={tile} value={stats[tile.key]} active={active.has(tile.key)} />
+                        ))}
+                    </div>
                 </section>
 
                 <main className="lm-main">
                     <Welcome pass={passes[0]} />
 
-                    <section className="lm-recent" aria-label="So‘nggi o‘tganlar">
+                    <section className="lm-recent" aria-label="So‘nggi kirganlar">
                         <div className="lm-recent-head">
-                            <h2 className="lm-recent-title">So‘nggi o‘tganlar</h2>
-                            <span className="lm-recent-sub">Recent passes</span>
+                            <h2 className="lm-recent-title">So‘nggi kirganlar</h2>
+                            <span className="lm-recent-sub">Recent arrivals</span>
                         </div>
                         {passes.length > 0 ? (
                             <ul className="lm-recent-list">
-                                {passes.map((pass, index) => (
-                                    <RecentRow key={pass.id} pass={pass} latest={index === 0} />
+                                {passes.map((pass) => (
+                                    <RecentRow key={pass.id} pass={pass} groupTone={groupTones.get(pass.group_id)} />
                                 ))}
                             </ul>
                         ) : (

@@ -89,6 +89,37 @@ class HikvisionDeviceServiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_setup_webhook_never_writes_loopback_address_to_device(): void
+    {
+        Http::fake([
+            '*' => Http::response('', 200),
+        ]);
+
+        $owner = User::factory()->create();
+        $category = Category::factory()->create();
+        $device = Device::factory()->create([
+            'user_id' => $owner->id,
+            'category_id' => $category->id,
+        ]);
+
+        $service = app(HikvisionDeviceService::class);
+
+        $targets = [
+            ['hikvision.webhook_url' => null, 'hikvision.webhook_host' => '127.0.0.1', 'hikvision.webhook_port' => 8000],
+            ['hikvision.webhook_url' => null, 'hikvision.webhook_host' => 'localhost', 'hikvision.webhook_port' => 8000],
+            ['hikvision.webhook_url' => 'http://127.0.0.1:8000/api/webhooks/hikvision/events/test-secret'],
+        ];
+
+        foreach ($targets as $target) {
+            config($target);
+
+            $this->assertFalse($service->setupWebhook($device));
+        }
+
+        // Yozilsa qurilmadagi mavjud HTTP Listening sozlamasi (boshqa tizimniki) o‘chib ketadi.
+        Http::assertNothingSent();
+    }
+
     public function test_setup_webhook_falls_back_to_json_when_xml_fails(): void
     {
         config([

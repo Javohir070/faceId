@@ -21,6 +21,12 @@ class DeviceActionTest extends TestCase
 
     public function test_authorized_user_can_connect_device(): void
     {
+        // Loopback manzil qurilmaga yozilmaydi — webhook sozlanishi uchun haqiqiy server manzili kerak.
+        config([
+            'hikvision.webhook_host' => '192.168.100.247',
+            'hikvision.webhook_port' => 8000,
+        ]);
+
         Http::fake([
             '*' => Http::sequence()
                 ->push(['DeviceInfo' => ['deviceName' => 'Terminal']], 200)

@@ -163,28 +163,41 @@
     font-weight: 500;
 }
 
-/* Ko‘rsatkichlar */
+/* Ko‘rsatkichlar: 2 qator × 4 ustun (Kirganlar + guruhlar / Mahalliy, Xorijiy, Erkaklar, Ayollar) */
 .lm-stats {
-    display: grid;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
+    display: flex;
+    flex-direction: column;
     gap: 1em;
 }
+
+/* Ustunlar soni qatordagi plitkalarga qarab (--lm-cols): guruh kam bo‘lsa ham qator to‘liq to‘ladi. */
+.lm-stats-row {
+    display: grid;
+    grid-template-columns: repeat(var(--lm-cols, 4), minmax(0, 1fr));
+    gap: 1em;
+}
+
+.lm-tone--green { --lm-tone: var(--lm-green); }
+.lm-tone--blue { --lm-tone: var(--lm-blue-soft); }
+.lm-tone--yellow { --lm-tone: var(--lm-yellow); }
+.lm-tone--pink { --lm-tone: var(--lm-pink); }
 
 .lm-stat {
     display: flex;
     align-items: center;
     gap: 1em;
-    padding: 1.125em 1.5em;
-    border: 1px solid color-mix(in srgb, var(--lm-tone) 55%, transparent);
+    padding: 0.875em 1.375em;
+    border: 1px solid var(--lm-line);
     border-radius: 1em;
-    background: color-mix(in srgb, var(--lm-tone) 9%, var(--lm-panel));
+    background: var(--lm-panel);
+    transition: border-color 300ms, background-color 300ms;
 }
 
-.lm-stat--green { --lm-tone: var(--lm-green); }
-.lm-stat--blue { --lm-tone: var(--lm-blue-soft); }
-.lm-stat--yellow { --lm-tone: var(--lm-yellow); }
-.lm-stat--pink { --lm-tone: var(--lm-pink); }
+/* Oxirgi kirgan mehmon qo‘shilgan plitkalar */
+.lm-stat--active {
+    border: 1.5px solid var(--lm-tone);
+    background: color-mix(in srgb, var(--lm-tone) 9%, var(--lm-panel));
+}
 
 .lm-stat-icon {
     display: flex;
@@ -223,7 +236,7 @@
 .lm-stat-value {
     margin: 0;
     color: var(--lm-tone);
-    font-size: 2.75em;
+    font-size: 2.5em;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -336,17 +349,53 @@
     color: var(--lm-green);
 }
 
-.lm-chip--exit .anticon {
+/* Xorijiy mehmon — oltin rang (Figma "Kirish monitori — Xorijiy mehmon") */
+.lm-welcome--foreign {
+    border-color: var(--lm-yellow);
+    background:
+        radial-gradient(70% 60% at 50% 40%, rgba(251, 191, 36, 0.12) 0%, transparent 70%),
+        var(--lm-panel-strong);
+}
+
+.lm-welcome--foreign .lm-welcome-kicker {
     color: var(--lm-yellow);
 }
 
-.lm-welcome--exit {
-    border-color: color-mix(in srgb, var(--lm-yellow) 70%, transparent);
-}
-
-.lm-welcome--exit .lm-hero-avatar {
+.lm-welcome--foreign .lm-hero-avatar {
     border-color: var(--lm-yellow);
     box-shadow: 0 0 0 0.75em rgba(251, 191, 36, 0.12);
+}
+
+.lm-welcome--foreign .lm-chip--outline {
+    border-color: var(--lm-yellow);
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--lm-yellow);
+}
+
+.lm-welcome--foreign .lm-chip--outline .anticon {
+    color: var(--lm-yellow);
+}
+
+/* Bayroq o‘rni — davlat kodi */
+.lm-flag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.4em;
+    height: 1.6em;
+    padding: 0 0.35em;
+    border: 1px solid var(--lm-line);
+    border-radius: 0.3em;
+    background: var(--lm-panel);
+    color: var(--lm-muted);
+    font-size: 0.75em;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
+.lm-chip .lm-flag {
+    font-size: 0.7em;
 }
 
 .lm-welcome-empty {
@@ -389,10 +438,13 @@
     font-weight: 500;
 }
 
+/* Sig‘magan qator yarim kesilib qolmasin: wrap uni ko‘rinmas keyingi ustunga o‘tkazadi. */
 .lm-recent-list {
     display: flex;
     flex: 1;
     flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
     gap: 0.75em;
     min-height: 0;
     margin: 0;
@@ -406,6 +458,7 @@
     flex: none;
     align-items: center;
     gap: 1em;
+    width: 100%;
     padding: 0.875em 1em;
     border: 1px solid transparent;
     border-radius: 0.875em;
@@ -413,8 +466,18 @@
     animation: lm-enter 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.lm-row--latest {
-    border-color: var(--lm-blue);
+.lm-row--foreign {
+    border-color: color-mix(in srgb, var(--lm-yellow) 75%, transparent);
+}
+
+.lm-row--foreign .lm-row-avatar {
+    border-color: var(--lm-yellow);
+    color: var(--lm-yellow);
+}
+
+.lm-row--foreign .lm-flag {
+    border-color: color-mix(in srgb, var(--lm-yellow) 60%, transparent);
+    color: var(--lm-yellow);
 }
 
 .lm-row-avatar {
@@ -436,12 +499,32 @@
 }
 
 .lm-row-name {
+    display: flex;
+    align-items: center;
+    gap: 0.55em;
+    min-width: 0;
     margin: 0;
-    overflow: hidden;
     font-size: 1.125em;
     font-weight: 800;
+}
+
+.lm-row-name-text {
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Toifa yorlig‘i (OAV, Homiy, Ishtirokchi…) */
+.lm-tag {
+    flex: none;
+    padding: 0.2em 0.65em;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--lm-tone) 14%, var(--lm-panel));
+    color: var(--lm-tone);
+    font-size: 0.6em;
+    font-weight: 800;
+    letter-spacing: 0.02em;
 }
 
 .lm-row-sub {
@@ -452,23 +535,6 @@
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.lm-row-type {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    gap: 0.4em;
-    font-size: 0.8125em;
-    font-weight: 800;
-}
-
-.lm-row-type--entry {
-    color: var(--lm-green);
-}
-
-.lm-row-type--exit {
-    color: var(--lm-yellow);
 }
 
 .lm-row-time {
@@ -541,8 +607,7 @@
         flex-wrap: wrap;
     }
 
-    .lm-stats {
-        grid-auto-flow: row;
+    .lm-stats-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

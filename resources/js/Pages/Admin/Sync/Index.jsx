@@ -195,7 +195,7 @@ function SyncProgressModal({
             open={open}
             title="Sinxronizatsiya jarayoni"
             closable={done}
-            maskClosable={done}
+            mask={{ closable: done }}
             keyboard={done}
             onCancel={onClose}
             footer={done ? (
