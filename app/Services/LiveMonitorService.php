@@ -75,7 +75,7 @@ class LiveMonitorService
      * @param  array{0:CarbonInterface, 1:CarbonInterface}  $range
      * @return list<array{id:int, name:string, entered:int}>
      */
-    private function enteredByGroup(array $range): array
+    public function enteredByGroup(array $range): array
     {
         $entered = Employee::query()
             ->whereNotNull('group_id')

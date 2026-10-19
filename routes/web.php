@@ -113,6 +113,9 @@ Route::middleware('auth')->group(function () {
         Route::get('live', [LiveMonitorController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.index');
+        Route::get('live/stats', [LiveMonitorController::class, 'stats'])
+            ->middleware('permission:'.$menuPermissions['live'])
+            ->name('live.stats');
         Route::get('live/faces/{employee}', [LiveMonitorController::class, 'face'])
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.face');
