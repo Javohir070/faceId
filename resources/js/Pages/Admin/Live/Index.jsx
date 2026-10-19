@@ -180,8 +180,10 @@ export default function Index({ passes = [], stats = {} }) {
     useInertiaPoll(['passes', 'stats'], POLL_MS);
 
     const groups = stats.groups ?? [];
+    const visibleGroups = groups.slice(0, GROUP_SLOTS);
     const groupTones = new Map(groups.map((group, index) => [group.id, GROUP_TONES[index % GROUP_TONES.length]]));
     const active = activeTileKeys(passes[0]);
+    const entered = <StatTile tile={enteredTile} value={stats.entered} active={active.has('entered')} />;
 
     return (
         <>
@@ -238,23 +240,27 @@ export default function Index({ passes = [], stats = {} }) {
                 </header>
 
                 <section className="lm-stats" aria-label="Bugungi ko‘rsatkichlar">
-                    <div className="lm-stats-row">
-                        <StatTile tile={enteredTile} value={stats.entered} active={active.has('entered')} />
-                        {groups.slice(0, GROUP_SLOTS).map((group) => (
-                            <StatTile
-                                key={group.id}
-                                tile={{
-                                    label: group.name,
-                                    sub: 'Bugun kirgan',
-                                    tone: groupTones.get(group.id),
-                                    icon: ApartmentOutlined,
-                                }}
-                                value={group.entered}
-                                active={active.has(`group-${group.id}`)}
-                            />
-                        ))}
-                    </div>
-                    <div className="lm-stats-row">
+                    {visibleGroups.length > 0 ? (
+                        <div className="lm-stats-row" style={{ '--lm-cols': 1 + visibleGroups.length }}>
+                            {entered}
+                            {visibleGroups.map((group) => (
+                                <StatTile
+                                    key={group.id}
+                                    tile={{
+                                        label: group.name,
+                                        sub: 'Bugun kirgan',
+                                        tone: groupTones.get(group.id),
+                                        icon: ApartmentOutlined,
+                                    }}
+                                    value={group.entered}
+                                    active={active.has(`group-${group.id}`)}
+                                />
+                            ))}
+                        </div>
+                    ) : null}
+                    {/* Guruh yo‘q bo‘lsa — Kirganlar ham shu qatorda (5 ta plitka), qator chala qolmasin. */}
+                    <div className="lm-stats-row" style={{ '--lm-cols': breakdownTiles.length + (visibleGroups.length > 0 ? 0 : 1) }}>
+                        {visibleGroups.length > 0 ? null : entered}
                         {breakdownTiles.map((tile) => (
                             <StatTile key={tile.key} tile={tile} value={stats[tile.key]} active={active.has(tile.key)} />
                         ))}

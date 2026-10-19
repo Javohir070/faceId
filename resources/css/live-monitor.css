@@ -170,9 +170,10 @@
     gap: 1em;
 }
 
+/* Ustunlar soni qatordagi plitkalarga qarab (--lm-cols): guruh kam bo‘lsa ham qator to‘liq to‘ladi. */
 .lm-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--lm-cols, 4), minmax(0, 1fr));
     gap: 1em;
 }
 
