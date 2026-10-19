@@ -12,7 +12,8 @@ use Illuminate\Support\Collection;
 class LiveMonitorService
 {
     /**
-     * Bugungi oxirgi o‘tishlar (kirish va chiqish) — eng yangisi birinchi. Bo‘lim scope Report modelida qo‘llanadi.
+     * Bugungi oxirgi kirishlar — eng yangisi birinchi (kirish monitori: chiqishlar ko‘rsatilmaydi).
+     * Bo‘lim scope Report modelida qo‘llanadi.
      * Tartib bazaga tushish ketma-ketligi bo‘yicha: qurilma soati noto‘g‘ri bo‘lsa ham ro‘yxat aralashmaydi.
      * Qurilma ulanganda eski (oflayn to‘plangan) hodisalarni ham yuboradi — ular monitorga chiqmaydi.
      *
@@ -21,11 +22,12 @@ class LiveMonitorService
     public function recentPasses(int $limit = 7): Collection
     {
         return Report::query()
+            ->entry()
             ->whereBetween('occurred_at', [now()->startOfDay(), now()->endOfDay()])
             ->with([
                 // Yuz rasmi (longText) yuklanmaydi — faqat bor/yo‘qligi.
                 'employee' => fn ($query) => $query
-                    ->select(['id', 'name', 'position', 'department_id', 'group_id'])
+                    ->select(['id', 'name', 'gender', 'country', 'position', 'department_id', 'group_id'])
                     ->withExists('face'),
                 'employee.department:id,name',
                 'employee.group:id,name',
@@ -41,18 +43,11 @@ class LiveMonitorService
     /**
      * Bugungi ko‘rsatkichlar — o‘tishlar emas, takrorlanmas xodimlar soni.
      *
-     * @return array{entered:int, exited:int, male:int, female:int, groups:list<array{id:int, name:string, entered:int}>}
+     * @return array{entered:int, male:int, female:int, local:int, foreign:int, groups:list<array{id:int, name:string, entered:int}>}
      */
     public function todayStats(): array
     {
         $range = [now()->startOfDay(), now()->endOfDay()];
-
-        $people = fn (int $type): int => Report::query()
-            ->where('type', $type)
-            ->whereBetween('occurred_at', $range)
-            ->whereNotNull('employee_id')
-            ->distinct()
-            ->count('employee_id');
 
         $enteredByGender = fn (int $gender): int => Employee::query()
             ->where('gender', $gender)
@@ -60,11 +55,33 @@ class LiveMonitorService
             ->count();
 
         return [
-            'entered' => $people(Report::TYPE_ENTRY),
-            'exited' => $people(Report::TYPE_EXIT),
+            'entered' => Report::query()
+                ->entry()
+                ->whereBetween('occurred_at', $range)
+                ->whereNotNull('employee_id')
+                ->distinct()
+                ->count('employee_id'),
             'male' => $enteredByGender(Employee::GENDER_MALE),
             'female' => $enteredByGender(Employee::GENDER_FEMALE),
+            ...$this->enteredByOrigin($range),
             'groups' => $this->enteredByGroup($range),
+        ];
+    }
+
+    /**
+     * Bugun kirgan xodimlar: mahalliy (O‘zbekiston) va xorijiy.
+     *
+     * @param  array{0:CarbonInterface, 1:CarbonInterface}  $range
+     * @return array{local:int, foreign:int}
+     */
+    public function enteredByOrigin(array $range): array
+    {
+        $entered = fn () => Employee::query()
+            ->whereHas('reports', fn ($query) => $query->entry()->whereBetween('occurred_at', $range));
+
+        return [
+            'local' => $entered()->where('country', Employee::LOCAL_COUNTRY)->count(),
+            'foreign' => $entered()->where('country', '!=', Employee::LOCAL_COUNTRY)->count(),
         ];
     }
 
@@ -135,8 +152,12 @@ class LiveMonitorService
         return [
             'id' => $report->id,
             'employee_name' => $employee?->name ?? $report->employee_name,
+            'gender' => $employee?->gender,
+            'country' => $employee?->country,
+            'country_name' => $employee?->countryName(),
             'position' => $employee?->position,
             'department_name' => $employee?->department?->name,
+            'group_id' => $employee?->group_id,
             'group_name' => $employee?->group?->name,
             'device_name' => $report->device?->name,
             'type' => $report->type,

@@ -4,12 +4,12 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ApartmentOutlined,
     ArrowLeftOutlined,
-    BankOutlined,
     BarChartOutlined,
     FullscreenExitOutlined,
     FullscreenOutlined,
+    GlobalOutlined,
+    HomeOutlined,
     LoginOutlined,
-    LogoutOutlined,
     ManOutlined,
     WomanOutlined,
 } from '@ant-design/icons';
@@ -21,27 +21,50 @@ import { route } from '../../../routes';
 import { formatNumber, GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
 const POLL_MS = 3000;
-const TYPE_EXIT = 2;
+const LOCAL_COUNTRY = 'UZ';
+const GENDER_MALE = 1;
+const GENDER_FEMALE = 2;
 
-// Guruh plitkalari bitta qatordan oshmasin — aks holda 1080px ekranda mehmon kartasi siqilib, tashqariga chiqadi.
-// To‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
-const MAX_GROUP_TILES = 4;
+// Figma "Kirish monitori": 1-qator — Kirganlar + 3 ta guruh (OAV, Homiy, Ishtirokchi), 2-qator — kelib chiqish va jins.
+// Guruhlar ko‘payib ketsa ham 1080px ekranda mehmon kartasi siqilmasin; to‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
+const GROUP_SLOTS = 3;
 
-const statTiles = [
-    { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined },
-    { key: 'exited', label: 'Chiqqanlar', sub: 'Exited today', tone: 'yellow', icon: LogoutOutlined },
+const enteredTile = { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined };
+
+const breakdownTiles = [
+    { key: 'local', label: 'Mahalliy', sub: 'Local', tone: 'blue', icon: HomeOutlined },
+    { key: 'foreign', label: 'Xorijiy', sub: 'International', tone: 'yellow', icon: GlobalOutlined },
     { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: ManOutlined },
     { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
 ];
 
-function groupTile(group, index) {
-    return {
-        key: `group-${group.id}`,
-        label: group.name,
-        sub: 'Bugun kirgan',
-        tone: GROUP_TONES[index % GROUP_TONES.length],
-        icon: ApartmentOutlined,
-    };
+function isForeign(pass) {
+    return Boolean(pass?.country) && pass.country !== LOCAL_COUNTRY;
+}
+
+function organizationOf(pass) {
+    return pass.position || pass.department_name || '';
+}
+
+/** Oxirgi kirgan mehmon qo‘shilgan plitkalar ajratib ko‘rsatiladi (Figma'dagi rangli ramka). */
+function activeTileKeys(pass) {
+    if (!pass) {
+        return new Set();
+    }
+
+    const keys = new Set(['entered', isForeign(pass) ? 'foreign' : 'local']);
+
+    if (pass.gender === GENDER_MALE) {
+        keys.add('male');
+    } else if (pass.gender === GENDER_FEMALE) {
+        keys.add('female');
+    }
+
+    if (pass.group_id) {
+        keys.add(`group-${pass.group_id}`);
+    }
+
+    return keys;
 }
 
 function Avatar({ pass, className }) {
@@ -61,11 +84,16 @@ function Avatar({ pass, className }) {
     );
 }
 
-function StatTile({ tile, value }) {
+// Bayroq o‘rni: Windows emoji bayroqlarni ko‘rsatmaydi, shuning uchun davlat kodi.
+function CountryCode({ code }) {
+    return code ? <span className="lm-flag" aria-hidden="true">{code}</span> : null;
+}
+
+function StatTile({ tile, value, active }) {
     const Icon = tile.icon;
 
     return (
-        <div className={`lm-stat lm-stat--${tile.tone}`}>
+        <div className={`lm-stat lm-tone--${tile.tone}${active ? ' lm-stat--active' : ''}`}>
             <span className="lm-stat-icon" aria-hidden="true">
                 <Icon />
             </span>
@@ -78,33 +106,28 @@ function StatTile({ tile, value }) {
     );
 }
 
-function TypeIcon({ pass }) {
-    return pass.type === TYPE_EXIT
-        ? <LogoutOutlined aria-hidden="true" />
-        : <LoginOutlined aria-hidden="true" />;
-}
-
 function Welcome({ pass }) {
-    const isExit = pass?.type === TYPE_EXIT;
+    const foreign = isForeign(pass);
+    const organization = pass ? organizationOf(pass) : '';
 
     return (
-        <section className={`lm-welcome${isExit ? ' lm-welcome--exit' : ''}`} aria-live="polite">
+        <section className={`lm-welcome${foreign ? ' lm-welcome--foreign' : ''}`} aria-live="polite">
             <p className="lm-welcome-kicker">
-                {isExit ? 'Xayr' : 'Xush kelibsiz'}
+                Xush kelibsiz
                 <span aria-hidden="true">·</span>
-                {isExit ? 'Goodbye' : 'Welcome'}
+                Welcome
             </p>
 
             {pass ? (
                 <div key={pass.id} className="lm-welcome-body">
                     <Avatar pass={pass} className="lm-hero-avatar" />
                     <h2 className="lm-hero-name">{pass.employee_name}</h2>
-                    {pass.position ? <p className="lm-hero-sub">{pass.position}</p> : null}
+                    {organization ? <p className="lm-hero-sub">{organization}</p> : null}
                     <div className="lm-chips">
-                        {pass.department_name ? (
+                        {pass.country_name ? (
                             <span className="lm-chip">
-                                <BankOutlined aria-hidden="true" />
-                                {pass.department_name}
+                                <CountryCode code={pass.country} />
+                                {pass.country_name}
                             </span>
                         ) : null}
                         {pass.group_name ? (
@@ -113,35 +136,37 @@ function Welcome({ pass }) {
                                 {pass.group_name}
                             </span>
                         ) : null}
-                        <span className={`lm-chip ${isExit ? 'lm-chip--exit' : 'lm-chip--entry'}`}>
-                            <TypeIcon pass={pass} />
-                            {[pass.type_label, pass.device_name, pass.time].filter(Boolean).join(' · ')}
+                        <span className="lm-chip lm-chip--entry">
+                            <LoginOutlined aria-hidden="true" />
+                            {[pass.device_name, pass.time].filter(Boolean).join(' · ')}
                         </span>
                     </div>
                 </div>
             ) : (
                 <p className="lm-welcome-empty">
-                    Bugun hali o‘tish qayd etilmagan. Face ID orqali o‘tgan xodim shu yerda paydo bo‘ladi.
+                    Bugun hali kirish qayd etilmagan. Face ID orqali kirgan xodim shu yerda paydo bo‘ladi.
                 </p>
             )}
         </section>
     );
 }
 
-function RecentRow({ pass, latest }) {
+function RecentRow({ pass, groupTone }) {
+    const foreign = isForeign(pass);
+
     return (
-        <li className={`lm-row${latest ? ' lm-row--latest' : ''}`}>
+        <li className={`lm-row${foreign ? ' lm-row--foreign' : ''}`}>
             <Avatar pass={pass} className="lm-row-avatar" />
             <div className="lm-row-text">
-                <p className="lm-row-name">{pass.employee_name}</p>
-                <p className="lm-row-sub">
-                    {[pass.position, pass.department_name, pass.device_name].filter(Boolean).join(' · ') || '—'}
+                <p className="lm-row-name">
+                    <span className="lm-row-name-text">{pass.employee_name}</span>
+                    {pass.group_name ? (
+                        <span className={`lm-tag lm-tone--${groupTone ?? 'blue'}`}>{pass.group_name}</span>
+                    ) : null}
                 </p>
+                <p className="lm-row-sub">{organizationOf(pass) || '—'}</p>
             </div>
-            <span className={`lm-row-type ${pass.type === TYPE_EXIT ? 'lm-row-type--exit' : 'lm-row-type--entry'}`}>
-                <TypeIcon pass={pass} />
-                {pass.type_label}
-            </span>
+            <CountryCode code={pass.country} />
             <span className="lm-row-time">{pass.time}</span>
         </li>
     );
@@ -153,6 +178,10 @@ export default function Index({ passes = [], stats = {} }) {
     const [fullscreen, toggleFullscreen] = useFullscreen();
 
     useInertiaPoll(['passes', 'stats'], POLL_MS);
+
+    const groups = stats.groups ?? [];
+    const groupTones = new Map(groups.map((group, index) => [group.id, GROUP_TONES[index % GROUP_TONES.length]]));
+    const active = activeTileKeys(passes[0]);
 
     return (
         <>
@@ -209,28 +238,41 @@ export default function Index({ passes = [], stats = {} }) {
                 </header>
 
                 <section className="lm-stats" aria-label="Bugungi ko‘rsatkichlar">
-                    {statTiles.map((tile) => (
-                        <StatTile key={tile.key} tile={tile} value={stats[tile.key]} />
-                    ))}
-                    {(stats.groups ?? []).slice(0, MAX_GROUP_TILES).map((group, index) => {
-                        const tile = groupTile(group, index);
-
-                        return <StatTile key={tile.key} tile={tile} value={group.entered} />;
-                    })}
+                    <div className="lm-stats-row">
+                        <StatTile tile={enteredTile} value={stats.entered} active={active.has('entered')} />
+                        {groups.slice(0, GROUP_SLOTS).map((group) => (
+                            <StatTile
+                                key={group.id}
+                                tile={{
+                                    label: group.name,
+                                    sub: 'Bugun kirgan',
+                                    tone: groupTones.get(group.id),
+                                    icon: ApartmentOutlined,
+                                }}
+                                value={group.entered}
+                                active={active.has(`group-${group.id}`)}
+                            />
+                        ))}
+                    </div>
+                    <div className="lm-stats-row">
+                        {breakdownTiles.map((tile) => (
+                            <StatTile key={tile.key} tile={tile} value={stats[tile.key]} active={active.has(tile.key)} />
+                        ))}
+                    </div>
                 </section>
 
                 <main className="lm-main">
                     <Welcome pass={passes[0]} />
 
-                    <section className="lm-recent" aria-label="So‘nggi o‘tganlar">
+                    <section className="lm-recent" aria-label="So‘nggi kirganlar">
                         <div className="lm-recent-head">
-                            <h2 className="lm-recent-title">So‘nggi o‘tganlar</h2>
-                            <span className="lm-recent-sub">Recent passes</span>
+                            <h2 className="lm-recent-title">So‘nggi kirganlar</h2>
+                            <span className="lm-recent-sub">Recent arrivals</span>
                         </div>
                         {passes.length > 0 ? (
                             <ul className="lm-recent-list">
-                                {passes.map((pass, index) => (
-                                    <RecentRow key={pass.id} pass={pass} latest={index === 0} />
+                                {passes.map((pass) => (
+                                    <RecentRow key={pass.id} pass={pass} groupTone={groupTones.get(pass.group_id)} />
                                 ))}
                             </ul>
                         ) : (
