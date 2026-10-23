@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\NoteType;
+use App\Exports\AttendanceExport;
 use App\Http\Requests\StoreNoteRequest;
 use App\Models\Department;
 use App\Models\Employee;
@@ -19,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AttendanceController extends Controller
 {
@@ -65,6 +68,22 @@ class AttendanceController extends Controller
                 NoteType::cases(),
             ),
         ]);
+    }
+
+    public function export(Request $request): BinaryFileResponse
+    {
+        $filters = $request->validate($this->filterRules());
+        $now = now();
+        $period = AttendancePeriod::make($filters['period'] ?? '2weeks', Carbon::parse($filters['date'] ?? $now->toDateString()));
+        $range = $period->toArray();
+
+        return Excel::download(
+            new AttendanceExport(
+                collect($this->grid->build($this->employees($filters), $period, $now)['rows']),
+                $period->columns($now),
+            ),
+            'davomat_'.$range['start'].'_'.$range['end'].'.xlsx',
+        );
     }
 
     public function storeNote(StoreNoteRequest $request): RedirectResponse

@@ -135,6 +135,9 @@ Route::middleware('auth')->group(function () {
         Route::get('attendance', [AttendanceController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['attendance'])
             ->name('attendance.index');
+        Route::get('attendance/export', [AttendanceController::class, 'export'])
+            ->middleware('permission:'.$menuPermissions['attendance'])
+            ->name('attendance.export');
         Route::post('attendance/notes', [AttendanceController::class, 'storeNote'])
             ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$menuPermissions['notes']])
             ->name('attendance.notes.store');
