@@ -102,6 +102,8 @@ Duplicates are expected and de-duplicated inside `ReportService::createFromAcces
 
 `AttendanceCalculator` handles night shifts by shifting the moment back 12 hours (`shiftMoment()`) so an overnight shift attributes to the correct work date — keep that in mind when touching late/early/worked-seconds math. `Note` records (`NoteType`: CameLate / LeftEarly / Absent) act as excuses and are joined in to suppress or annotate rows.
 
+The **Davomat** page (`/admin/attendance`, permission `'Davomat'`) is a separate employee × work-day grid built by `App\Services\Attendance\AttendanceGridService` over `AttendancePeriod` (week / 2 weeks / month). Its rules differ from the Reports page on purpose: work days are Monday–Friday only, 1 hour of lunch is subtracted from worked and planned time, any `Note` on a day makes it "Sababli", and days outside an employee's `valid_from_dt`..`valid_to_dt` are not counted. Notes added from this page ("Ariza berish") go through `POST /admin/attendance/notes` and need the `'Izohlar'` permission too. Spec: `docs/superpowers/specs/2026-10-23-attendance-grid-design.md`.
+
 ## Frontend
 
 - **There is no Ziggy.** `resources/js/routes.js` is a hand-maintained map of route names → URL builders and throws on unknown names. Every new named route used from JSX must be added there.
