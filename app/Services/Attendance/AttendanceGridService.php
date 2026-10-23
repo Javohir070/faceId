@@ -111,6 +111,70 @@ class AttendanceGridService
         ];
     }
 
+    /**
+     * Bitta xodim-kun tafsiloti (kun oynasi uchun). Holat va vaqtlar build() dagi katak bilan bir xil.
+     *
+     * @return array<string, mixed>
+     */
+    public function day(Employee $employee, string $date, CarbonInterface $now): array
+    {
+        $employee->loadMissing(['schedule', 'department:id,name']);
+        $period = AttendancePeriod::make('week', Carbon::parse($date));
+        $row = $this->build(EloquentCollection::make([$employee]), $period, $now)['rows'][0] ?? null;
+        $cell = collect($row['cells'] ?? [])->firstWhere('date', $date) ?? $this->emptyCell($date, 'inactive');
+        $schedule = $this->scheduleInfo($employee);
+
+        $punches = Report::query()
+            ->with('device.category:id,name')
+            ->where('employee_id', $employee->id)
+            ->where('occurred_at', '>=', Carbon::parse($date)->format('Y-m-d H:i:s'))
+            ->where('occurred_at', '<', Carbon::parse($date)->addDay()->addHours(12)->format('Y-m-d H:i:s'))
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (Report $report): bool => $this->calculator->workDate($report->occurred_at, $schedule['night']) === $date)
+            ->map(fn (Report $report): array => [
+                'time' => $report->occurred_at->format('H:i'),
+                'type' => $report->type === Report::TYPE_ENTRY ? 'entry' : 'exit',
+                'label' => $report->type === Report::TYPE_ENTRY ? 'Kirdi' : 'Chiqdi',
+                'place' => $report->device === null
+                    ? 'Noma’lum qurilma'
+                    : implode(' · ', array_filter([$report->device->category?->name, $report->device->name])),
+            ])
+            ->values()
+            ->all();
+
+        $notes = Note::query()
+            ->where('employee_id', $employee->id)
+            ->whereDate('dt', $date)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Note $note): array => [
+                'id' => $note->id,
+                'type' => $note->type->value,
+                'type_label' => $note->type->label(),
+                'note' => (string) $note->note,
+            ])
+            ->all();
+
+        return [
+            'employee' => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'position' => $employee->position,
+            ],
+            'date' => $date,
+            'status' => $cell['status'],
+            'in' => $cell['in'],
+            'out' => $cell['out'],
+            'inside' => $cell['inside'],
+            'worked' => self::formatDuration($cell['worked_seconds']),
+            'schedule' => substr($schedule['enter'], 0, 5).'–'.substr($schedule['exit'], 0, 5),
+            'punches' => $punches,
+            'notes' => $notes,
+        ];
+    }
+
     public static function formatDuration(int $seconds): string
     {
         $seconds = max(0, $seconds);
