@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
-
-const WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-const MONTHS = [
-    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
-];
+import { MONTHS, WEEKDAYS } from '../../utils/uzDate';
 
 function useNow() {
     const [now, setNow] = useState(() => new Date());
