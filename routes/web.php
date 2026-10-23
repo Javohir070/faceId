@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BiocontrolController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DepartmentController;
@@ -131,6 +132,12 @@ Route::middleware('auth')->group(function () {
         Route::get('reports/export', [ReportController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['reports'])
             ->name('reports.export');
+        Route::get('attendance', [AttendanceController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['attendance'])
+            ->name('attendance.index');
+        Route::post('attendance/notes', [AttendanceController::class, 'storeNote'])
+            ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$menuPermissions['notes']])
+            ->name('attendance.notes.store');
         Route::resource('users', UserController::class)
             ->middleware('permission:'.$menuPermissions['users']);
         Route::resource('roles', RoleController::class)

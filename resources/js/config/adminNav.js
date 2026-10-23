@@ -12,6 +12,7 @@ import {
     KeyOutlined,
     SafetyCertificateOutlined,
     ScanOutlined,
+    ScheduleOutlined,
     SettingOutlined,
     SyncOutlined,
     TeamOutlined,
@@ -48,6 +49,7 @@ export const adminNavGroups = [
                 label: 'Ish vaqtida ruxsatlar',
                 icon: FormOutlined,
             },
+            { key: 'attendance', href: route('admin.attendance.index'), label: 'Davomat', icon: ScheduleOutlined },
             {
                 key: 'reports-group',
                 label: 'Hisobotlar',

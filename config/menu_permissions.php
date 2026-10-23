@@ -15,6 +15,7 @@ return [
         'sync' => 'Sinxronizatsiya',
         'live' => 'Jonli kuzatuv',
         'reports' => 'Hisobotlar',
+        'attendance' => 'Davomat',
         'reports-pull' => 'Event tortish',
         'users' => 'Foydalanuvchilar',
         'roles' => 'Rollar',

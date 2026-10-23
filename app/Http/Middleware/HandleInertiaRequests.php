@@ -63,6 +63,7 @@ class HandleInertiaRequests extends Middleware
                 'sync' => $user->can($menuPermissions['sync']),
                 'live' => $user->can($menuPermissions['live']),
                 'reports' => $user->can($menuPermissions['reports']),
+                'attendance' => $user->can($menuPermissions['attendance']),
                 'reports-pull' => $user->can($menuPermissions['reports-pull']),
                 'users' => $user->can($menuPermissions['users']),
                 'roles' => $user->can($menuPermissions['roles']),

@@ -47,6 +47,9 @@ const routeBuilders = {
 
     'admin.reports.index': () => '/admin/reports',
     'admin.reports.export': () => '/admin/reports/export',
+    'admin.attendance.index': () => '/admin/attendance',
+    'admin.attendance.export': () => '/admin/attendance/export',
+    'admin.attendance.notes.store': () => '/admin/attendance/notes',
     'admin.reports.pull': () => '/admin/reports/pull',
     'admin.reports.pull.store': () => '/admin/reports/pull',
 
