@@ -34,7 +34,7 @@ class AttendanceGridService
     {
         $employees = EloquentCollection::make($employees->all())->loadMissing(['schedule', 'department:id,name']);
         $dates = $period->workDates();
-        $today = $now->toDateString();
+        $nowTs = $now->getTimestamp();
 
         $punches = $this->punchesByEmployeeDate($employees, $period);
         $notes = $this->noteKeys($employees->modelKeys(), $period);
@@ -48,6 +48,8 @@ class AttendanceGridService
 
         foreach ($employees as $employee) {
             $schedule = $this->scheduleInfo($employee);
+            // Tungi smenada "bugun" ham siljitiladi: soat 03:00 da kechagi smena hali davom etmoqda.
+            $today = $this->calculator->workDate(Carbon::instance($now), $schedule['night']);
             $validFrom = $employee->valid_from_dt?->toDateString();
             $validTo = $employee->valid_to_dt?->toDateString();
             $cells = [];
@@ -64,10 +66,11 @@ class AttendanceGridService
                 $hasValidDay = true;
                 $cell = $this->cell(
                     $date,
-                    $punches[$employee->id][$date] ?? [],
+                    $punches[$employee->id][$date] ?? null,
                     isset($notes[$employee->id.'|'.$date]),
                     $schedule,
                     $today,
+                    $nowTs,
                 );
                 $cells[] = $cell['public'];
 
@@ -107,7 +110,7 @@ class AttendanceGridService
 
         return [
             'rows' => $rows,
-            'stats' => $this->stats($counts, $early, $arrivals, $workedTotal, $planTotal, $dates, $today),
+            'stats' => $this->stats($counts, $early, $arrivals, $workedTotal, $planTotal, $dates, $now->toDateString()),
         ];
     }
 
@@ -183,29 +186,29 @@ class AttendanceGridService
     }
 
     /**
-     * @param  list<array{type: int, at: Carbon}>  $punches  vaqt bo‘yicha tartiblangan
+     * @param  array{first_entry: ?int, last_exit: ?int, last_type: ?int}|null  $day  kunning yig‘ma o‘tishlari (timestamp)
      * @param  array{enter: string, exit: string, night: bool, plan: int}  $schedule
+     * @param  string  $today  xodim uchun bugungi ish kuni (tungi smenada siljitilgan)
      * @return array{public: array<string, mixed>, completed: bool, arrival: ?int}
      */
-    private function cell(string $date, array $punches, bool $hasNote, array $schedule, string $today): array
+    private function cell(string $date, ?array $day, bool $hasNote, array $schedule, string $today, int $nowTs): array
     {
         if ($date > $today) {
             return ['public' => $this->emptyCell($date, 'future'), 'completed' => false, 'arrival' => null];
         }
 
-        $firstEntry = null;
-        $lastExit = null;
-        foreach ($punches as $punch) {
-            if ($punch['type'] === Report::TYPE_ENTRY) {
-                $firstEntry ??= $punch['at'];
-            } elseif ($punch['type'] === Report::TYPE_EXIT) {
-                $lastExit = $punch['at'];
-            }
-        }
-        $lastPunch = $punches === [] ? null : $punches[array_key_last($punches)];
+        $timezone = date_default_timezone_get();
+        $firstEntry = isset($day['first_entry']) ? Carbon::createFromTimestamp($day['first_entry'], $timezone) : null;
+        $lastExit = isset($day['last_exit']) ? Carbon::createFromTimestamp($day['last_exit'], $timezone) : null;
         $isToday = $date === $today;
-        $lastIsEntry = $lastPunch !== null && $lastPunch['type'] === Report::TYPE_ENTRY;
-        $completed = ! $isToday || ($lastPunch !== null && ! $lastIsEntry);
+        $lastIsEntry = ($day['last_type'] ?? null) === Report::TYPE_ENTRY;
+        // Bugungi kun faqat kelgan, oxirgi o‘tishi chiqish va jadvaldagi ketish vaqti o‘tgan bo‘lsa yakunlangan:
+        // tushlikka chiqish raqamlarni kun davomida o‘stirib-tushirmasligi uchun.
+        $completed = ! $isToday || (
+            $firstEntry !== null
+            && ($day['last_type'] ?? null) === Report::TYPE_EXIT
+            && $nowTs >= $this->scheduledExitTimestamp($date, $schedule)
+        );
 
         $status = match (true) {
             $hasNote => 'excused',
@@ -217,6 +220,7 @@ class AttendanceGridService
         };
 
         $early = $completed
+            && $firstEntry !== null
             && $lastExit !== null
             && $this->calculator->earlySeconds($lastExit, $schedule['exit'], $schedule['night']) > 0;
 
@@ -320,11 +324,17 @@ class AttendanceGridService
         ];
     }
 
+    private function scheduledExitTimestamp(string $date, array $schedule): int
+    {
+        return (int) strtotime($date.' '.$schedule['exit']) + ($schedule['night'] ? 86400 : 0);
+    }
+
     /**
-     * Davr o‘tishlarini xodim va ish kuni (tungi smenada siljitilgan) bo‘yicha guruhlaydi.
+     * Davr o‘tishlarini xodim va ish kuni (tungi smenada siljitilgan) bo‘yicha yig‘adi. Har o‘tish saqlanmaydi —
+     * faqat birinchi kirish, oxirgi chiqish va oxirgi o‘tish turi (oy × 750 xodimda xotira tejaladi).
      *
      * @param  EloquentCollection<int, Employee>  $employees
-     * @return array<int, array<string, list<array{type: int, at: Carbon}>>>
+     * @return array<int, array<string, array{first_entry: ?int, last_exit: ?int, last_type: ?int}>>
      */
     private function punchesByEmployeeDate(EloquentCollection $employees, AttendancePeriod $period): array
     {
@@ -353,12 +363,23 @@ class AttendanceGridService
 
         foreach ($reports as $report) {
             $employeeId = (int) $report->employee_id;
-            $at = Carbon::parse($report->occurred_at);
-            $date = $this->calculator->workDate($at, $night[$employeeId] ?? false);
+            $timestamp = (int) strtotime((string) $report->occurred_at);
+            // AttendanceCalculator::workDate() bilan bir xil: tungi smenada vaqt 12 soat orqaga suriladi.
+            $date = date('Y-m-d', ($night[$employeeId] ?? false) ? $timestamp - 43200 : $timestamp);
 
-            if (isset($dates[$date])) {
-                $map[$employeeId][$date][] = ['type' => (int) $report->type, 'at' => $at];
+            if (! isset($dates[$date])) {
+                continue;
             }
+
+            $type = (int) $report->type;
+            $day = $map[$employeeId][$date] ?? ['first_entry' => null, 'last_exit' => null, 'last_type' => null];
+            if ($type === Report::TYPE_ENTRY) {
+                $day['first_entry'] ??= $timestamp;
+            } elseif ($type === Report::TYPE_EXIT) {
+                $day['last_exit'] = $timestamp;
+            }
+            $day['last_type'] = $type;
+            $map[$employeeId][$date] = $day;
         }
 
         return $map;

@@ -27,6 +27,11 @@ class AttendanceController extends Controller
 {
     private const PER_PAGE = 50;
 
+    private const NOTES_PAGE = 'notes_page';
+
+    /** Sahifalash havolalariga o‘tmaydigan parametrlar. */
+    private const TRANSIENT_QUERY = ['page', self::NOTES_PAGE, 'day_employee_id', 'day_date'];
+
     public function __construct(
         private readonly AttendanceGridService $grid,
         private readonly NoteService $noteService,
@@ -37,6 +42,7 @@ class AttendanceController extends Controller
         $filters = $request->validate($this->filterRules());
         $now = now();
         $period = AttendancePeriod::make($filters['period'] ?? '2weeks', Carbon::parse($filters['date'] ?? $now->toDateString()));
+        $isNotesTab = ($filters['tab'] ?? null) === 'notes';
 
         // Jadval bir so‘rovda bir marta hisoblanadi; qisman qayta yuklashda (masalan faqat `day`) umuman hisoblanmaydi.
         $result = null;
@@ -55,11 +61,14 @@ class AttendanceController extends Controller
                 'search' => $filters['search'] ?? null,
                 'tab' => $filters['tab'] ?? 'attendance',
             ],
-            'stats' => fn () => $build()['stats'],
-            'rows' => fn () => $this->paginateRows($build()['rows'], $request),
-            'department_counts' => fn () => collect($build()['rows'])->countBy(fn (array $row): int => $row['department']['id'])->all(),
+            // Arizalar tabida jadval umuman hisoblanmaydi; tab almashganda frontend to‘liq qayta yuklaydi.
+            'stats' => fn () => $isNotesTab ? null : $build()['stats'],
+            'rows' => fn () => $isNotesTab ? null : $this->paginateRows($build()['rows'], $request),
+            'department_counts' => fn () => $isNotesTab
+                ? null
+                : collect($build()['rows'])->countBy(fn (array $row): int => $row['department']['id'])->all(),
             'day' => fn () => $this->dayDetail($filters, $now),
-            'notes' => fn () => ($filters['tab'] ?? null) === 'notes' ? $this->notes($filters, $period) : null,
+            'notes' => fn () => $isNotesTab ? $this->notes($filters, $period, $request) : null,
             'departments' => fn () => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
             'groups' => fn () => Group::query()->orderBy('name')->get(['id', 'name', 'department_id']),
             'employees' => fn () => Employee::query()->orderBy('name')->get(['id', 'name']),
@@ -146,7 +155,7 @@ class AttendanceController extends Controller
             count($rows),
             self::PER_PAGE,
             $page,
-            ['path' => $request->url(), 'query' => $request->except('page')],
+            ['path' => $request->url(), 'query' => $request->except(self::TRANSIENT_QUERY)],
         );
     }
 
@@ -168,24 +177,31 @@ class AttendanceController extends Controller
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function notes(array $filters, AttendancePeriod $period): mixed
+    private function notes(array $filters, AttendancePeriod $period, Request $request): LengthAwarePaginator
     {
         $range = $period->toArray();
+        $notes = $this->noteService->paginate(12, [
+            'date_from' => $range['start'],
+            'date_to' => $range['end'],
+            'search' => $filters['search'] ?? null,
+            'department_id' => $filters['department_id'] ?? null,
+            'group_id' => $filters['group_id'] ?? null,
+        ], self::NOTES_PAGE);
 
-        return $this->noteService
-            ->paginate(12, [
-                'date_from' => $range['start'],
-                'date_to' => $range['end'],
-                'search' => $filters['search'] ?? null,
-            ])
-            ->withQueryString()
-            ->through(fn (Note $note): array => [
+        // Havolalarda kun oynasi parametrlari qolmasin — aks holda sahifa almashganda oyna qayta ochiladi.
+        return new LengthAwarePaginator(
+            collect($notes->items())->map(fn (Note $note): array => [
                 'id' => $note->id,
                 'employee' => $note->employee?->only(['id', 'name']),
                 'type' => $note->type->value,
                 'type_label' => $note->type->label(),
                 'dt' => $note->dt?->toDateString(),
                 'note' => (string) $note->note,
-            ]);
+            ]),
+            $notes->total(),
+            $notes->perPage(),
+            $notes->currentPage(),
+            ['path' => $request->url(), 'query' => $request->except(self::TRANSIENT_QUERY), 'pageName' => self::NOTES_PAGE],
+        );
     }
 }

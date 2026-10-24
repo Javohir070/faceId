@@ -175,7 +175,7 @@ export default function Index({
 
             <Tabs
                 activeKey={isNotesTab ? 'notes' : 'attendance'}
-                onChange={(key) => visit({ tab: key, page: null }, { only: ['notes', 'filters'] })}
+                onChange={(key) => visit({ tab: key, page: null })}
                 items={[
                     { key: 'attendance', label: 'Davomat' },
                     { key: 'notes', label: 'Arizalar' },

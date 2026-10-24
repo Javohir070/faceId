@@ -162,6 +162,79 @@ class AttendancePageTest extends TestCase
                 ->where('notes.data.0.type_label', 'Erta ketdi'));
     }
 
+    public function test_notes_tab_has_own_pagination_and_skips_grid(): void
+    {
+        $employee = $this->employee();
+        // (xodim, sana, tur) unikal — 10 sana × 2 tur
+        Note::factory()->count(13)->sequence(fn ($s) => [
+            'dt' => '2026-10-'.(12 + $s->index % 10),
+            'type' => $s->index < 10 ? NoteType::LeftEarly : NoteType::CameLate,
+        ])->create(['employee_id' => $employee->id]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.attendance.index', ['tab' => 'notes', 'notes_page' => 2]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('notes.current_page', 2)
+                ->has('notes.data', 1)
+                ->where('rows', null)
+                ->where('stats', null));
+    }
+
+    public function test_notes_tab_respects_department_and_group_filters(): void
+    {
+        $it = Department::factory()->create();
+        $hr = Department::factory()->create();
+        $mine = $this->employee(['department_id' => $it->id]);
+        $other = $this->employee(['department_id' => $hr->id]);
+        Note::factory()->create(['employee_id' => $mine->id, 'dt' => '2026-10-16', 'type' => NoteType::LeftEarly]);
+        Note::factory()->create(['employee_id' => $other->id, 'dt' => '2026-10-16', 'type' => NoteType::Absent]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.attendance.index', ['tab' => 'notes', 'department_id' => $it->id]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('notes.data', 1)
+                ->where('notes.data.0.employee.id', $mine->id));
+    }
+
+    public function test_pagination_links_drop_day_parameters(): void
+    {
+        $department = Department::factory()->create();
+        $schedule = $this->schedule();
+        $employees = Employee::factory()->count(51)->create([
+            'department_id' => $department->id,
+            'schedule_id' => $schedule->id,
+            'valid_from_dt' => '2026-01-01 00:00:00',
+            'valid_to_dt' => '2027-12-31 00:00:00',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.attendance.index', ['day_employee_id' => $employees[0]->id, 'day_date' => '2026-10-22']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('rows.next_page_url', fn (string $url) => ! str_contains($url, 'day_employee_id') && ! str_contains($url, 'day_date')));
+    }
+
+    public function test_department_user_cannot_add_note_for_other_department(): void
+    {
+        $own = Department::factory()->create();
+        $other = Department::factory()->create();
+        $foreign = $this->employee(['department_id' => $other->id]);
+        $user = $this->createDepartmentUserWithPermissions($own->id, [
+            config('menu_permissions.resources')['attendance'],
+            config('menu_permissions.resources')['notes'],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.attendance.notes.store'), [
+                'employee_id' => $foreign->id,
+                'type' => NoteType::CameLate->value,
+                'dt' => '2026-10-21',
+                'note' => 'Tirbandlik',
+            ])
+            ->assertSessionHasErrors('employee_id');
+
+        $this->assertFalse(Note::query()->where('employee_id', $foreign->id)->exists());
+    }
+
     public function test_store_note_redirects_back_with_success(): void
     {
         $employee = $this->employee();

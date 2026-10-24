@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 class NoteRepository implements NoteRepositoryInterface
 {
     /**
-     * @param  array{employee_id?:?int, type?:?int, date_from?:?string, date_to?:?string, search?:?string}  $filters
+     * @param  array{employee_id?:?int, department_id?:?int, group_id?:?int, type?:?int, date_from?:?string, date_to?:?string, search?:?string}  $filters
      * @return Builder<Note>
      */
     public function filteredQuery(array $filters = []): Builder
@@ -21,6 +21,14 @@ class NoteRepository implements NoteRepositoryInterface
 
         if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
+        }
+
+        if (! empty($filters['department_id'])) {
+            $query->whereHas('employee', fn (Builder $employee) => $employee->where('department_id', $filters['department_id']));
+        }
+
+        if (! empty($filters['group_id'])) {
+            $query->whereHas('employee', fn (Builder $employee) => $employee->where('group_id', $filters['group_id']));
         }
 
         if (! empty($filters['type'])) {
@@ -52,12 +60,12 @@ class NoteRepository implements NoteRepositoryInterface
     }
 
     /**
-     * @param  array{employee_id?:?int, type?:?int, date_from?:?string, date_to?:?string, search?:?string}  $filters
+     * @param  array{employee_id?:?int, department_id?:?int, group_id?:?int, type?:?int, date_from?:?string, date_to?:?string, search?:?string}  $filters
      */
-    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage = 12, array $filters = [], string $pageName = 'page'): LengthAwarePaginator
     {
         return $this->filteredQuery($filters)
-            ->paginate($perPage)
+            ->paginate($perPage, ['*'], $pageName)
             ->withQueryString();
     }
 

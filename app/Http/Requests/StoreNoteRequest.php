@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\NoteType;
+use App\Models\Employee;
 use App\Models\Note;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,7 +22,16 @@ class StoreNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
+            'employee_id' => [
+                'required',
+                'integer',
+                // Bo‘lim cheklovi (global scope) hisobga olinadi: boshqa bo‘lim xodimiga izoh qo‘shib bo‘lmaydi.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! Employee::query()->whereKey($value)->exists()) {
+                        $fail('Tanlangan xodim topilmadi.');
+                    }
+                },
+            ],
             'type' => ['required', Rule::enum(NoteType::class)],
             'dt' => [
                 'required',

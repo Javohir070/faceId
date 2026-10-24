@@ -3,6 +3,7 @@
 namespace Tests\Feature\Attendance;
 
 use App\Enums\NoteType;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Note;
 use App\Models\Report;
@@ -198,6 +199,113 @@ class AttendanceGridServiceTest extends TestCase
 
         $this->assertSame([], $result['rows']);
         $this->assertSame([0, 0, 10], [$result['stats']['on_time'], $result['stats']['absent'], $result['stats']['work_days']]);
+    }
+
+    public function test_exit_only_today_is_pending_and_not_counted(): void
+    {
+        $employee = $this->employee();
+        $this->punch($employee, '2026-10-23 10:00', 'out');
+
+        $result = $this->build([$employee]);
+
+        $this->assertSame('pending', $this->cells($result)['2026-10-23']['status']);
+        $this->assertSame([0, '72 s 00 d'], [$result['stats']['early'], $result['stats']['plan']]);
+    }
+
+    public function test_exit_only_past_day_is_absent_without_early_leave(): void
+    {
+        $employee = $this->employee();
+        $this->punch($employee, '2026-10-22 17:00', 'out');
+
+        $result = $this->build([$employee]);
+        $cell = $this->cells($result)['2026-10-22'];
+
+        $this->assertSame(['absent', false], [$cell['status'], $cell['early']]);
+        $this->assertSame(0, $result['stats']['early']);
+    }
+
+    public function test_today_lunch_exit_does_not_finish_the_day(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 13:30:00'));
+        $employee = $this->employee();
+        $this->punch($employee, '2026-10-23 08:00', 'in');
+        $this->punch($employee, '2026-10-23 13:00', 'out');
+
+        $result = $this->build([$employee]);
+        $cell = $this->cells($result)['2026-10-23'];
+
+        $this->assertSame([false, 0], [$cell['early'], $cell['worked_seconds']]);
+        $this->assertSame([0, '72 s 00 d'], [$result['stats']['early'], $result['stats']['plan']]);
+
+        $this->travelTo(Carbon::parse('2026-10-23 18:30:00'));
+        $this->punch($employee, '2026-10-23 13:30', 'in');
+        $this->punch($employee, '2026-10-23 18:20', 'out');
+
+        $finished = $this->build([$employee]);
+        // 08:00–18:20 = 10 s 20 d, tushlik ayirilgach 9 s 20 d
+        $this->assertSame(33600, $this->cells($finished)['2026-10-23']['worked_seconds']);
+        $this->assertSame('80 s 00 d', $finished['stats']['plan']);
+    }
+
+    public function test_night_shift_still_in_progress_after_midnight(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 03:00:00'));
+        $schedule = Schedule::factory()->create(['enter_time' => '20:00', 'exit_time' => '08:00']);
+        $employee = $this->employee(['schedule_id' => $schedule->id]);
+        $this->punch($employee, '2026-10-22 19:55', 'in');
+        $this->punch($employee, '2026-10-23 00:30', 'out');
+        $this->punch($employee, '2026-10-23 01:00', 'in');
+
+        $result = $this->build([$employee]);
+        $cells = $this->cells($result);
+
+        $this->assertSame(
+            [true, false, 0],
+            [$cells['2026-10-22']['inside'], $cells['2026-10-22']['early'], $cells['2026-10-22']['worked_seconds']],
+        );
+        $this->assertSame('future', $cells['2026-10-23']['status']);
+        // 12–21.10 — 8 yakunlangan kun × 11 soat; 22.10 smenasi hali tugamagan
+        $this->assertSame(8 * 39600, $result['stats']['plan_seconds']);
+        $this->assertSame(0, $result['stats']['early']);
+    }
+
+    public function test_month_with_many_punches_stays_within_memory_budget(): void
+    {
+        $schedule = Schedule::factory()->create(['enter_time' => '09:00', 'exit_time' => '18:00']);
+        $department = Department::factory()->create();
+        $employees = Employee::factory()->count(300)->create([
+            'schedule_id' => $schedule->id,
+            'department_id' => $department->id,
+            'valid_from_dt' => '2026-01-01 00:00:00',
+            'valid_to_dt' => '2027-12-31 00:00:00',
+        ]);
+        $period = AttendancePeriod::make('month', now());
+        $rows = [];
+        foreach ($employees as $employee) {
+            foreach ($period->workDates() as $date) {
+                foreach ([['08:50:00', 1], ['13:00:00', 2], ['14:00:00', 1], ['18:10:00', 2]] as [$time, $type]) {
+                    $rows[] = [
+                        'employee_id' => $employee->id,
+                        'department_id' => $department->id,
+                        'employee_name' => $employee->name,
+                        'type' => $type,
+                        'occurred_at' => "$date $time",
+                    ];
+                }
+            }
+        }
+        foreach (array_chunk($rows, 1000) as $chunk) {
+            Report::query()->insert($chunk);
+        }
+        unset($rows);
+
+        memory_reset_peak_usage();
+        $before = memory_get_usage();
+        $result = $this->service->build($employees, $period, now());
+        $peak = memory_get_peak_usage() - $before;
+
+        $this->assertCount(300, $result['rows']);
+        $this->assertLessThan(32 * 1024 * 1024, $peak, 'build() xotira sarfi: '.round($peak / 1048576, 1).' MB');
     }
 
     public function test_format_duration(): void
