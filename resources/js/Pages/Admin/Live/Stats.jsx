@@ -225,7 +225,7 @@ function LastArrival({ arrival }) {
     );
 }
 
-// `screen` — login'siz ochiq havola (/screen/{token}/stats): qaytish tugmasi ochiq monitorga olib boradi.
+// `screen` — login'siz ochiq ekran (/screen/stats): qaytish tugmasi ochiq monitorga olib boradi.
 export default function Stats({ stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Middleware\VerifyLiveScreenToken;
 use App\Models\Employee;
 use App\Services\LiveMonitorService;
 use App\Services\VisitStatsService;
@@ -20,15 +19,13 @@ class LiveMonitorController extends Controller
 
     public function index(Request $request): Response
     {
-        $token = $this->screenToken($request);
-        $faceUrl = $token !== null
-            ? fn (int $id): string => route('screen.face', ['token' => $token, 'employee' => $id])
-            : null;
+        $screen = $this->isScreen($request);
+        $faceUrl = $screen ? fn (int $id): string => route('screen.face', $id) : null;
 
         return Inertia::render('Admin/Live/Index', [
             'passes' => fn () => $this->liveMonitorService->recentPasses(7, $faceUrl),
             'stats' => fn () => $this->liveMonitorService->todayStats(),
-            'screen' => $this->screenLinks($token),
+            'screen' => $this->screenLinks($screen),
         ]);
     }
 
@@ -39,7 +36,7 @@ class LiveMonitorController extends Controller
     {
         return Inertia::render('Admin/Live/Stats', [
             'stats' => fn () => $this->visitStatsService->today(),
-            'screen' => $this->screenLinks($this->screenToken($request)),
+            'screen' => $this->screenLinks($this->isScreen($request)),
         ]);
     }
 
@@ -61,29 +58,27 @@ class LiveMonitorController extends Controller
     }
 
     /**
-     * Ochiq havola (`/screen/{token}`) orqali kelinganda — token; admin sahifasida — null.
+     * Login'siz ochiq zal ekrani (`/screen…`) orqali kelinganmi.
      */
-    private function screenToken(Request $request): ?string
+    private function isScreen(Request $request): bool
     {
-        $token = $request->attributes->get(VerifyLiveScreenToken::ATTRIBUTE);
-
-        return is_string($token) && $token !== '' ? $token : null;
+        return $request->routeIs('screen.*');
     }
 
     /**
-     * Ochiq havolada sahifalar bir-biriga shu havolalar bilan o‘tadi (admin panelga qaytish tugmasi yo‘q).
+     * Ochiq ekranda sahifalar bir-biriga shu havolalar bilan o‘tadi (admin panelga qaytish tugmasi yo‘q).
      *
      * @return array{live_url: string, stats_url: string}|null
      */
-    private function screenLinks(?string $token): ?array
+    private function screenLinks(bool $screen): ?array
     {
-        if ($token === null) {
+        if (! $screen) {
             return null;
         }
 
         return [
-            'live_url' => route('screen.live', $token),
-            'stats_url' => route('screen.stats', $token),
+            'live_url' => route('screen.live'),
+            'stats_url' => route('screen.stats'),
         ];
     }
 }

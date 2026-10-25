@@ -11,7 +11,7 @@ use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
 
 /**
- * Zal ekranlari: /screen/{token} va /screen/{token}/stats — login'siz, faqat to‘g‘ri token bilan.
+ * Zal ekranlari: /screen va /screen/stats — login'siz ochiq.
  */
 class LiveScreenLinkTest extends TestCase
 {
@@ -19,15 +19,6 @@ class LiveScreenLinkTest extends TestCase
     use RefreshDatabase;
 
     private const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
-    private const TOKEN = 'zal-ekrani-maxfiy-token';
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        config(['live.screen_token' => self::TOKEN]);
-    }
 
     public function test_screens_open_without_login_and_link_to_each_other(): void
     {
@@ -41,42 +32,33 @@ class LiveScreenLinkTest extends TestCase
             'occurred_at' => now()->subMinute(),
         ]);
 
-        $this->get(route('screen.live', self::TOKEN))
+        $this->get('/screen')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Live/Index')
                 ->where('passes.0.employee_name', 'Innoweek Mehmon')
-                ->where('passes.0.face_url', route('screen.face', ['token' => self::TOKEN, 'employee' => $visitor->id]))
+                ->where('passes.0.face_url', route('screen.face', $visitor->id))
                 ->where('stats.entered', 1)
-                ->where('screen.stats_url', route('screen.stats', self::TOKEN)));
+                ->where('screen.stats_url', route('screen.stats')));
 
-        $this->get(route('screen.stats', self::TOKEN))
+        $this->get('/screen/stats')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Live/Stats')
                 ->where('stats.registered', 1)
                 ->where('stats.entered', 1)
-                ->where('screen.live_url', route('screen.live', self::TOKEN)));
+                ->where('screen.live_url', route('screen.live')));
 
-        $this->get(route('screen.face', ['token' => self::TOKEN, 'employee' => $visitor->id]))
+        $this->get(route('screen.face', $visitor->id))
             ->assertOk()
             ->assertHeader('Content-Type', 'image/png');
     }
 
-    public function test_wrong_or_missing_token_is_not_found_and_admin_pages_still_need_login(): void
+    public function test_admin_pages_still_need_login_and_have_no_screen_links(): void
     {
-        $this->get('/screen/notogri')->assertNotFound();
-        $this->get('/screen/notogri/stats')->assertNotFound();
-
-        config(['live.screen_token' => null]);
-        $this->get('/screen/'.self::TOKEN)->assertNotFound();
-
         $this->get(route('admin.live.index'))->assertRedirect('/login');
         $this->get(route('admin.live.stats'))->assertRedirect('/login');
-    }
 
-    public function test_admin_pages_have_no_screen_links(): void
-    {
         $admin = $this->createUserWithPermissions([config('menu_permissions.resources')['live']]);
 
         $this->actingAs($admin)

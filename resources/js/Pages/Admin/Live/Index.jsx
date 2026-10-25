@@ -173,7 +173,7 @@ function RecentRow({ pass, groupTone }) {
     );
 }
 
-// `screen` — login'siz ochiq havola (/screen/{token}): admin panelga qaytish yo‘q, sahifalar shu havolalar bilan.
+// `screen` — login'siz ochiq ekran (/screen): admin panelga qaytish yo‘q, sahifalar shu havolalar bilan.
 export default function Index({ passes = [], stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';

@@ -27,8 +27,8 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-// Zal ekranlari: login'siz maxfiy havola — /screen/{token} va /screen/{token}/stats (LIVE_SCREEN_TOKEN).
-Route::prefix('screen/{token}')->name('screen.')->middleware('live.screen')->group(function () {
+// Zal ekranlari: login'siz ochiq — /screen va /screen/stats (havolani bilgan har kim ko‘radi).
+Route::prefix('screen')->name('screen.')->middleware('throttle:300,1')->group(function () {
     Route::get('/', [LiveMonitorController::class, 'index'])->name('live');
     Route::get('stats', [LiveMonitorController::class, 'stats'])->name('stats');
     Route::get('faces/{employee}', [LiveMonitorController::class, 'face'])
