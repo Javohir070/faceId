@@ -51,7 +51,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.employees.index', [
                 'search' => 'Ali',
-                'department_id' => $department->id,
+                'department_ids' => [$department->id],
                 'schedule_id' => $schedule->id,
                 'has_face' => '1',
             ]))
@@ -59,7 +59,7 @@ class EmployeeAdminTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Employees/Index')
                 ->where('filters.search', 'Ali')
-                ->where('filters.department_id', $department->id)
+                ->where('filters.department_ids', [$department->id])
                 ->where('filters.schedule_id', $schedule->id)
                 ->where('filters.has_face', '1')
                 ->has('employees.data', 0));

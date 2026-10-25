@@ -8,6 +8,14 @@ use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Sahifa testlari Vite dev server (public/hot) yoki public/build manifestiga bog‘liq bo‘lmasin.
+        $this->withoutVite();
+    }
+
     /**
      * Config cache (.env dagi MySQL) testlarga aralashmasin.
      */
@@ -26,6 +34,8 @@ abstract class TestCase extends BaseTestCase
             'database.default' => 'sqlite',
             'database.connections.sqlite.database' => ':memory:',
             'database.connections.sqlite.prefix' => '',
+            // Turniket bazasi (LAN dagi haqiqiy server) testlarda hech qachon ulanmasin.
+            'database.connections.turnstile' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''],
             'cache.default' => 'array',
             'session.driver' => 'array',
             'queue.default' => 'sync',

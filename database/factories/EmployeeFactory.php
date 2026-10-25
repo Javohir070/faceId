@@ -31,4 +31,10 @@ class EmployeeFactory extends Factory
             'valid_to_dt' => (clone $validFrom)->modify('+1 year')->format('Y-m-d H:i:s'),
         ];
     }
+
+    /** Tadbir mehmoni — faqat Jonli kuzatuv va Tashrif statistikasida ko‘rinadi. */
+    public function visitor(): static
+    {
+        return $this->state(fn (): array => ['is_visitor' => true]);
+    }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\NoteType;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Note;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -139,5 +140,84 @@ class NoteAdminTest extends TestCase
             ->assertSessionHasErrors('dt');
 
         $this->assertSame(1, Note::query()->count());
+    }
+
+    public function test_scoped_user_cannot_create_notes_for_other_department_employee(): void
+    {
+        $own = Department::factory()->create();
+        $other = Department::factory()->create();
+        $otherEmployee = Employee::factory()->create(['department_id' => $other->id]);
+
+        $user = $this->createDepartmentUserWithPermissions($own->id, [
+            config('menu_permissions.resources')['notes'],
+            config('menu_permissions.resources')['attendance'],
+        ]);
+
+        $payload = [
+            'employee_id' => $otherEmployee->id,
+            'type' => NoteType::Absent->value,
+            'dt' => '2026-08-03',
+            'note' => 'Boshqa bo‘lim.',
+        ];
+
+        $this->actingAs($user)
+            ->post(route('admin.notes.store'), $payload)
+            ->assertSessionHasErrors('employee_id');
+
+        $this->actingAs($user)
+            ->post(route('admin.attendance.notes.store'), $payload)
+            ->assertSessionHasErrors('employee_id');
+
+        $this->assertDatabaseCount('notes', 0);
+    }
+
+    public function test_scoped_user_cannot_see_edit_or_delete_other_department_notes(): void
+    {
+        $own = Department::factory()->create();
+        $other = Department::factory()->create();
+        $ownEmployee = Employee::factory()->create(['department_id' => $own->id]);
+        $otherEmployee = Employee::factory()->create(['department_id' => $other->id]);
+
+        $ownNote = Note::factory()->create(['employee_id' => $ownEmployee->id]);
+        $otherNote = Note::factory()->create([
+            'employee_id' => $otherEmployee->id,
+            'type' => NoteType::Absent,
+            'dt' => '2026-08-03',
+            'note' => 'Asl matn.',
+        ]);
+
+        $user = $this->createDepartmentUserWithPermissions($own->id, [
+            config('menu_permissions.resources')['notes'],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.notes.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('notes.data', 1)
+                ->where('notes.data.0.id', $ownNote->id));
+
+        $this->actingAs($user)
+            ->get(route('admin.notes.edit', $otherNote))
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->put(route('admin.notes.update', $otherNote), [
+                'employee_id' => $ownEmployee->id,
+                'type' => NoteType::Absent->value,
+                'dt' => '2026-08-03',
+                'note' => 'O‘zgartirildi.',
+            ])
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->delete(route('admin.notes.destroy', $otherNote))
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('notes', [
+            'id' => $otherNote->id,
+            'employee_id' => $otherEmployee->id,
+            'note' => 'Asl matn.',
+        ]);
     }
 }

@@ -68,6 +68,24 @@ return [
             ],
         ],
 
+        // Turniket tizimi bazasi (faqat o‘qiladi): o‘tishlar `gecishareketleri` jadvaliga yoziladi.
+        'turnstile' => [
+            'driver' => 'mysql',
+            'host' => env('TURNSTILE_DB_HOST', '127.0.0.1'),
+            'port' => env('TURNSTILE_DB_PORT', '3306'),
+            'database' => env('TURNSTILE_DB_DATABASE', 'expo'),
+            'username' => env('TURNSTILE_DB_USERNAME', ''),
+            'password' => env('TURNSTILE_DB_PASSWORD', ''),
+            'charset' => env('TURNSTILE_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('TURNSTILE_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'strict' => false,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? [
+                PDO::ATTR_TIMEOUT => (int) env('TURNSTILE_DB_TIMEOUT', 5),
+            ] : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

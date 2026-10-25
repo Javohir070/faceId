@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Database\Factories\ReportFactory;
 use App\Models\Scopes\BelongsToDepartmentScope;
+use App\Models\Scopes\ExcludesVisitorReportsScope;
+use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +45,17 @@ class Report extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new BelongsToDepartmentScope);
+        static::addGlobalScope(new ExcludesVisitorReportsScope);
+    }
+
+    /**
+     * Tadbir mehmonlarining o‘tishlarini ham qo‘shadi (faqat Jonli kuzatuv / Tashrif statistikasi uchun).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithVisitors(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(ExcludesVisitorReportsScope::class);
     }
 
     public function employee(): BelongsTo

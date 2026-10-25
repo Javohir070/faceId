@@ -14,6 +14,7 @@ return [
         'notes' => 'Izohlar',
         'sync' => 'Sinxronizatsiya',
         'live' => 'Jonli kuzatuv',
+        'live-adjust' => 'Statistika qo‘shish',
         'reports' => 'Hisobotlar',
         'attendance' => 'Davomat',
         'reports-pull' => 'Event tortish',
