@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\NoteType;
+use App\Models\Scopes\BelongsToEmployeeDepartmentScope;
 use Database\Factories\NoteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,11 @@ class Note extends Model
             'type' => NoteType::class,
             'dt' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BelongsToEmployeeDepartmentScope);
     }
 
     public function employee(): BelongsTo

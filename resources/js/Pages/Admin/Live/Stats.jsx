@@ -9,12 +9,11 @@ import {
     FullscreenOutlined,
     LoginOutlined,
     LogoutOutlined,
-    ManOutlined,
     TeamOutlined,
     UserOutlined,
-    WomanOutlined,
 } from '@ant-design/icons';
 import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
+import { FemaleFigureIcon, MaleFigureIcon } from '../../../Components/Live/GenderIcons';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
 import useIncrease from '../../../hooks/useIncrease';
@@ -126,8 +125,8 @@ function GenderPanel({ stats }) {
         <section className="vs-panel vs-gender" aria-label="Erkaklar va ayollar">
             <PanelTitle title="Erkaklar va ayollar" sub="Guests by gender  ·  bugun kirganlar" />
             <div className="vs-gender-cards">
-                <GenderCard tone="blue" icon={ManOutlined} label="Erkaklar" sub="Male" value={stats.male} total={total} />
-                <GenderCard tone="pink" icon={WomanOutlined} label="Ayollar" sub="Female" value={stats.female} total={total} />
+                <GenderCard tone="blue" icon={MaleFigureIcon} label="Erkaklar" sub="Male" value={stats.male} total={total} />
+                <GenderCard tone="pink" icon={FemaleFigureIcon} label="Ayollar" sub="Female" value={stats.female} total={total} />
             </div>
             <div className="vs-split">
                 <div className={`vs-split-bar${total > 0 ? ' vs-split-bar--pink' : ''}`}>
@@ -226,7 +225,8 @@ function LastArrival({ arrival }) {
     );
 }
 
-export default function Stats({ stats = {} }) {
+// `screen` — login'siz ochiq havola (/screen/{token}/stats): qaytish tugmasi ochiq monitorga olib boradi.
+export default function Stats({ stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';
     const [fullscreen, toggleFullscreen] = useFullscreen();
@@ -252,7 +252,7 @@ export default function Stats({ stats = {} }) {
                     <div className="lm-header-side">
                         <div className="lm-tools">
                             <Link
-                                href={route('admin.live.index')}
+                                href={screen?.live_url ?? route('admin.live.index')}
                                 className="lm-tool"
                                 aria-label="Kirish monitoriga qaytish"
                                 title="Kirish monitoriga qaytish"

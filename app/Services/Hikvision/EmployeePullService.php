@@ -7,6 +7,7 @@ use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Face;
 use App\Models\Schedule;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -193,7 +194,14 @@ class EmployeePullService
         Department $department,
         Schedule $schedule,
     ): array {
-        $existing = Employee::query()->where('card', $employeeNo)->first();
+        // Karta butun tizimda unikal: boshqa bo‘lim xodimi ham topilishi kerak (aks holda dublikat
+        // yaratishga urinib xato beradi), lekin bo‘limga cheklangan foydalanuvchi uni o‘zgartirmaydi.
+        $existing = Employee::query()->withoutGlobalScopes()->where('card', $employeeNo)->first();
+
+        if ($existing !== null && ! Employee::query()->whereKey($existing->id)->exists()) {
+            return ['outcome' => 'skipped', 'face_saved' => false];
+        }
+
         $name = trim((string) ($user['name'] ?? ''));
         $name = $name !== '' ? $name : 'Xodim '.$employeeNo;
         $validFrom = $this->parseDeviceTime($user['beginTime'] ?? null) ?? now()->startOfDay();
@@ -300,6 +308,13 @@ class EmployeePullService
 
     private function resolveImportDepartment(): Department
     {
+        // Bo‘limga cheklangan foydalanuvchi tortgan yangi xodimlar uning bo‘limiga tushadi — aks holda ularni ko‘rmaydi.
+        $user = auth()->user();
+
+        if ($user instanceof User && $user->isDepartmentScoped() && $user->department !== null) {
+            return $user->department;
+        }
+
         $name = (string) config('hikvision.employees_pull_department', 'Qurilmadan');
 
         return Department::query()->firstOrCreate(['name' => $name]);

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Category;
+use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Report;
@@ -312,5 +313,63 @@ class ReportPullPageTest extends TestCase
         // 105 pages * 20 identity events = 2100 imported (10 noise per page skipped)
         $this->assertDatabaseCount('reports', 2100);
         $this->assertGreaterThan(100, $page);
+    }
+
+    public function test_scoped_user_pull_links_other_department_events_to_their_employee(): void
+    {
+        Http::fake([
+            '*AcsEvent*' => Http::response([
+                'AcsEvent' => [
+                    'searchID' => 'biocontrol-search',
+                    'responseStatusStrg' => 'OK',
+                    'numOfMatches' => 1,
+                    'InfoList' => [
+                        [
+                            'major' => 5,
+                            'minor' => 75,
+                            'time' => '2026-07-21T09:05:00+05:00',
+                            'employeeNoString' => '66001',
+                            'name' => 'Boshqa Xodim',
+                            'currentVerifyMode' => 'face',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $own = Department::factory()->create();
+        $other = Department::factory()->create();
+        $otherEmployee = Employee::factory()->create([
+            'card' => '66001',
+            'department_id' => $other->id,
+        ]);
+
+        $user = $this->createDepartmentUserWithPermissions($own->id, [
+            config('menu_permissions.resources')['reports-pull'],
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => User::factory(),
+            'category_id' => Category::factory(),
+            'type' => Device::TYPE_ENTRY,
+            'is_online' => true,
+        ]);
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+
+        $this->actingAs($user)
+            ->post(route('admin.reports.pull.store'), [
+                'device_ids' => [$device->id],
+                'date_from' => '2026-07-21',
+                'date_to' => '2026-07-21',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('reports', 1);
+        $this->assertDatabaseHas('reports', [
+            'employee_id' => $otherEmployee->id,
+            'department_id' => $other->id,
+            'device_id' => $device->id,
+        ]);
     }
 }

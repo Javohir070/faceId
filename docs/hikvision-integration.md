@@ -71,7 +71,7 @@ Har bir Face ID qurilma uchun alohida saqlanadi — `.env` da emas:
 | `use_https` | HTTPS yoqilganmi |
 | `user` | ISAPI login |
 | `password` | ISAPI parol (shifrlangan) |
-| `type` | Kirish (0) / Chiqish (1) |
+| `type` | Kirish (1) / Chiqish (2) |
 | `is_online` | Ulanish holati |
 
 Bir nechta qurilma qo'shishingiz mumkin — har biri o'z IP/login/parol bilan ishlaydi.
@@ -91,11 +91,11 @@ Xodim yaratish/yangilash **avtomatik** qurilmaga yubormaydi. Qurilmaga yuborish 
 - Admin → **Sinxronizatsiya** (tanlangan xodim + qurilma)
 - Qurilma amali → **Sync** (shu qurilmaga barcha xodimlar)
 
-Bu amallar `EmployeeSyncService` orqali **queue** ga tushadi. Xodim o‘chirilganda esa allaqachon bog‘langan qurilmalardan olib tashlash navbatga qo‘yiladi.
+Bu amallar `EmployeeSyncService` orqali **so‘rovning o‘zida (sinxron)** bajariladi va natija flash xabarda qaytadi. Sinxronizatsiya sahifasi har bir xodim × qurilma juftligi uchun `POST /admin/sync/transfer-one` ni alohida chaqirib, progress oynasida ko‘rsatadi.
+
+**Queue** faqat ikki holatda ishlatiladi: xodim o‘chirilganda uni bog‘langan qurilmalardan olib tashlash (`RemoveHikvisionUsersJob`) va tahrirda yuz rasmi olib tashlanganda yuzni qurilmalardan o‘chirish (`RemoveHikvisionFacesJob`).
 
 Ishga tushirish: `php artisan queue:work` (yoki `composer dev` ichidagi `queue:listen`).
-
-Joblar: `app/Jobs/Hikvision/` (`TransferEmployeesJob`, `SyncDeviceEmployeesJob`, …).
 
 ## Qurilma amallari (admin jadvali)
 
@@ -105,8 +105,8 @@ Joblar: `app/Jobs/Hikvision/` (`TransferEmployeesJob`, `SyncDeviceEmployeesJob`,
 | Uzish | `POST /admin/devices/{id}/disconnect` | Onlayn holatni o'chirish |
 | Ochish | `POST /admin/devices/{id}/open` | Eshikni masofadan ochish |
 | Qayta yuklash | `POST /admin/devices/{id}/restart` | Qurilmani reboot |
-| Tozalash | `POST /admin/devices/{id}/clear` | Barcha xodimlarni qurilmadan o'chirish |
-| Sync | `POST /admin/devices/{id}/sync-employees` | Barcha xodimlarni qayta yuborish |
+| Tozalash | `POST /admin/devices/{id}/clear` | Qurilmaga bog‘langan barcha xodimlarni qurilmadan o'chirish |
+| Sync | `POST /admin/devices/{id}/sync-employees` | Qurilmaga bog‘langan xodimlarni qayta yuborish |
 
 ## Webhook
 

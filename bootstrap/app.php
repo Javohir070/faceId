@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'telegram.webhook' => \App\Http\Middleware\VerifyTelegramWebhookSecret::class,
+            'live.screen' => \App\Http\Middleware\VerifyLiveScreenToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

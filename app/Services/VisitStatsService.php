@@ -15,6 +15,7 @@ class VisitStatsService
 {
     public function __construct(
         private readonly LiveMonitorService $liveMonitorService,
+        private readonly VisitAdjustmentService $adjustments,
     ) {}
 
     /**
@@ -37,27 +38,32 @@ class VisitStatsService
         $insideByGender = $insideIds === []
             ? collect()
             : Employee::query()
+                ->withVisitors()
                 ->whereIn('id', $insideIds)
                 ->groupBy('gender')
                 ->selectRaw('gender, count(*) as total')
                 ->pluck('total', 'gender');
 
+        // Admin qo‘lda qo‘shgan kirishlar (mahalliy va guruh qismi LiveMonitorService ichida qo‘shiladi).
+        $added = $this->adjustments->totals($today[0]);
+
         $enteredToday = fn (): Builder => Employee::query()
-            ->whereHas('reports', fn ($query) => $query->entry()->whereBetween('occurred_at', $today));
+            ->withVisitors()
+            ->whereHas('reports', fn ($query) => $query->withVisitors()->entry()->whereBetween('occurred_at', $today));
 
         return [
-            'registered' => Employee::query()->count(),
-            'registered_today' => Employee::query()->whereBetween('created_at', $today)->count(),
-            'entered' => $this->people(Report::TYPE_ENTRY, $today),
-            'entered_last_hour' => $this->people(Report::TYPE_ENTRY, $lastHour),
+            'registered' => Employee::query()->withVisitors()->count(),
+            'registered_today' => Employee::query()->withVisitors()->whereBetween('created_at', $today)->count(),
+            'entered' => $this->people(Report::TYPE_ENTRY, $today) + $added['entered'],
+            'entered_last_hour' => $this->people(Report::TYPE_ENTRY, $lastHour) + $this->adjustments->enteredBetween(...$lastHour),
             'exited' => $this->people(Report::TYPE_EXIT, $today),
             'exited_last_hour' => $this->people(Report::TYPE_EXIT, $lastHour),
             'inside' => count($insideIds),
             'inside_male' => (int) ($insideByGender[Employee::GENDER_MALE] ?? 0),
             'inside_female' => (int) ($insideByGender[Employee::GENDER_FEMALE] ?? 0),
             ...$this->liveMonitorService->enteredByOrigin($today),
-            'male' => $enteredToday()->where('gender', Employee::GENDER_MALE)->count(),
-            'female' => $enteredToday()->where('gender', Employee::GENDER_FEMALE)->count(),
+            'male' => $enteredToday()->where('gender', Employee::GENDER_MALE)->count() + $added['male'],
+            'female' => $enteredToday()->where('gender', Employee::GENDER_FEMALE)->count() + $added['female'],
             'groups' => $this->liveMonitorService->enteredByGroup($today),
             'last_arrival' => $this->lastArrival($today),
         ];
@@ -69,6 +75,7 @@ class VisitStatsService
     private function people(int $type, array $range): int
     {
         return Report::query()
+            ->withVisitors()
             ->where('type', $type)
             ->whereBetween('occurred_at', $range)
             ->whereNotNull('employee_id')
@@ -85,12 +92,14 @@ class VisitStatsService
     private function insideEmployeeIds(array $range): array
     {
         $latest = Report::query()
+            ->withVisitors()
             ->whereBetween('occurred_at', $range)
             ->whereNotNull('employee_id')
             ->groupBy('employee_id')
             ->selectRaw('employee_id, max(occurred_at) as last_at');
 
         $lastPassIds = Report::query()
+            ->withVisitors()
             ->joinSub($latest, 'latest', fn ($join) => $join
                 ->on('reports.employee_id', '=', 'latest.employee_id')
                 ->on('reports.occurred_at', '=', 'latest.last_at'))
@@ -99,6 +108,7 @@ class VisitStatsService
             ->pluck('id');
 
         return Report::query()
+            ->withVisitors()
             ->whereIn('id', $lastPassIds)
             ->where('type', Report::TYPE_ENTRY)
             ->pluck('employee_id')
@@ -114,11 +124,14 @@ class VisitStatsService
     private function lastArrival(array $range): ?array
     {
         $report = Report::query()
+            ->withVisitors()
             ->entry()
             ->whereBetween('occurred_at', $range)
             ->whereNotNull('employee_id')
             ->with([
-                'employee:id,name,country,position,department_id',
+                'employee' => fn ($query) => $query
+                    ->withVisitors()
+                    ->select(['id', 'name', 'country', 'position', 'department_id']),
                 'employee.department:id,name',
                 'device:id,name',
             ])

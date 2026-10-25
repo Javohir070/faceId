@@ -18,12 +18,22 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VisitAdjustmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('home.index')
         : redirect()->route('login');
+});
+
+// Zal ekranlari: login'siz maxfiy havola — /screen/{token} va /screen/{token}/stats (LIVE_SCREEN_TOKEN).
+Route::prefix('screen/{token}')->name('screen.')->middleware('live.screen')->group(function () {
+    Route::get('/', [LiveMonitorController::class, 'index'])->name('live');
+    Route::get('stats', [LiveMonitorController::class, 'stats'])->name('stats');
+    Route::get('faces/{employee}', [LiveMonitorController::class, 'face'])
+        ->whereNumber('employee')
+        ->name('face');
 });
 
 // /admin — public/admin static papka bilan to'qnashadi, shuning uchun /dashboard
@@ -117,7 +127,17 @@ Route::middleware('auth')->group(function () {
         Route::get('live/stats', [LiveMonitorController::class, 'stats'])
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.stats');
+        Route::get('live/adjustments', [VisitAdjustmentController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.index');
+        Route::post('live/adjustments', [VisitAdjustmentController::class, 'store'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.store');
+        Route::delete('live/adjustments/{adjustment}', [VisitAdjustmentController::class, 'destroy'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.destroy');
         Route::get('live/faces/{employee}', [LiveMonitorController::class, 'face'])
+            ->whereNumber('employee')
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.face');
         Route::get('reports/pull', [ReportController::class, 'pull'])

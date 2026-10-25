@@ -32,7 +32,7 @@ class EmployeeExportTest extends TestCase
         Employee::factory()->create(['name' => 'Vali Aliyev', 'department_id' => $otherDepartment->id]);
 
         $this->actingAs($admin)
-            ->get(route('admin.employees.export', ['department_id' => $department->id]))
+            ->get(route('admin.employees.export', ['department_ids' => [$department->id]]))
             ->assertOk();
 
         Excel::assertDownloaded('xodimlar.xlsx', function (EmployeesExport $export) {

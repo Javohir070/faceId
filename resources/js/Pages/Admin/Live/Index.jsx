@@ -10,11 +10,10 @@ import {
     GlobalOutlined,
     HomeOutlined,
     LoginOutlined,
-    ManOutlined,
-    WomanOutlined,
 } from '@ant-design/icons';
 import { useState } from 'react';
 import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
+import { FemaleFigureIcon, MaleFigureIcon } from '../../../Components/Live/GenderIcons';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
@@ -35,8 +34,8 @@ const enteredTile = { key: 'entered', label: 'Kirganlar', sub: 'Entered today', 
 const breakdownTiles = [
     { key: 'local', label: 'Mahalliy', sub: 'Local', tone: 'blue', icon: HomeOutlined },
     { key: 'foreign', label: 'Xorijiy', sub: 'International', tone: 'yellow', icon: GlobalOutlined },
-    { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: ManOutlined },
-    { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
+    { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: MaleFigureIcon },
+    { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: FemaleFigureIcon },
 ];
 
 function isForeign(pass) {
@@ -174,7 +173,8 @@ function RecentRow({ pass, groupTone }) {
     );
 }
 
-export default function Index({ passes = [], stats = {} }) {
+// `screen` — login'siz ochiq havola (/screen/{token}): admin panelga qaytish yo‘q, sahifalar shu havolalar bilan.
+export default function Index({ passes = [], stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';
     const [fullscreen, toggleFullscreen] = useFullscreen();
@@ -205,16 +205,18 @@ export default function Index({ passes = [], stats = {} }) {
 
                     <div className="lm-header-side">
                         <div className="lm-tools">
+                            {screen ? null : (
+                                <Link
+                                    href={route('home.index')}
+                                    className="lm-tool"
+                                    aria-label="Panelga qaytish"
+                                    title="Panelga qaytish"
+                                >
+                                    <ArrowLeftOutlined aria-hidden="true" />
+                                </Link>
+                            )}
                             <Link
-                                href={route('home.index')}
-                                className="lm-tool"
-                                aria-label="Panelga qaytish"
-                                title="Panelga qaytish"
-                            >
-                                <ArrowLeftOutlined aria-hidden="true" />
-                            </Link>
-                            <Link
-                                href={route('admin.live.stats')}
+                                href={screen?.stats_url ?? route('admin.live.stats')}
                                 className="lm-tool"
                                 aria-label="Tashrif statistikasi"
                                 title="Tashrif statistikasi"
