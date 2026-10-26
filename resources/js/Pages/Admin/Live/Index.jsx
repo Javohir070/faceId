@@ -29,13 +29,13 @@ const GENDER_FEMALE = 2;
 // Guruhlar ko‘payib ketsa ham 1080px ekranda mehmon kartasi siqilmasin; to‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
 const GROUP_SLOTS = 3;
 
-const enteredTile = { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined };
+const enteredTile = { key: 'entered', label: 'Kirganlar', tone: 'green', icon: LoginOutlined };
 
 const breakdownTiles = [
-    { key: 'local', label: 'Mahalliy', sub: 'Local', tone: 'blue', icon: HomeOutlined },
-    { key: 'foreign', label: 'Xorijiy', sub: 'International', tone: 'yellow', icon: GlobalOutlined },
-    { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: MaleFigureIcon },
-    { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: FemaleFigureIcon },
+    { key: 'local', label: 'Mahalliy', tone: 'blue', icon: HomeOutlined },
+    { key: 'foreign', label: 'Xorijiy', tone: 'yellow', icon: GlobalOutlined },
+    { key: 'male', label: 'Erkaklar', tone: 'blue', icon: MaleFigureIcon },
+    { key: 'female', label: 'Ayollar', tone: 'pink', icon: FemaleFigureIcon },
 ];
 
 function isForeign(pass) {
@@ -99,7 +99,6 @@ function StatTile({ tile, value, active }) {
             </span>
             <div className="lm-stat-text">
                 <p className="lm-stat-label">{tile.label}</p>
-                <p className="lm-stat-sub">{tile.sub}</p>
             </div>
             <p className="lm-stat-value"><AnimatedNumber value={value ?? 0} /></p>
             <BumpGlow value={value} />
@@ -252,7 +251,6 @@ export default function Index({ passes = [], stats = {}, screen = null }) {
                                     key={group.id}
                                     tile={{
                                         label: group.name,
-                                        sub: 'Bugun kirgan',
                                         tone: groupTones.get(group.id),
                                         icon: ApartmentOutlined,
                                     }}
