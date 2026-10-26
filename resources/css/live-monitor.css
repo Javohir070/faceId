@@ -205,15 +205,15 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 2.75em;
-    height: 2.75em;
-    border-radius: 0.75em;
+    width: 3.25em;
+    height: 3.25em;
+    border-radius: 0.875em;
     background: color-mix(in srgb, var(--lm-tone) 16%, transparent);
     color: var(--lm-tone);
 }
 
 .lm-stat-icon .anticon {
-    font-size: 1.375em;
+    font-size: 1.625em;
 }
 
 .lm-stat-text {
@@ -221,17 +221,15 @@
     flex: 1;
 }
 
+/* Pastki izoh yo‘q — nom zal ekranida uzoqdan o‘qilsin */
 .lm-stat-label {
     margin: 0;
-    font-size: 1.125em;
-    font-weight: 700;
-}
-
-.lm-stat-sub {
-    margin: 0.125em 0 0;
-    color: var(--lm-muted);
-    font-size: 0.75em;
-    font-weight: 500;
+    overflow: hidden;
+    font-size: 1.625em;
+    font-weight: 800;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lm-stat-value {
