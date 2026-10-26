@@ -160,11 +160,13 @@ function RecentRow({ pass, groupTone }) {
             <div className="lm-row-text">
                 <p className="lm-row-name">
                     <span className="lm-row-name-text">{pass.employee_name}</span>
+                </p>
+                <p className="lm-row-sub">
                     {pass.group_name ? (
                         <span className={`lm-tag lm-tone--${groupTone ?? 'blue'}`}>{pass.group_name}</span>
                     ) : null}
+                    <span className="lm-row-sub-text">{organizationOf(pass) || '—'}</span>
                 </p>
-                <p className="lm-row-sub">{organizationOf(pass) || '—'}</p>
             </div>
             <CountryCode code={pass.country} />
             <span className="lm-row-time">{pass.time}</span>
