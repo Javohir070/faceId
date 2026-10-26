@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Report;
 use App\Services\Turnstile\TurnstilePullService;
 use App\Services\VisitStatsService;
+use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -165,6 +166,30 @@ class PullTurnstilePassesCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame(1, Report::query()->withVisitors()->count());
+    }
+
+    public function test_turnstile_timezone_is_converted_to_app_time(): void
+    {
+        // Expo Panel `tarih` ni Turkiya vaqtida (UTC+3) yozadi; ilova — Toshkent (UTC+5).
+        config(['app.timezone' => 'Asia/Tashkent', 'turnstile.timezone' => 'Europe/Istanbul']);
+        $defaultTimezone = date_default_timezone_get();
+        date_default_timezone_set('Asia/Tashkent');
+        $this->beforeApplicationDestroyed(fn () => date_default_timezone_set($defaultTimezone));
+        $this->travelTo(Carbon::parse('2026-10-24 11:00:00', 'Asia/Tashkent'));
+
+        $this->pass(['kartid' => '0003700000', 'tarih' => '2026-10-23 21:30:00']); // Toshkentda kecha 23:30 — olinmaydi
+        $this->pass(['kartid' => '0003700000', 'tarih' => '2026-10-23 22:30:00']); // Toshkentda bugun 00:30
+        $this->pass(['kartid' => '0003700000', 'tarih' => '2026-10-24 07:09:33']); // Toshkentda 09:09:33
+
+        $this->artisan('turnstile:pull')
+            ->expectsOutputToContain('2 o‘qildi — 2 yangi')
+            ->assertSuccessful();
+
+        $this->assertSame(
+            ['2026-10-24 00:30:00', '2026-10-24 09:09:33'],
+            Report::query()->withVisitors()->orderBy('occurred_at')->get()
+                ->map(fn (Report $report): string => $report->occurred_at->format('Y-m-d H:i:s'))->all(),
+        );
     }
 
     public function test_unreachable_turnstile_database_fails_cleanly(): void

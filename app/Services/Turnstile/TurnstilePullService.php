@@ -149,7 +149,8 @@ class TurnstilePullService
 
         $report = $this->reportService->createFromWebhookPayload([
             'ipAddress' => $row->cihaz_ip ?: 'turnstile',
-            'dateTime' => Carbon::parse($row->tarih)->toIso8601String(),
+            // ReportService vaqtni berilgan zonadagi soat bo‘yicha yozadi — shuning uchun avval ilova zonasiga o‘tkaziladi.
+            'dateTime' => Carbon::parse($row->tarih, $this->timezone())->setTimezone(config('app.timezone'))->toIso8601String(),
             'AccessControllerEvent' => [
                 'employeeNoString' => $card,
                 'cardNo' => $card,
@@ -187,12 +188,20 @@ class TurnstilePullService
         if ($saved === null) {
             $since ??= now()->startOfDay();
 
+            $since = Carbon::instance($since)->setTimezone($this->timezone());
+
             return (int) ($this->passes()->where('tarih', '<', $since->format('Y-m-d H:i:s'))->max('submission_id') ?? 0);
         }
 
         $max = (int) ($this->passes()->max('submission_id') ?? 0);
 
         return (int) $saved > $max ? 0 : (int) $saved;
+    }
+
+    /** Turniket `tarih` yozadigan vaqt zonasi (config `turnstile.timezone`, bo‘sh bo‘lsa ilova zonasi). */
+    private function timezone(): string
+    {
+        return (string) (config('turnstile.timezone') ?: config('app.timezone'));
     }
 
     private function passes(): Builder

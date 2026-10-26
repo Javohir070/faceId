@@ -28,4 +28,8 @@ return [
     // Faqat shu fuar (`fuarid`) o‘tishlari; bo‘sh — hammasi.
     'fair_id' => env('TURNSTILE_FAIR_ID'),
 
+    // Turniket `tarih` ni qaysi vaqt zonasida yozadi (Expo Panel — Turkiya vaqti, Europe/Istanbul = UTC+3).
+    // Bo‘sh — APP_TIMEZONE bilan bir xil deb olinadi.
+    'timezone' => env('TURNSTILE_TIMEZONE') ?: null,
+
 ];
