@@ -21,7 +21,7 @@ import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 import { formatNumber, formatPercent, GROUP_TONES, initialsOf, share } from '../../../utils/liveFormat';
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
 function PanelTitle({ title }) {
     return (

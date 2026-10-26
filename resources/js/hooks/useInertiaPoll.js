@@ -17,15 +17,29 @@ export default function useInertiaPoll(only, intervalMs = 10000, enabled = true)
             return undefined;
         }
 
+        // Sekin tarmoqda javob intervaldan kech kelsa, yangi reload eskisini bekor qilib, sahifa umuman
+        // yangilanmay qolardi — oldingi so‘rov tugamaguncha yangisi yuborilmaydi.
+        // 30 soniyadan ko‘p osilib qolgan so‘rov esa tashlab yuboriladi (yangi reload uni bekor qiladi).
+        let inFlightSince = 0;
+
         const tick = () => {
-            if (document.hidden) {
+            if (document.hidden || (inFlightSince && Date.now() - inFlightSince < 30000)) {
                 return;
             }
+
+            inFlightSince = Date.now();
 
             router.reload({
                 only: onlyRef.current,
                 preserveScroll: true,
                 preserveState: true,
+                // ngrok/internet bir zum uzilsa, uning xato sahifasi ekran ustida modal bo‘lib qolmasin —
+                // eski ma’lumot turaveradi, keyingi tikda qayta urinamiz.
+                onHttpException: () => false,
+                onNetworkError: () => false,
+                onFinish: () => {
+                    inFlightSince = 0;
+                },
             });
         };
 

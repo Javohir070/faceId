@@ -20,7 +20,7 @@ import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 import { GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
-const POLL_MS = 3000;
+const POLL_MS = 2000;
 const LOCAL_COUNTRY = 'UZ';
 const GENDER_MALE = 1;
 const GENDER_FEMALE = 2;
