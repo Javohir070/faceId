@@ -24,7 +24,7 @@ return [
 
     'page_size' => max(min((int) env('INNOWEEK_PAGE_SIZE', 500), 1000), 1),
 
-    'timeout' => max((int) env('INNOWEEK_API_TIMEOUT', 15), 1),
+    'timeout' => max((int) env('INNOWEEK_API_TIMEOUT', 30), 1),
 
     // Mehmonlar bo‘limi (OAV (Media), Homiy, Ishtirokchi guruhlari shu bo‘limda); bo‘sh — "Innoweek <yil>".
     'department' => env('INNOWEEK_DEPARTMENT'),

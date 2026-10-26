@@ -22,7 +22,7 @@ class InnoweekApiClient
 
         $response = Http::withToken((string) config('innoweek.api_token'))
             ->acceptJson()
-            ->timeout((int) config('innoweek.timeout', 15))
+            ->timeout((int) config('innoweek.timeout', 30))
             ->get($url.'/api/biocontrol/participants', array_filter([
                 'cursor' => $cursor,
                 'limit' => $limit,

@@ -2,6 +2,7 @@
 
 namespace App\Services\Innoweek;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -16,6 +17,9 @@ class InnoweekSyncService
 
     /** Bir ishga tushishda eng ko‘pi shuncha sahifa — qolgani keyingi tikda. */
     private const MAX_PAGES = 100;
+
+    /** Timeout bo‘lsa sahifa shu hajmgacha ikki barobardan kichraytiriladi. */
+    private const MIN_PAGE_SIZE = 50;
 
     public function __construct(
         private readonly InnoweekApiClient $client,
@@ -47,9 +51,10 @@ class InnoweekSyncService
 
             $cursor = Cache::get(self::CURSOR_KEY);
             $pages = 0;
+            $limit = (int) config('innoweek.page_size', 500);
 
             do {
-                $page = $this->client->participants($cursor, (int) config('innoweek.page_size', 500));
+                $page = $this->fetchPage($cursor, $limit);
                 $result['received'] += count($page['data']);
 
                 if ($page['data'] !== []) {
@@ -74,6 +79,27 @@ class InnoweekSyncService
             return $result;
         } finally {
             $lock->release();
+        }
+    }
+
+    /**
+     * Katta sahifa timeout bersa, xuddi shu kursordan kichikroq sahifa bilan qayta so‘raydi;
+     * kichraytirilgan hajm qolgan sahifalar uchun ham saqlanadi.
+     *
+     * @return array{data: list<array<string, mixed>>, next_cursor: ?string, has_more: bool}
+     */
+    private function fetchPage(?string $cursor, int &$limit): array
+    {
+        while (true) {
+            try {
+                return $this->client->participants($cursor, $limit);
+            } catch (ConnectionException $exception) {
+                if ($limit <= self::MIN_PAGE_SIZE) {
+                    throw $exception;
+                }
+
+                $limit = max(intdiv($limit, 2), self::MIN_PAGE_SIZE);
+            }
         }
     }
 

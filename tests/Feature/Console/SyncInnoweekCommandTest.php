@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Group;
 use App\Services\Innoweek\InnoweekSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -98,6 +99,32 @@ class SyncInnoweekCommandTest extends TestCase
         $this->assertSame('Yangi Nom', Employee::query()->withVisitors()->where('card', '0003700001')->value('name'));
         $this->assertSame('Oddiy xodim', $staff->fresh()->name);
         $this->assertFalse(Employee::query()->withVisitors()->where('card', '0003700010')->exists());
+    }
+
+    public function test_timeout_retries_same_cursor_with_smaller_pages(): void
+    {
+        config(['innoweek.page_size' => 400]);
+        $limits = [];
+
+        Http::fake(function (Request $request) use (&$limits) {
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            $limits[] = [(int) $query['limit'], $query['cursor'] ?? null];
+
+            if ((int) $query['limit'] > 100) {
+                throw new ConnectionException('cURL error 28: Operation timed out');
+            }
+
+            return isset($query['cursor'])
+                ? Http::response(['data' => [$this->item(['id' => 2, 'card' => '0003700002'])], 'next_cursor' => 'c2', 'has_more' => false])
+                : Http::response(['data' => [$this->item(['id' => 1, 'card' => '0003700001'])], 'next_cursor' => 'c1', 'has_more' => true]);
+        });
+
+        $this->artisan('innoweek:sync')
+            ->expectsOutputToContain('2 keldi')
+            ->assertSuccessful();
+
+        $this->assertSame([[400, null], [200, null], [100, null], [100, 'c1']], $limits);
+        $this->assertSame('c2', Cache::get(InnoweekSyncService::CURSOR_KEY));
     }
 
     public function test_api_error_and_missing_config_fail_cleanly(): void
