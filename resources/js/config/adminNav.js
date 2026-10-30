@@ -17,6 +17,7 @@ import {
     SettingOutlined,
     SyncOutlined,
     TeamOutlined,
+    UnorderedListOutlined,
     UserAddOutlined,
 } from '@ant-design/icons';
 import { route } from '../routes';
@@ -81,6 +82,13 @@ export const adminNavGroups = [
                         icon: UserAddOutlined,
                     },
                     { key: 'live-adjust', href: route('admin.live.adjustments.index'), label: 'sq', icon: PlusCircleOutlined },
+                    {
+                        key: 'live-entrants',
+                        permission: 'live-adjust',
+                        href: route('admin.live.entrants.index'),
+                        label: 'Kirganlar ro‘yxati',
+                        icon: UnorderedListOutlined,
+                    },
                 ],
             },
         ],

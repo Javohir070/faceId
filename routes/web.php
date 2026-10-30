@@ -7,6 +7,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DeviceActionController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EntrantListController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveMonitorController;
@@ -136,6 +137,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('live/adjustments/{adjustment}', [VisitAdjustmentController::class, 'destroy'])
             ->middleware('permission:'.$menuPermissions['live-adjust'])
             ->name('live.adjustments.destroy');
+        Route::get('live/entrants', [EntrantListController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.entrants.index');
+        Route::get('live/entrants/export', [EntrantListController::class, 'export'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.entrants.export');
         Route::get('live/faces/{employee}', [LiveMonitorController::class, 'face'])
             ->whereNumber('employee')
             ->middleware('permission:'.$menuPermissions['live'])
