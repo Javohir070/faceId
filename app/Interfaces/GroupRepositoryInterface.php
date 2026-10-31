@@ -14,9 +14,16 @@ interface GroupRepositoryInterface
     public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator;
 
     /**
-     * @return list<array{key: string, type: string, id: int, title: string, checkable: bool, children: list<array<string, mixed>>}>
+     * @return list<array{key: string, type: string, id: int, title: string, checkable: bool, employees_count: int, unassigned_count: int, children: list<array<string, mixed>>}>
      */
     public function treeForIndex(?int $departmentId = null): array;
+
+    /**
+     * Guruh sahifasi uchun: yuqori guruhlar zanjiri, pastki guruhlar va birinchi $employeesLimit ta xodim.
+     *
+     * @return array<string, mixed>
+     */
+    public function detailsForShow(Group $group, int $employeesLimit): array;
 
     public function allOrdered(?int $departmentId = null): Collection;
 

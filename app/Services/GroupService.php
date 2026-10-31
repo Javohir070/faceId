@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class GroupService
 {
+    /** Guruh sahifasida ko‘rsatiladigan xodimlar soni; qolganlari Xodimlar sahifasida filtr bilan. */
+    private const SHOW_EMPLOYEES_LIMIT = 50;
+
     public function __construct(
         private readonly GroupRepositoryInterface $groupRepository,
         private readonly DepartmentRepositoryInterface $departmentRepository,
@@ -30,6 +33,14 @@ class GroupService
     public function treeForIndex(?int $departmentId = null): array
     {
         return $this->groupRepository->treeForIndex($departmentId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function detailsForShow(Group $group): array
+    {
+        return $this->groupRepository->detailsForShow($group, self::SHOW_EMPLOYEES_LIMIT);
     }
 
     /**

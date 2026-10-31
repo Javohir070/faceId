@@ -31,11 +31,22 @@ class GroupController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $departments = $this->groupService->getDepartmentsForForm();
+        $groups = $this->groupService->getGroupsForForm();
+
+        // ?parent_id= (pastki guruh qo‘shish) yoki ?department_id= — faqat foydalanuvchiga ko‘rinadiganlari olinadi.
+        $parent = $groups->firstWhere('id', $request->integer('parent_id') ?: null);
+        $department = $departments->firstWhere('id', $parent?->department_id ?? ($request->integer('department_id') ?: null));
+
         return Inertia::render('Admin/Groups/Form', [
-            'departments' => $this->groupService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
-            'groups' => $this->groupService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
+            'departments' => $departments->map->only(['id', 'name'])->values(),
+            'groups' => $groups->map->only(['id', 'name', 'department_id'])->values(),
+            'defaults' => [
+                'department_id' => $department?->id,
+                'parent_id' => $department ? $parent?->id : null,
+            ],
         ]);
     }
 
@@ -50,16 +61,8 @@ class GroupController extends Controller
 
     public function show(Group $group): Response
     {
-        $group->load(['department:id,name', 'parent:id,name']);
-
         return Inertia::render('Admin/Groups/Show', [
-            'group' => [
-                'id' => $group->id,
-                'name' => $group->name,
-                'department' => $group->department?->only(['id', 'name']),
-                'parent' => $group->parent?->only(['id', 'name']),
-                'created_at' => $group->created_at,
-            ],
+            'group' => $this->groupService->detailsForShow($group),
         ]);
     }
 

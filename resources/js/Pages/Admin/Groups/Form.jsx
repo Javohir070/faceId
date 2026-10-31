@@ -6,12 +6,12 @@ import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
-export default function Form({ group, departments = [], groups = [] }) {
+export default function Form({ group, departments = [], groups = [], defaults = {} }) {
     const isEdit = !!group;
     const { data, setData, post, put, processing, errors } = useForm({
         name: group?.name || '',
-        department_id: group?.department_id || null,
-        parent_id: group?.parent_id || null,
+        department_id: group?.department_id || defaults.department_id || null,
+        parent_id: group?.parent_id || defaults.parent_id || null,
     });
 
     const parentOptions = useMemo(() => {
