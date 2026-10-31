@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\NoteType;
+use App\Models\Employee;
 use App\Models\Note;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,7 +25,16 @@ class UpdateNoteRequest extends FormRequest
         $note = $this->route('note');
 
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
+            'employee_id' => [
+                'required',
+                'integer',
+                // `exists` qoidasi global scope'ni chetlab o‘tadi — xodim bo‘lim cheklovi bilan tekshiriladi.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! Employee::query()->whereKey($value)->exists()) {
+                        $fail('Xodim topilmadi.');
+                    }
+                },
+            ],
             'type' => ['required', Rule::enum(NoteType::class)],
             'dt' => [
                 'required',

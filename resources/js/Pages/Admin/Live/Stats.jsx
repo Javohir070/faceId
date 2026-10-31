@@ -9,12 +9,11 @@ import {
     FullscreenOutlined,
     LoginOutlined,
     LogoutOutlined,
-    ManOutlined,
     TeamOutlined,
     UserOutlined,
-    WomanOutlined,
 } from '@ant-design/icons';
 import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
+import { FemaleFigureIcon, MaleFigureIcon } from '../../../Components/Live/GenderIcons';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
 import useIncrease from '../../../hooks/useIncrease';
@@ -22,18 +21,17 @@ import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 import { formatNumber, formatPercent, GROUP_TONES, initialsOf, share } from '../../../utils/liveFormat';
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
-function PanelTitle({ title, sub }) {
+function PanelTitle({ title }) {
     return (
         <div className="vs-panel-title">
             <h2>{title}</h2>
-            <p>{sub}</p>
         </div>
     );
 }
 
-function KpiCard({ tone, icon: Icon, label, sub, value, note, noteTone = false }) {
+function KpiCard({ tone, icon: Icon, label, value, note, noteTone = false }) {
     // Figma: yangi o‘tishdan keyin izoh oldida "▲ +1 hozirgina" (10 soniya).
     const bump = useIncrease(value);
 
@@ -45,7 +43,6 @@ function KpiCard({ tone, icon: Icon, label, sub, value, note, noteTone = false }
                 </span>
                 <div>
                     <p className="vs-kpi-label">{label}</p>
-                    <p className="vs-kpi-sub">{sub}</p>
                 </div>
             </div>
             <p className="vs-kpi-value"><AnimatedNumber value={value ?? 0} /></p>
@@ -71,17 +68,16 @@ function OriginPanel({ stats }) {
         : 'var(--lm-row)';
 
     const rows = [
-        { key: 'local', label: 'Mahalliy · Local', tone: 'blue', value: stats.local },
-        { key: 'foreign', label: 'Xorijiy · International', tone: 'gold', value: stats.foreign },
+        { key: 'local', label: 'Mahalliy', tone: 'blue', value: stats.local },
+        { key: 'foreign', label: 'Xorijiy', tone: 'gold', value: stats.foreign },
     ];
 
     return (
         <section className="vs-panel vs-origin" aria-label="Mahalliy va xorijiy">
-            <PanelTitle title="Mahalliy va xorijiy" sub="Local & international guests" />
+            <PanelTitle title="Mahalliy va xorijiy" />
             <div className="vs-donut" style={{ background: ring }}>
                 <div className="vs-donut-center">
                     <p className="vs-donut-total"><AnimatedNumber value={entered} /></p>
-                    <p className="vs-donut-sub">bugun kirgan</p>
                 </div>
             </div>
             <ul className="vs-legend">
@@ -99,7 +95,7 @@ function OriginPanel({ stats }) {
     );
 }
 
-function GenderCard({ tone, icon: Icon, label, sub, value, total }) {
+function GenderCard({ tone, icon: Icon, label, value, total }) {
     return (
         <article className={`vs-gender-card vs-tone--${tone}`}>
             <div className="vs-gender-head">
@@ -108,7 +104,6 @@ function GenderCard({ tone, icon: Icon, label, sub, value, total }) {
                 </span>
                 <div className="vs-gender-labels">
                     <p className="vs-gender-label">{label}</p>
-                    <p className="vs-gender-sub">{sub}</p>
                 </div>
                 <span className="vs-pill">{formatPercent(value, total)}</span>
             </div>
@@ -124,10 +119,10 @@ function GenderPanel({ stats }) {
 
     return (
         <section className="vs-panel vs-gender" aria-label="Erkaklar va ayollar">
-            <PanelTitle title="Erkaklar va ayollar" sub="Guests by gender  ·  bugun kirganlar" />
+            <PanelTitle title="Erkaklar va ayollar" />
             <div className="vs-gender-cards">
-                <GenderCard tone="blue" icon={ManOutlined} label="Erkaklar" sub="Male" value={stats.male} total={total} />
-                <GenderCard tone="pink" icon={WomanOutlined} label="Ayollar" sub="Female" value={stats.female} total={total} />
+                <GenderCard tone="blue" icon={MaleFigureIcon} label="Erkaklar" value={stats.male} total={total} />
+                <GenderCard tone="pink" icon={FemaleFigureIcon} label="Ayollar" value={stats.female} total={total} />
             </div>
             <div className="vs-split">
                 <div className={`vs-split-bar${total > 0 ? ' vs-split-bar--pink' : ''}`}>
@@ -141,7 +136,6 @@ function GenderPanel({ stats }) {
             <div className="vs-inside">
                 <div>
                     <p className="vs-inside-label">Hozir ichkarida</p>
-                    <p className="vs-inside-sub">Inside now</p>
                 </div>
                 <div className="vs-inside-values">
                     <span className="vs-inside-item vs-tone--blue">
@@ -166,7 +160,7 @@ function GroupsPanel({ stats }) {
 
     return (
         <section className="vs-panel vs-groups" aria-label="Toifalar bo‘yicha">
-            <PanelTitle title="Toifalar bo‘yicha" sub="Guests by category  ·  bugun kirganlar" />
+            <PanelTitle title="Toifalar bo‘yicha" />
             <div className="vs-split-bar vs-split-bar--flex">
                 {toned.map((group) => (
                     <span
@@ -185,7 +179,6 @@ function GroupsPanel({ stats }) {
                             </span>
                             <div className="vs-group-labels">
                                 <p className="vs-group-name">{group.name}</p>
-                                <p className="vs-group-sub">Bugun kirgan</p>
                             </div>
                             <div className="vs-group-numbers">
                                 <p className="vs-group-value"><AnimatedNumber value={group.entered ?? 0} /></p>
@@ -210,7 +203,7 @@ function LastArrival({ arrival }) {
 
     return (
         <footer className="vs-ticker" aria-live="polite">
-            <p className="vs-ticker-kicker">So‘nggi kirgan  ·  Last arrival</p>
+            <p className="vs-ticker-kicker">So‘nggi kirgan</p>
             {arrival ? (
                 <>
                     <div className="vs-ticker-body">
@@ -226,7 +219,8 @@ function LastArrival({ arrival }) {
     );
 }
 
-export default function Stats({ stats = {} }) {
+// `screen` — login'siz ochiq ekran (/screen/stats): qaytish tugmasi ochiq monitorga olib boradi.
+export default function Stats({ stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';
     const [fullscreen, toggleFullscreen] = useFullscreen();
@@ -245,14 +239,14 @@ export default function Stats({ stats = {} }) {
                         </span>
                         <div>
                             <h1 className="lm-brand-name">{brandName}  ·  Tashrif statistikasi</h1>
-                            <p className="lm-brand-sub">Real vaqt rejimida yangilanadi  ·  Live attendance statistics</p>
+                            <p className="lm-brand-sub">Real vaqt rejimida yangilanadi</p>
                         </div>
                     </div>
 
                     <div className="lm-header-side">
                         <div className="lm-tools">
                             <Link
-                                href={route('admin.live.index')}
+                                href={screen?.live_url ?? route('admin.live.index')}
                                 className="lm-tool"
                                 aria-label="Kirish monitoriga qaytish"
                                 title="Kirish monitoriga qaytish"
@@ -273,7 +267,7 @@ export default function Stats({ stats = {} }) {
                         </div>
                         <span className="lm-live" role="status">
                             <span className="lm-live-dot" aria-hidden="true" />
-                            JONLI · LIVE
+                            JONLI
                         </span>
                         <LiveClock />
                     </div>
@@ -284,7 +278,6 @@ export default function Stats({ stats = {} }) {
                         tone="white"
                         icon={TeamOutlined}
                         label="Ro‘yxatdan o‘tganlar"
-                        sub="Registered"
                         value={stats.registered}
                         note={`Bugun +${formatNumber(stats.registered_today)} ta yangi`}
                     />
@@ -292,7 +285,6 @@ export default function Stats({ stats = {} }) {
                         tone="green"
                         icon={LoginOutlined}
                         label="Bugun kirganlar"
-                        sub="Entered today"
                         value={stats.entered}
                         note={`So‘nggi 1 soatda +${formatNumber(stats.entered_last_hour)}`}
                         noteTone
@@ -301,7 +293,6 @@ export default function Stats({ stats = {} }) {
                         tone="blue"
                         icon={UserOutlined}
                         label="Hozir ichkarida"
-                        sub="Inside now"
                         value={stats.inside}
                         note={`Erkak ${formatNumber(stats.inside_male)}  ·  Ayol ${formatNumber(stats.inside_female)}`}
                         noteTone
@@ -310,7 +301,6 @@ export default function Stats({ stats = {} }) {
                         tone="red"
                         icon={LogoutOutlined}
                         label="Bugun chiqqanlar"
-                        sub="Exited today"
                         value={stats.exited}
                         note={`So‘nggi 1 soatda +${formatNumber(stats.exited_last_hour)}`}
                     />

@@ -10,18 +10,17 @@ import {
     GlobalOutlined,
     HomeOutlined,
     LoginOutlined,
-    ManOutlined,
-    WomanOutlined,
 } from '@ant-design/icons';
 import { useState } from 'react';
 import AnimatedNumber, { BumpGlow } from '../../../Components/Live/AnimatedNumber';
+import { FemaleFigureIcon, MaleFigureIcon } from '../../../Components/Live/GenderIcons';
 import LiveClock from '../../../Components/Live/LiveClock';
 import useFullscreen from '../../../hooks/useFullscreen';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 import { route } from '../../../routes';
 import { GROUP_TONES, initialsOf } from '../../../utils/liveFormat';
 
-const POLL_MS = 3000;
+const POLL_MS = 2000;
 const LOCAL_COUNTRY = 'UZ';
 const GENDER_MALE = 1;
 const GENDER_FEMALE = 2;
@@ -30,13 +29,13 @@ const GENDER_FEMALE = 2;
 // Guruhlar ko‘payib ketsa ham 1080px ekranda mehmon kartasi siqilmasin; to‘liq ro‘yxat "Tashrif statistikasi" sahifasida.
 const GROUP_SLOTS = 3;
 
-const enteredTile = { key: 'entered', label: 'Kirganlar', sub: 'Entered today', tone: 'green', icon: LoginOutlined };
+const enteredTile = { key: 'entered', label: 'Kirganlar', tone: 'green', icon: LoginOutlined };
 
 const breakdownTiles = [
-    { key: 'local', label: 'Mahalliy', sub: 'Local', tone: 'blue', icon: HomeOutlined },
-    { key: 'foreign', label: 'Xorijiy', sub: 'International', tone: 'yellow', icon: GlobalOutlined },
-    { key: 'male', label: 'Erkaklar', sub: 'Male', tone: 'blue', icon: ManOutlined },
-    { key: 'female', label: 'Ayollar', sub: 'Female', tone: 'pink', icon: WomanOutlined },
+    { key: 'local', label: 'Mahalliy', tone: 'blue', icon: HomeOutlined },
+    { key: 'foreign', label: 'Xorijiy', tone: 'yellow', icon: GlobalOutlined },
+    { key: 'male', label: 'Erkaklar', tone: 'blue', icon: MaleFigureIcon },
+    { key: 'female', label: 'Ayollar', tone: 'pink', icon: FemaleFigureIcon },
 ];
 
 function isForeign(pass) {
@@ -100,7 +99,6 @@ function StatTile({ tile, value, active }) {
             </span>
             <div className="lm-stat-text">
                 <p className="lm-stat-label">{tile.label}</p>
-                <p className="lm-stat-sub">{tile.sub}</p>
             </div>
             <p className="lm-stat-value"><AnimatedNumber value={value ?? 0} /></p>
             <BumpGlow value={value} />
@@ -162,11 +160,13 @@ function RecentRow({ pass, groupTone }) {
             <div className="lm-row-text">
                 <p className="lm-row-name">
                     <span className="lm-row-name-text">{pass.employee_name}</span>
+                </p>
+                <p className="lm-row-sub">
                     {pass.group_name ? (
                         <span className={`lm-tag lm-tone--${groupTone ?? 'blue'}`}>{pass.group_name}</span>
                     ) : null}
+                    <span className="lm-row-sub-text">{organizationOf(pass) || '—'}</span>
                 </p>
-                <p className="lm-row-sub">{organizationOf(pass) || '—'}</p>
             </div>
             <CountryCode code={pass.country} />
             <span className="lm-row-time">{pass.time}</span>
@@ -174,7 +174,8 @@ function RecentRow({ pass, groupTone }) {
     );
 }
 
-export default function Index({ passes = [], stats = {} }) {
+// `screen` — login'siz ochiq ekran (/screen): admin panelga qaytish yo‘q, sahifalar shu havolalar bilan.
+export default function Index({ passes = [], stats = {}, screen = null }) {
     const { appName } = usePage().props;
     const brandName = appName || 'Biocontrol';
     const [fullscreen, toggleFullscreen] = useFullscreen();
@@ -205,16 +206,18 @@ export default function Index({ passes = [], stats = {} }) {
 
                     <div className="lm-header-side">
                         <div className="lm-tools">
+                            {screen ? null : (
+                                <Link
+                                    href={route('home.index')}
+                                    className="lm-tool"
+                                    aria-label="Panelga qaytish"
+                                    title="Panelga qaytish"
+                                >
+                                    <ArrowLeftOutlined aria-hidden="true" />
+                                </Link>
+                            )}
                             <Link
-                                href={route('home.index')}
-                                className="lm-tool"
-                                aria-label="Panelga qaytish"
-                                title="Panelga qaytish"
-                            >
-                                <ArrowLeftOutlined aria-hidden="true" />
-                            </Link>
-                            <Link
-                                href={route('admin.live.stats')}
+                                href={screen?.stats_url ?? route('admin.live.stats')}
                                 className="lm-tool"
                                 aria-label="Tashrif statistikasi"
                                 title="Tashrif statistikasi"
@@ -250,7 +253,6 @@ export default function Index({ passes = [], stats = {} }) {
                                     key={group.id}
                                     tile={{
                                         label: group.name,
-                                        sub: 'Bugun kirgan',
                                         tone: groupTones.get(group.id),
                                         icon: ApartmentOutlined,
                                     }}

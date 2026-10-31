@@ -108,17 +108,11 @@
 
 .vs-panel-title h2 {
     margin: 0;
-    font-size: 1.625em;
+    font-size: 1.875em;
     font-weight: 700;
     line-height: 1.35;
 }
 
-.vs-panel-title p {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 1em;
-    font-weight: 500;
-}
 
 .vs-empty {
     margin: auto 0;
@@ -152,17 +146,11 @@
 
 .vs-kpi-label {
     margin: 0;
-    font-size: 1.5em;
+    font-size: 1.875em;
     font-weight: 600;
     line-height: 1.35;
 }
 
-.vs-kpi-sub {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 1em;
-    font-weight: 500;
-}
 
 .vs-kpi-value {
     margin: 0.125em 0 0;
@@ -176,7 +164,7 @@
 .vs-kpi-note {
     margin: 0;
     color: var(--vs-muted);
-    font-size: 1.125em;
+    font-size: 1.375em;
     font-weight: 600;
 }
 
@@ -255,12 +243,6 @@
     line-height: 1.1;
 }
 
-.vs-donut-sub {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 0.9375em;
-    font-weight: 500;
-}
 
 .vs-legend {
     display: flex;
@@ -284,7 +266,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: 1.25em;
+    font-size: 1.625em;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -292,7 +274,7 @@
 
 .vs-legend-value {
     color: var(--vs-tone);
-    font-size: 1.5em;
+    font-size: 1.875em;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
 }
@@ -300,7 +282,7 @@
 .vs-legend-pct,
 .vs-group-pct {
     color: var(--vs-muted);
-    font-size: 1em;
+    font-size: 1.25em;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
 }
@@ -336,17 +318,11 @@
 
 .vs-gender-label {
     margin: 0;
-    font-size: 1.5em;
+    font-size: 1.875em;
     font-weight: 600;
     line-height: 1.35;
 }
 
-.vs-gender-sub {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 0.9375em;
-    font-weight: 500;
-}
 
 .vs-pill {
     flex: none;
@@ -398,7 +374,7 @@
 .vs-split-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 1em;
+    font-size: 1.25em;
     font-weight: 600;
 }
 
@@ -418,16 +394,10 @@
 
 .vs-inside-label {
     margin: 0;
-    font-size: 1.25em;
+    font-size: 1.625em;
     font-weight: 600;
 }
 
-.vs-inside-sub {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 0.875em;
-    font-weight: 500;
-}
 
 .vs-inside-values {
     display: flex;
@@ -439,7 +409,7 @@
     align-items: center;
     gap: 0.5em;
     color: var(--vs-muted);
-    font-size: 1.125em;
+    font-size: 1.375em;
     font-weight: 500;
 }
 
@@ -490,18 +460,12 @@
 .vs-group-name {
     margin: 0;
     overflow: hidden;
-    font-size: 1.375em;
+    font-size: 1.75em;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.vs-group-sub {
-    margin: 0;
-    color: var(--vs-muted);
-    font-size: 0.9375em;
-    font-weight: 500;
-}
 
 .vs-group-numbers {
     flex: none;
@@ -537,7 +501,7 @@
     flex: none;
     margin: 0;
     color: var(--vs-gold);
-    font-size: 1em;
+    font-size: 1.25em;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -555,7 +519,7 @@
 .vs-ticker-name {
     flex: none;
     margin: 0;
-    font-size: 1.375em;
+    font-size: 1.75em;
     font-weight: 700;
 }
 
@@ -564,7 +528,7 @@
     margin: 0;
     overflow: hidden;
     color: var(--vs-muted);
-    font-size: 1.125em;
+    font-size: 1.375em;
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: pre;
@@ -573,7 +537,7 @@
 .vs-ticker-gate {
     flex: none;
     margin: 0 0 0 auto;
-    font-size: 1.125em;
+    font-size: 1.375em;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: pre;

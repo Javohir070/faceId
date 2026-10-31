@@ -22,7 +22,9 @@ class ReportService
         $occurredAt = $event->event_time ?? now();
         $employeeName = $employee?->name ?? $event->full_name ?? 'Noma’lum';
 
-        $existingQuery = Report::query()->where('occurred_at', $occurredAt);
+        // Event — tizim darajasidagi fakt: qo‘lda tortishni bo‘limga cheklangan foydalanuvchi boshlasa ham
+        // xodim va dublikat bo‘lim cheklovisiz qidiriladi, aks holda report employee_id siz saqlanadi.
+        $existingQuery = Report::query()->withoutGlobalScopes()->where('occurred_at', $occurredAt);
 
         if ($device !== null) {
             $existingQuery->where('device_id', $device->id);
@@ -63,14 +65,14 @@ class ReportService
 
     private function resolveEmployee(AccessControllerEvent $event): ?Employee
     {
-        $employee = $event->employee;
+        $employee = $event->employee()->withoutGlobalScopes()->first();
 
         if ($employee !== null) {
             return $employee->loadMissing('department');
         }
 
         if ($event->card_no) {
-            $employee = Employee::query()->where('card', $event->card_no)->first();
+            $employee = Employee::query()->withoutGlobalScopes()->where('card', $event->card_no)->first();
 
             if ($employee !== null) {
                 return $employee->loadMissing('department');

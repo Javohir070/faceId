@@ -7,6 +7,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DeviceActionController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EntrantListController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveMonitorController;
@@ -18,12 +19,22 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VisitAdjustmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('home.index')
         : redirect()->route('login');
+});
+
+// Zal ekranlari: login'siz ochiq — /screen va /screen/stats (havolani bilgan har kim ko‘radi).
+Route::prefix('screen')->name('screen.')->middleware('throttle:300,1')->group(function () {
+    Route::get('/', [LiveMonitorController::class, 'index'])->name('live');
+    Route::get('stats', [LiveMonitorController::class, 'stats'])->name('stats');
+    Route::get('faces/{employee}', [LiveMonitorController::class, 'face'])
+        ->whereNumber('employee')
+        ->name('face');
 });
 
 // /admin — public/admin static papka bilan to'qnashadi, shuning uchun /dashboard
@@ -117,7 +128,23 @@ Route::middleware('auth')->group(function () {
         Route::get('live/stats', [LiveMonitorController::class, 'stats'])
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.stats');
+        Route::get('live/adjustments', [VisitAdjustmentController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.index');
+        Route::post('live/adjustments', [VisitAdjustmentController::class, 'store'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.store');
+        Route::delete('live/adjustments/{adjustment}', [VisitAdjustmentController::class, 'destroy'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.adjustments.destroy');
+        Route::get('live/entrants', [EntrantListController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.entrants.index');
+        Route::get('live/entrants/export', [EntrantListController::class, 'export'])
+            ->middleware('permission:'.$menuPermissions['live-adjust'])
+            ->name('live.entrants.export');
         Route::get('live/faces/{employee}', [LiveMonitorController::class, 'face'])
+            ->whereNumber('employee')
             ->middleware('permission:'.$menuPermissions['live'])
             ->name('live.face');
         Route::get('reports/pull', [ReportController::class, 'pull'])

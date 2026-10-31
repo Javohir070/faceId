@@ -12,6 +12,7 @@ use App\Interfaces\PermissionRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
+use App\Interfaces\VisitAdjustmentRepositoryInterface;
 use App\Repositories\CategoryRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\DeviceRepository;
@@ -22,7 +23,9 @@ use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\UserRepository;
+use App\Repositories\VisitAdjustmentRepository;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
         ScheduleRepositoryInterface::class => ScheduleRepository::class,
         EmployeeRepositoryInterface::class => EmployeeRepository::class,
         NoteRepositoryInterface::class => NoteRepository::class,
+        VisitAdjustmentRepositoryInterface::class => VisitAdjustmentRepository::class,
     ];
 
     public function register(): void
@@ -54,6 +58,12 @@ class AppServiceProvider extends ServiceProvider
     {
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
+        }
+
+        // `npm run dev` ishlab tursa ham tashqaridan (ngrok, LAN, zal ekrani) kirganlar build fayllarini oladi:
+        // 127.0.0.1:5173 faqat shu kompyuterda ochiladi, aks holda sahifa oppoq qoladi.
+        if (! $this->app->runningInConsole() && ! in_array(request()->getHost(), ['localhost', '127.0.0.1', '::1', '[::1]'], true)) {
+            Vite::useHotFile(storage_path('framework/vite.hot.disabled'));
         }
     }
 }

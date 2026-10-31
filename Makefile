@@ -7,5 +7,5 @@ o:
 o-c:
 	php artisan optimize:clear
 m-f:
-    php artisan migrate:fresh --seed
+	php artisan migrate:fresh --seed
 

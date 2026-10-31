@@ -25,10 +25,10 @@ class StoreNoteRequest extends FormRequest
             'employee_id' => [
                 'required',
                 'integer',
-                // Bo‘lim cheklovi (global scope) hisobga olinadi: boshqa bo‘lim xodimiga izoh qo‘shib bo‘lmaydi.
+                // `exists` qoidasi global scope'ni chetlab o‘tadi — xodim bo‘lim cheklovi bilan tekshiriladi.
                 function (string $attribute, mixed $value, Closure $fail): void {
                     if (! Employee::query()->whereKey($value)->exists()) {
-                        $fail('Tanlangan xodim topilmadi.');
+                        $fail('Xodim topilmadi.');
                     }
                 },
             ],

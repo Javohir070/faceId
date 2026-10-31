@@ -44,6 +44,11 @@ const routeBuilders = {
 
     'admin.live.index': () => '/admin/live',
     'admin.live.stats': () => '/admin/live/stats',
+    'admin.live.adjustments.index': () => '/admin/live/adjustments',
+    'admin.live.adjustments.store': () => '/admin/live/adjustments',
+    'admin.live.adjustments.destroy': (id) => `/admin/live/adjustments/${id}`,
+    'admin.live.entrants.index': () => '/admin/live/entrants',
+    'admin.live.entrants.export': () => '/admin/live/entrants/export',
 
     'admin.reports.index': () => '/admin/reports',
     'admin.reports.export': () => '/admin/reports/export',
