@@ -440,7 +440,7 @@ export default function Show({ device }) {
                 backHref={route('admin.devices.index')}
                 backLabel="Qurilmalar ro‘yxati"
                 title={device.name}
-                subtitle={device.description || `${device.ip_address}:${device.port}`}
+                subtitle={`${device.ip_address}:${device.port}`}
                 editHref={route('admin.devices.edit', device.id)}
                 deleteHref={route('admin.devices.destroy', device.id)}
             >
@@ -504,7 +504,6 @@ export default function Show({ device }) {
                         <p className="mb-2 text-sm text-ink-muted">Asosiy identifikatsiya ma’lumotlari</p>
                         <dl>
                             <Field label="Nomi">{device.name}</Field>
-                            <Field label="Tavsif">{device.description || '—'}</Field>
                             <Field label="Turi">{device.type_label || '—'}</Field>
                             <Field label="Kategoriya">{device.category?.name || '—'}</Field>
                             <Field label="Egasi">{device.owner?.name || '—'}</Field>

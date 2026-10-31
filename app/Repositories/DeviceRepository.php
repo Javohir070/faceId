@@ -23,8 +23,7 @@ class DeviceRepository implements DeviceRepositoryInterface
                 $builder
                     ->where('name', 'like', '%'.$search.'%')
                     ->orWhere('ip_address', 'like', '%'.$search.'%')
-                    ->orWhere('user', 'like', '%'.$search.'%')
-                    ->orWhere('description', 'like', '%'.$search.'%');
+                    ->orWhere('user', 'like', '%'.$search.'%');
             });
         }
 

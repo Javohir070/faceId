@@ -21,7 +21,6 @@ class DeviceFactory extends Factory
             'user_id' => User::factory(),
             'category_id' => Category::factory(),
             'name' => fake()->words(2, true),
-            'description' => fake()->sentence(4),
             'ip_address' => fake()->localIpv4(),
             'port' => fake()->numberBetween(80, 8999),
             'user' => 'admin',

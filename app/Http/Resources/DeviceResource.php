@@ -35,7 +35,6 @@ class DeviceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'description' => $this->description,
             'ip_address' => $this->ip_address,
             'port' => $this->port,
             'user' => $this->user,
@@ -65,7 +64,6 @@ class DeviceResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'description' => $this->description,
             'ip_address' => $this->ip_address,
             'port' => $this->port,
             'use_https' => $this->use_https,
@@ -111,7 +109,6 @@ class DeviceResource extends JsonResource
             'id' => $this->id,
             'category_id' => $this->category_id,
             'name' => $this->name,
-            'description' => $this->description,
             'ip_address' => $this->ip_address,
             'port' => $this->port,
             'use_https' => $this->use_https,

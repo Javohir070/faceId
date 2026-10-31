@@ -50,7 +50,6 @@ class CategoryDeviceAdminTest extends TestCase
             ->post(route('admin.devices.store'), [
                 'category_id' => $category->id,
                 'name' => 'Terminal 1',
-                'description' => 'Asosiy kirish',
                 'ip_address' => '192.168.1.10',
                 'port' => 80,
                 'user' => 'admin',
@@ -74,13 +73,13 @@ class CategoryDeviceAdminTest extends TestCase
                 ->has('devices.data', 1)
                 ->where('devices.data.0.name', 'Terminal 1')
                 ->where('devices.data.0.has_password', true)
-                ->missing('devices.data.0.password'));
+                ->missing('devices.data.0.password')
+                ->missing('devices.data.0.description'));
 
         $this->actingAs($admin)
             ->put(route('admin.devices.update', $device), [
                 'category_id' => $category->id,
                 'name' => 'Terminal 1 Updated',
-                'description' => 'Yangilangan',
                 'ip_address' => '192.168.1.11',
                 'port' => 8080,
                 'user' => 'admin',

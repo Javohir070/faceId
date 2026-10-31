@@ -10,7 +10,6 @@ export default function Form({ device, categories = [] }) {
     const { data, setData, post, put, processing, errors } = useForm({
         category_id: device?.category_id || null,
         name: device?.name || '',
-        description: device?.description || '',
         ip_address: device?.ip_address || '',
         port: device?.port ?? 80,
         use_https: device?.use_https ?? false,
@@ -88,14 +87,6 @@ export default function Form({ device, categories = [] }) {
                         <p className="mt-1.5 text-xs text-ink-muted">
                             Kichik raqam yuqorida ko&apos;rinadi (masalan: 1, 2, 3…).
                         </p>
-                    </FormField>
-
-                    <FormField label="Tavsif" error={errors.description} required>
-                        <Input
-                            value={data.description}
-                            status={errors.description ? 'error' : undefined}
-                            onChange={(e) => setData('description', e.target.value)}
-                        />
                     </FormField>
                 </div>
 

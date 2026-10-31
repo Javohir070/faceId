@@ -34,7 +34,6 @@ class Device extends Model
         'user_id',
         'category_id',
         'name',
-        'description',
         'ip_address',
         'port',
         'use_https',

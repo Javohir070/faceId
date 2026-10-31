@@ -20,7 +20,6 @@ class UpdateDeviceRequest extends FormRequest
         return [
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:255'],
             'ip_address' => ['required', 'ip'],
             'port' => ['required', 'integer', 'min:1', 'max:65535'],
             'use_https' => ['sometimes', 'boolean'],
