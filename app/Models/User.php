@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -16,6 +17,7 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -66,9 +68,16 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    /** Foydalanuvchi o‘zi qo‘shgan qurilmalar (devices.user_id). */
     public function devices(): HasMany
     {
         return $this->hasMany(Device::class);
+    }
+
+    /** Foydalanuvchiga bog‘langan qurilmalar — o‘zi qo‘shganlari bilan birga unga ko‘rinadi. */
+    public function assignedDevices(): BelongsToMany
+    {
+        return $this->belongsToMany(Device::class)->withTimestamps();
     }
 
     public function isDepartmentScoped(): bool

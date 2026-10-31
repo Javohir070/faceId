@@ -12,6 +12,7 @@ use App\Services\Hikvision\HikvisionEventPullService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\InteractsWithPermissions;
@@ -135,7 +136,7 @@ class ReportPullPageTest extends TestCase
 
     public function test_pull_requests_all_access_minors_with_stable_search_id_and_paginates(): void
     {
-        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        Http::fake(function (Request $request) {
             $body = $request->data();
             $position = (int) data_get($body, 'AcsEventCond.searchResultPosition', 0);
             $searchId = (string) data_get($body, 'AcsEventCond.searchID', '');
@@ -200,7 +201,7 @@ class ReportPullPageTest extends TestCase
             ])
             ->assertRedirect();
 
-        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        Http::assertSent(function (Request $request) {
             if (! str_contains($request->url(), 'AcsEvent')) {
                 return false;
             }
@@ -214,7 +215,7 @@ class ReportPullPageTest extends TestCase
         });
 
         $searchIds = [];
-        Http::recorded(function (\Illuminate\Http\Client\Request $request) use (&$searchIds): void {
+        Http::recorded(function (Request $request) use (&$searchIds): void {
             if (! str_contains($request->url(), 'AcsEvent')) {
                 return;
             }
@@ -232,7 +233,7 @@ class ReportPullPageTest extends TestCase
     {
         $page = 0;
 
-        Http::fake(function (\Illuminate\Http\Client\Request $request) use (&$page) {
+        Http::fake(function (Request $request) use (&$page) {
             if (! str_contains($request->url(), 'AcsEvent')) {
                 return Http::response([], 404);
             }
@@ -354,6 +355,8 @@ class ReportPullPageTest extends TestCase
             'type' => Device::TYPE_ENTRY,
             'is_online' => true,
         ]);
+        // Bo‘lim foydalanuvchisi faqat o‘ziga bog‘langan qurilmadan tortadi.
+        $device->users()->attach($user->id);
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\VisibleDevice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class TransferOneSyncRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'device_id' => ['required', 'integer', Rule::exists('devices', 'id')],
+            'device_id' => ['required', 'integer', new VisibleDevice],
             'employee_id' => ['required', 'integer', Rule::exists('employees', 'id')],
         ];
     }

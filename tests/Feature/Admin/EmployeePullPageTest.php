@@ -132,6 +132,8 @@ class EmployeePullPageTest extends TestCase
             'category_id' => Category::factory(),
             'is_online' => true,
         ]);
+        // Bo‘lim foydalanuvchisi faqat o‘ziga bog‘langan qurilmadan tortadi.
+        $device->users()->attach($user->id);
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
 

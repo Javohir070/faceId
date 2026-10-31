@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserDevicesRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Department;
 use App\Models\User;
@@ -28,11 +29,15 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department?->only(['id', 'name']),
                 'roles' => $user->roles->map->only(['id', 'name'])->values(),
+                'is_super_admin' => $user->roles->contains('name', 'super-admin'),
+                'device_ids' => $user->assignedDevices->pluck('id')->values(),
+                'owned_devices_count' => $user->devices_count,
             ];
         });
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
+            'devices' => $this->userService->devicesForLinking(),
         ]);
     }
 
@@ -70,7 +75,22 @@ class UserController extends Controller
                 'department' => $user->department?->only(['id', 'name']),
                 'roles' => $user->roles->map->only(['id', 'name'])->values(),
                 'permissions' => $user->permissions->map->only(['id', 'name'])->values(),
+                'is_super_admin' => $user->roles->contains('name', 'super-admin'),
+                'device_ids' => $user->assignedDevices->pluck('id')->values(),
+                'assigned_devices' => $user->assignedDevices->map(fn ($device): array => [
+                    'id' => $device->id,
+                    'name' => $device->name,
+                    'ip_address' => $device->ip_address,
+                    'category' => $device->category?->name,
+                ])->values(),
+                'owned_devices' => $user->devices->map(fn ($device): array => [
+                    'id' => $device->id,
+                    'name' => $device->name,
+                    'ip_address' => $device->ip_address,
+                    'category' => $device->category?->name,
+                ])->values(),
             ],
+            'devices' => $this->userService->devicesForLinking(),
         ]);
     }
 
@@ -102,6 +122,15 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'Foydalanuvchi muvaffaqiyatli yangilandi.');
+    }
+
+    public function updateDevices(UpdateUserDevicesRequest $request, User $user): RedirectResponse
+    {
+        $this->userService->syncDevices($user, array_map('intval', $request->validated('device_ids', [])));
+
+        return redirect()
+            ->back(fallback: route('admin.users.index'))
+            ->with('success', 'Foydalanuvchiga bog‘langan qurilmalar saqlandi.');
     }
 
     public function destroy(User $user): RedirectResponse

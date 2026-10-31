@@ -4,12 +4,11 @@ namespace App\Services;
 
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
+use App\Models\Device;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class UserService
 {
@@ -62,7 +61,7 @@ class UserService
             return 'Oxirgi super-admin foydalanuvchini o\'chirib bo\'lmaydi.';
         }
 
-        if ($user->devices()->exists()) {
+        if ($user->devices()->withoutGlobalScopes()->exists()) {
             return 'Foydalanuvchiga biriktirilgan qurilmalar bor. Avval qurilmalarni o\'chiring yoki boshqa foydalanuvchiga o\'tkazing.';
         }
 
@@ -75,7 +74,34 @@ class UserService
 
     public function loadForShow(User $user): User
     {
-        return $this->userRepository->loadRelations($user, ['roles', 'permissions', 'department']);
+        return $this->userRepository->loadRelations($user, ['roles', 'permissions', 'department', 'assignedDevices.category:id,name', 'devices.category:id,name']);
+    }
+
+    /**
+     * @param  list<int>  $deviceIds
+     */
+    public function syncDevices(User $user, array $deviceIds): void
+    {
+        DB::transaction(fn () => $this->userRepository->syncAssignedDevices($user, $deviceIds));
+    }
+
+    /**
+     * Bog‘lash oynasi uchun qurilmalar ro‘yxati.
+     *
+     * @return list<array{id: int, name: string, ip_address: string, category: ?string, owner_id: int}>
+     */
+    public function devicesForLinking(): array
+    {
+        return $this->userRepository->devicesForLinking()
+            ->map(fn (Device $device): array => [
+                'id' => $device->id,
+                'name' => $device->name,
+                'ip_address' => $device->ip_address,
+                'category' => $device->category?->name,
+                'owner_id' => $device->user_id,
+            ])
+            ->values()
+            ->all();
     }
 
     public function loadForEdit(User $user): User

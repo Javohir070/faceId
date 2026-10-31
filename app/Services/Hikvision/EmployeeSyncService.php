@@ -107,9 +107,10 @@ class EmployeeSyncService
 
     public function queueRemoveEmployee(Employee $employee, ?Device $device = null): void
     {
+        // Xodim o‘chirilsa u yozilgan barcha qurilmalardan olinadi — o‘chirgan foydalanuvchiga ko‘rinmaydiganlaridan ham.
         $deviceIds = $device !== null
             ? [$device->id]
-            : $employee->devices()->pluck('devices.id')->all();
+            : $employee->devices()->withoutGlobalScopes()->pluck('devices.id')->all();
 
         if ($deviceIds === []) {
             return;
@@ -121,7 +122,10 @@ class EmployeeSyncService
 
     public function queueRemoveFace(Employee $employee, ?Device $device = null): void
     {
-        $deviceIds = $this->resolveDevices($employee, $device)->pluck('id')->all();
+        // Yuz rasmi o‘chirilsa u barcha sinxronlangan qurilmalardan olinadi (ko‘rinmaydiganlaridan ham).
+        $deviceIds = $device !== null
+            ? [$device->id]
+            : $employee->devices()->withoutGlobalScopes()->pluck('devices.id')->all();
 
         if ($deviceIds === []) {
             return;

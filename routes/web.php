@@ -134,6 +134,9 @@ Route::middleware('auth')->group(function () {
         Route::post('attendance/notes', [AttendanceController::class, 'storeNote'])
             ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$menuPermissions['notes']])
             ->name('attendance.notes.store');
+        Route::put('users/{user}/devices', [UserController::class, 'updateDevices'])
+            ->middleware('permission:'.$menuPermissions['users'])
+            ->name('users.devices.update');
         Route::resource('users', UserController::class)
             ->middleware('permission:'.$menuPermissions['users']);
         Route::resource('roles', RoleController::class)

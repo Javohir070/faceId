@@ -71,6 +71,8 @@ routes/web.php  →  Controller  →  Service  →  Repository (interface)  → 
 - New models holding a `department_id` should probably add the same scope; models that belong to an employee should use `BelongsToEmployeeDepartmentScope`.
 - Store/update requests merge the scoped department via `App\Http\Requests\Concerns\MergesScopedDepartmentId`.
 
+`Device` boots `AssignedDevicesScope` the same way: a non-super-admin sees only devices they created (`devices.user_id`) or that are linked to them (`device_user` pivot, `User::assignedDevices()`, managed from the link icon on Admin → Foydalanuvchilar). With no logged-in user (console, queue worker, webhook) the scope is a no-op, so background channels keep working on every device. Validate device ids with `App\Rules\VisibleDevice`, not `exists:devices`. Cleanup after an employee is deleted or its face cleared uses `withoutGlobalScopes()` so it reaches every synced device, not just the ones the acting user can see.
+
 ## Hikvision integration
 
 Full reference: [docs/hikvision-integration.md](docs/hikvision-integration.md).

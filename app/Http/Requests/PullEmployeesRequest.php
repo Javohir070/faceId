@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\VisibleDevice;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class PullEmployeesRequest extends FormRequest
 {
@@ -19,7 +19,7 @@ class PullEmployeesRequest extends FormRequest
     {
         return [
             'device_ids' => ['required', 'array', 'min:1'],
-            'device_ids.*' => ['integer', Rule::exists('devices', 'id')],
+            'device_ids.*' => ['integer', new VisibleDevice],
         ];
     }
 

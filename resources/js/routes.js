@@ -41,6 +41,7 @@ const routeBuilders = {
     'admin.employees.pull.store': () => '/admin/employees/pull',
     'admin.employees.export': () => '/admin/employees/export',
     'admin.employees.bulk-destroy': () => '/admin/employees/bulk-destroy',
+    'admin.users.devices.update': (id) => `/admin/users/${id}/devices`,
     'admin.employees.remove-devices': (id) => `/admin/employees/${id}/remove-devices`,
 
 

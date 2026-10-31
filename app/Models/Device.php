@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\AssignedDevicesScope;
 use Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -78,6 +79,11 @@ class Device extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new AssignedDevicesScope);
+    }
+
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('order')->orderBy('id');
@@ -91,6 +97,12 @@ class Device extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /** Qurilma bog‘langan foydalanuvchilar (qo‘shgan egasidan tashqari). */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 
     public function employees(): BelongsToMany

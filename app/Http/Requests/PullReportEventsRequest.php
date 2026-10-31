@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\VisibleDevice;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class PullReportEventsRequest extends FormRequest
 {
@@ -19,7 +19,7 @@ class PullReportEventsRequest extends FormRequest
     {
         return [
             'device_ids' => ['required', 'array', 'min:1'],
-            'device_ids.*' => ['integer', Rule::exists('devices', 'id')],
+            'device_ids.*' => ['integer', new VisibleDevice],
             'date_from' => ['required', 'date'],
             'date_to' => ['required', 'date', 'after_or_equal:date_from'],
         ];
