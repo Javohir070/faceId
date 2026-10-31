@@ -3,9 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\BelongsToDepartmentScope;
-use App\Models\Scopes\ExcludesVisitorsScope;
 use Database\Factories\EmployeeFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +31,6 @@ class Employee extends Model
         'card',
         'gender',
         'country',
-        'is_visitor',
         'position',
         'schedule_id',
         'valid_from_dt',
@@ -51,7 +48,6 @@ class Employee extends Model
     {
         return [
             'gender' => 'integer',
-            'is_visitor' => 'boolean',
             'valid_from_dt' => 'datetime',
             'valid_to_dt' => 'datetime',
             'expiry_warned_at' => 'datetime',
@@ -62,7 +58,6 @@ class Employee extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new BelongsToDepartmentScope);
-        static::addGlobalScope(new ExcludesVisitorsScope);
 
         static::updating(function (Employee $employee): void {
             if (! $employee->isDirty('valid_to_dt')) {
@@ -76,17 +71,6 @@ class Employee extends Model
                 $employee->expiry_notified_at = null;
             }
         });
-    }
-
-    /**
-     * Tadbir mehmonlarini ham qo‘shadi (faqat Jonli kuzatuv / Tashrif statistikasi uchun). Bo‘lim cheklovi qoladi.
-     *
-     * @param  Builder<self>  $query
-     * @return Builder<self>
-     */
-    public function scopeWithVisitors(Builder $query): Builder
-    {
-        return $query->withoutGlobalScope(ExcludesVisitorsScope::class);
     }
 
     public function isForeign(): bool

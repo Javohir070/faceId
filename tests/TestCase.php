@@ -34,8 +34,6 @@ abstract class TestCase extends BaseTestCase
             'database.default' => 'sqlite',
             'database.connections.sqlite.database' => ':memory:',
             'database.connections.sqlite.prefix' => '',
-            // Turniket bazasi (LAN dagi haqiqiy server) testlarda hech qachon ulanmasin.
-            'database.connections.turnstile' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''],
             'cache.default' => 'array',
             'session.driver' => 'array',
             'queue.default' => 'sync',
@@ -65,7 +63,7 @@ abstract class TestCase extends BaseTestCase
 
         if (! $isInMemorySqlite && ! $isFileSqlite) {
             throw new RuntimeException(
-                "Testlar faqat sqlite (:memory: yoki *.sqlite) bazasida ishlaydi. "
+                'Testlar faqat sqlite (:memory: yoki *.sqlite) bazasida ishlaydi. '
                 ."Hozirgi ulanish: {$connection} / {$database}. "
                 ."Asosiy bazangizni himoya qilish uchun test to'xtatildi."
             );

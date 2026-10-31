@@ -20,21 +20,6 @@ Schedule::command('devices:pull-events')
     ->withoutOverlapping()
     ->runInBackground();
 
-// Turniket (expo.gecishareketleri) — har daqiqa ~55 soniya davomida har TURNSTILE_POLL_SECONDS da tortadi,
-// shu sabab jonli sahifalar bir necha soniya kechikadi. Mutex 2 daqiqada eskiradi: jarayon o‘lsa ham ertasi daqiqa qayta turadi.
-Schedule::command('turnstile:pull --for=55')
-    ->everyMinute()
-    ->when(fn (): bool => (bool) config('turnstile.enabled', false))
-    ->withoutOverlapping(2)
-    ->runInBackground();
-
-// Innoweek API — joyida ro‘yxatdan o‘tgan yangi ishtirokchilar har INNOWEEK_SYNC_INTERVAL soniyada keladi.
-Schedule::command('innoweek:sync --for=55')
-    ->everyMinute()
-    ->when(fn (): bool => (bool) config('innoweek.sync_enabled', false))
-    ->withoutOverlapping(2)
-    ->runInBackground();
-
 Schedule::command('employees:notify-expiry')
     ->dailyAt('08:00')
     ->withoutOverlapping();

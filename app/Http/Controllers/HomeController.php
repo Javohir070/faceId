@@ -39,12 +39,6 @@ class HomeController extends Controller
 
         $recentEvents = $user->can($menuPermissions['reports'])
             ? AccessControllerEvent::query()
-                // Tadbir mehmonlarining o‘tishlari faqat Jonli kuzatuvda ko‘rinadi.
-                ->whereNotExists(fn ($query) => $query
-                    ->selectRaw('1')
-                    ->from('employees')
-                    ->whereColumn('employees.card', 'access_controller_events.employee_no')
-                    ->where('employees.is_visitor', true))
                 ->latest('event_time')
                 ->limit(6)
                 ->get([

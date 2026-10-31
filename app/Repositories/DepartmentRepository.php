@@ -43,7 +43,6 @@ class DepartmentRepository implements DepartmentRepositoryInterface
 
     public function hasEmployees(Department $department): bool
     {
-        // Mehmonlar ham hisoblanadi — aks holda bo‘lim o‘chirilib, FK xatosi beradi.
-        return $department->employees()->withVisitors()->exists();
+        return $department->employees()->exists();
     }
 }

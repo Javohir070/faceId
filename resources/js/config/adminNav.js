@@ -10,14 +10,11 @@ import {
     HomeOutlined,
     IdcardOutlined,
     KeyOutlined,
-    PlusCircleOutlined,
     SafetyCertificateOutlined,
-    ScanOutlined,
     ScheduleOutlined,
     SettingOutlined,
     SyncOutlined,
     TeamOutlined,
-    UnorderedListOutlined,
     UserAddOutlined,
 } from '@ant-design/icons';
 import { route } from '../routes';
@@ -29,8 +26,6 @@ export const adminNavGroups = [
         title: null,
         items: [
             { key: 'home', href: route('home.index'), label: 'Bosh sahifa', icon: HomeOutlined },
-            { key: 'live', href: route('admin.live.index'), label: 'Jonli kuzatuv', icon: ScanOutlined },
-            { key: 'live-stats', permission: 'live', href: route('admin.live.stats'), label: 'Tashrif statistikasi', icon: BarChartOutlined },
             { key: 'categories', href: route('admin.categories.index'), label: 'Kategoriyalar', icon: AppstoreOutlined },
             { key: 'devices', href: route('admin.devices.index'), label: 'Qurilmalar', icon: ClusterOutlined },
             { key: 'sync', href: route('admin.sync.index'), label: 'Sinxronizatsiya', icon: SyncOutlined },
@@ -80,14 +75,6 @@ export const adminNavGroups = [
                         href: route('admin.employees.pull'),
                         label: 'Xodim tortish',
                         icon: UserAddOutlined,
-                    },
-                    { key: 'live-adjust', href: route('admin.live.adjustments.index'), label: 'sq', icon: PlusCircleOutlined },
-                    {
-                        key: 'live-entrants',
-                        permission: 'live-adjust',
-                        href: route('admin.live.entrants.index'),
-                        label: 'Kirganlar ro‘yxati',
-                        icon: UnorderedListOutlined,
                     },
                 ],
             },

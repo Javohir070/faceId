@@ -12,7 +12,7 @@ return new class extends Migration
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $permission = Permission::query()->firstOrCreate([
-            'name' => config('menu_permissions.resources')['live-adjust'],
+            'name' => 'Statistika qo‘shish',
             'guard_name' => 'web',
         ]);
 
@@ -30,7 +30,7 @@ return new class extends Migration
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         Permission::query()
-            ->where('name', config('menu_permissions.resources')['live-adjust'])
+            ->where('name', 'Statistika qo‘shish')
             ->where('guard_name', 'web')
             ->delete();
 

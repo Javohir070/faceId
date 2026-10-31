@@ -33,9 +33,6 @@ Artisan commands specific to this project:
 - `devices:stream-events` — long-running realtime alertStream listener; **run in its own terminal**. The scheduler only ever starts it as `devices:stream-events --ensure` (a no-op while a manager is alive), and only when `HIKVISION_ALERT_STREAM_AUTOSTART=true` — never schedule it without `--ensure` (see the comment at the bottom of `routes/console.php`)
 - `devices:pull-employees {device?}` — import employees from a device
 - `employees:notify-expiry`, `telegram:daily-digest`, `telegram:set-webhook {url?}`
-- `turnstile:pull {--for=0} {--since=} {--rescan}` — reads new rows from the turnstile system's MySQL table `expo.gecishareketleri` (connection `turnstile`, `TURNSTILE_DB_*`, read-only) by `submission_id` cursor and feeds them to `ReportService` (`kartid` = `employees.card`, `cihaz_yon` g/c = entry/exit; rejected attempts and unknown cards are skipped). Expo Panel writes `tarih` in Turkey time — `TURNSTILE_TIMEZONE` (`Europe/Istanbul`) converts it to app time; ReportService keeps the wall-clock of whatever offset it is given, so convert before passing a time in. Scheduled as `turnstile:pull --for=55` every minute when `TURNSTILE_ENABLED=true`. `tests/TestCase.php` forces the `turnstile` connection to in-memory SQLite
-- `innoweek:import {path} {--department=} {--dry-run}` — loads Innoweek site participants (`users` + `numbers` from its SQL dump) as **visitors** (`employees.is_visitor`, see "Event visitors" below). The dump is parsed as text by `App\Services\Innoweek\SqlDumpReader` (never executed); card = `numbers.full_number`, group from `users.profession_id` → `professions.name_uz` (Ishtirokchi, Homiy, OAV (Media); active professions are pre-created in id order), upsert by card so re-running is safe; a staff employee with the same card is never overwritten
-- `innoweek:sync {--for=0} {--full}` — pulls new/changed participants from the Innoweek API (`GET /api/biocontrol/participants`, Bearer `INNOWEEK_API_TOKEN`, keyset cursor cached in `innoweek.sync.cursor`) through the same `InnoweekImportService::upsertParticipants()` as the dump import. Real time: Innoweek also pushes each participant the moment a card is assigned to `POST /api/webhooks/innoweek/participants` (same Bearer token, `InnoweekWebhookController` → `InnoweekSyncService::upsertItems()`); polling stays as the fallback. Scheduled as `innoweek:sync --for=55` every minute when `INNOWEEK_SYNC_ENABLED=true`. Both import and sync default to the `INNOWEEK_DEPARTMENT` department. The Innoweek-side controller lives in `docs/innoweek-api.md` (spec: `docs/superpowers/specs/2026-10-25-innoweek-api-sync-design.md`). `turnstile:pull` remembers unknown-card passes (`turnstile.pull.unknown`, last 5000) and records them once sync brings the card in
 
 ## Request layering
 
@@ -74,14 +71,6 @@ routes/web.php  →  Controller  →  Service  →  Repository (interface)  → 
 - New models holding a `department_id` should probably add the same scope; models that belong to an employee should use `BelongsToEmployeeDepartmentScope`.
 - Store/update requests merge the scoped department via `App\Http\Requests\Concerns\MergesScopedDepartmentId`.
 
-### Event visitors
-
-Employees with `is_visitor = true` (event guests such as Innoweek participants) exist only so device events resolve to a person on `/admin/live` and `/admin/live/stats`. `Employee` boots `ExcludesVisitorsScope` and `Report` boots `ExcludesVisitorReportsScope`, so by default visitors and their passes are invisible everywhere — employees, sync, attendance, reports, notes, dashboard, Telegram, expiry alerts. Only `LiveMonitorService`, `VisitStatsService`, `LiveMonitorController@face` and the department/schedule "has employees" delete guards opt back in with `->withVisitors()` (on both `Employee` and `Report` queries, including `whereHas('reports', …)` and eager-load closures). New pages get the hidden-by-default behaviour for free; don't add `withVisitors()` outside the live pages. Spec: `docs/superpowers/specs/2026-10-24-event-visitors-design.md`.
-
-Hall screens are also open **without login** at `/screen` and `/screen/stats` (+ `/screen/faces/{id}`; `throttle:300,1`). They reuse `LiveMonitorController` (it detects `routeIs('screen.*')`) and the same pages with a `screen` prop (public links, no "back to panel"); with no user there is no department scope, so they show everything — anyone with the URL sees names.
-
-Admins with `'Statistika qo‘shish'` (`live-adjust`) can add manual entries for a given day at `/admin/live/adjustments` (`VisitAdjustment`, department-scoped). `VisitAdjustmentService::totals()` is added on top of the real counts in `LiveMonitorService` and `VisitStatsService` only: entered, men/women split 70/30 at creation, all local, the chosen group (default "Ishtirokchi"); "last hour" counts additions created in the last 60 minutes. Inside/exited, registered and the pass lists stay real. Spec: `docs/superpowers/specs/2026-10-25-visit-adjustments-design.md`.
-
 ## Hikvision integration
 
 Full reference: [docs/hikvision-integration.md](docs/hikvision-integration.md).
@@ -102,12 +91,11 @@ Hikvision device (ISAPI)
 
 Sync, transfer, device Clear and "remove from device" run **synchronously in the request** (`set_time_limit(0)`) and report counts back in the flash. The Sinxronizatsiya page calls `POST /admin/sync/transfer-one` once per employee × device pair from a progress modal — the one place JSX uses raw `fetch`. Only `EmployeeService::delete()` and face removal in `update()` go through the queue (`RemoveHikvisionUsersJob`, `RemoveHikvisionFacesJob`); the other jobs in `app/Jobs/Hikvision/` and the `queue*` helpers on `EmployeeSyncService` are currently unused.
 
-Events arrive through **four independent channels**, all converging on `ReportService`:
+Events arrive through **three independent channels**, all converging on `ReportService`:
 
 1. Webhook `POST /api/webhooks/hikvision/events/{secret?}` → `WebhookController` (secret via header, query, or path; device IP can be trusted instead)
 2. `devices:stream-events` — persistent alertStream connection
 3. `devices:pull-events` — scheduled polling fallback
-4. `turnstile:pull` — passes from the separate turnstile system (Expo Panel) database, not Hikvision
 
 Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`.
 
