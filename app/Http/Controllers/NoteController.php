@@ -38,13 +38,16 @@ class NoteController extends Controller
 
     public function create(Request $request): Response
     {
-        $prefillEmployeeId = $request->validate([
+        $prefill = $request->validate([
             'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
-        ])['employee_id'] ?? null;
+            'dt' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $prefillEmployeeId = $prefill['employee_id'] ?? null;
 
         return Inertia::render('Admin/Notes/Form', [
             ...$this->formOptions(),
             'prefillEmployeeId' => $prefillEmployeeId ? (int) $prefillEmployeeId : null,
+            'prefillDate' => $prefill['dt'] ?? null,
         ]);
     }
 

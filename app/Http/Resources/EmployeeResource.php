@@ -62,7 +62,11 @@ class EmployeeResource extends JsonResource
             'created_at' => $this->created_at,
             'department' => $this->department?->only(['id', 'name']),
             'group' => $this->group?->only(['id', 'name']),
-            'schedule' => $this->schedule?->only(['id', 'name']),
+            'schedule' => $this->schedule === null ? null : [
+                'id' => $this->schedule->id,
+                'name' => $this->schedule->name,
+                'time' => $this->schedule->enter_time?->format('H:i').'–'.$this->schedule->exit_time?->format('H:i'),
+            ],
             'face_preview' => self::facePreviewUrl($this->face?->face),
             'devices' => $this->devices
                 ->sortBy('name')

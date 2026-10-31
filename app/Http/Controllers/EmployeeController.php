@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\EmployeesExport;
+use App\Http\Requests\BulkDestroyEmployeesRequest;
 use App\Http\Requests\PullEmployeesRequest;
 use App\Http\Requests\RemoveEmployeeDevicesRequest;
 use App\Http\Requests\StoreEmployeeRequest;
@@ -12,9 +13,11 @@ use App\Models\Category;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Note;
+use App\Services\Employees\EmployeeProfileService;
 use App\Services\EmployeeService;
 use App\Services\Hikvision\EmployeePullService;
 use App\Services\Hikvision\EmployeeSyncService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,6 +31,7 @@ class EmployeeController extends Controller
         private readonly EmployeeService $employeeService,
         private readonly EmployeeSyncService $employeeSyncService,
         private readonly EmployeePullService $employeePullService,
+        private readonly EmployeeProfileService $profileService,
     ) {}
 
     public function index(Request $request): Response
@@ -131,6 +135,20 @@ class EmployeeController extends Controller
 
     public function show(Request $request, Employee $employee): Response
     {
+        $filters = $request->validate($this->showFilterRules());
+        $now = now();
+        $month = CarbonImmutable::createFromFormat('!Y-m', $filters['month'] ?? $now->format('Y-m'));
+
+        // Kirish-chiqishlar oralig‘i: tanlangan sanalar, aks holda kalendardagi oy.
+        $from = $filters['from'] ?? $month->startOfMonth()->toDateString();
+        $to = $filters['to'] ?? $month->endOfMonth()->toDateString();
+        $passFilters = [
+            'from' => min($from, $to),
+            'to' => max($from, $to),
+            'type' => $filters['type'] ?? null,
+            'device_id' => isset($filters['device_id']) ? (int) $filters['device_id'] : null,
+        ];
+
         $employee = $this->employeeService->loadForShow($employee);
         $employee->load([
             'notes' => fn ($query) => $query->orderByDesc('dt')->orderByDesc('id'),
@@ -145,6 +163,14 @@ class EmployeeController extends Controller
                 'dt' => $note->dt->format('Y-m-d'),
                 'note' => $note->note,
             ])->values(),
+            'filters' => [...$passFilters, 'month' => $month->format('Y-m')],
+            'month' => fn () => $this->profileService->month($employee, $month, $now),
+            'passes' => fn () => $this->profileService->passes($employee, $passFilters),
+            'passes_summary' => fn () => $this->profileService->passesSummary($employee, $passFilters),
+            'pass_devices' => fn () => $this->profileService->passDevices($employee),
+            'day' => fn () => isset($filters['day'])
+                ? $this->profileService->day($employee, $filters['day'], $now)
+                : null,
         ]);
     }
 
@@ -208,6 +234,15 @@ class EmployeeController extends Controller
             ->with('success', 'Xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
     }
 
+    public function bulkDestroy(BulkDestroyEmployeesRequest $request): RedirectResponse
+    {
+        $deleted = $this->employeeService->deleteMany($request->validated('employee_ids'));
+
+        return redirect()
+            ->back(fallback: route('admin.employees.index'))
+            ->with('success', $deleted.' ta xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
+    }
+
     public function export(Request $request): BinaryFileResponse
     {
         $filters = $request->validate($this->filterRules());
@@ -220,6 +255,21 @@ class EmployeeController extends Controller
     /**
      * @return array<string, array<int, mixed>>
      */
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function showFilterRules(): array
+    {
+        return [
+            'month' => ['nullable', 'date_format:Y-m'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+            'type' => ['nullable', 'in:entry,exit'],
+            'device_id' => ['nullable', 'integer'],
+            'day' => ['nullable', 'date_format:Y-m-d'],
+        ];
+    }
+
     private function filterRules(): array
     {
         return [

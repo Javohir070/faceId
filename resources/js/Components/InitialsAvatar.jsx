@@ -22,6 +22,7 @@ const SIZES = {
     sm: 'h-8 w-8 text-[11px]',
     md: 'h-9 w-9 text-xs',
     lg: 'h-11 w-11 text-sm',
+    xl: 'h-24 w-24 text-2xl',
 };
 
 /** Rasm o‘rniga bosh harfli belgi: guruhlar uchun kvadrat, odamlar uchun dumaloq. */

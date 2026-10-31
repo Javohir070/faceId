@@ -10,12 +10,13 @@ export default function Form({
     employees = [],
     types = [],
     prefillEmployeeId = null,
+    prefillDate = null,
 }) {
     const isEdit = Boolean(note);
     const { data, setData, post, processing, errors } = useForm({
         employee_id: note?.employee_id ?? prefillEmployeeId,
         type: note?.type ?? null,
-        dt: note?.dt?.slice(0, 10) || '',
+        dt: note?.dt?.slice(0, 10) || prefillDate || '',
         note: note?.note || '',
         _method: isEdit ? 'put' : undefined,
     });

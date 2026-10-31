@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Interfaces\DepartmentRepositoryInterface;
 use App\Interfaces\EmployeeRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
-use App\Models\Group;
 use App\Models\Employee;
 use App\Models\Face;
+use App\Models\Group;
 use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -101,6 +101,22 @@ class EmployeeService
             $this->employeeSyncService->queueRemoveEmployee($employee);
             $this->employeeRepository->delete($employee);
         });
+    }
+
+    /**
+     * Tanlangan xodimlarni bittalab o‘chiradi — har biri sinxronlangan qurilmalaridan navbat orqali olib tashlanadi.
+     *
+     * @param  list<int>  $employeeIds
+     */
+    public function deleteMany(array $employeeIds): int
+    {
+        $employees = $this->employeeRepository->findMany($employeeIds);
+
+        foreach ($employees as $employee) {
+            $this->delete($employee);
+        }
+
+        return $employees->count();
     }
 
     public function loadForShow(Employee $employee): Employee

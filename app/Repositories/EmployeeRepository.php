@@ -6,6 +6,7 @@ use App\Interfaces\EmployeeRepositoryInterface;
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
@@ -98,6 +99,11 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     public function delete(Employee $employee): void
     {
         $employee->delete();
+    }
+
+    public function findMany(array $ids): Collection
+    {
+        return Employee::query()->whereIn('id', $ids)->get();
     }
 
     public function loadRelations(Employee $employee, array $relations): Employee

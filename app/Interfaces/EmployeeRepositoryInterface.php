@@ -5,6 +5,7 @@ namespace App\Interfaces;
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 interface EmployeeRepositoryInterface
 {
@@ -24,6 +25,12 @@ interface EmployeeRepositoryInterface
     public function update(Employee $employee, array $data): Employee;
 
     public function delete(Employee $employee): void;
+
+    /**
+     * @param  list<int>  $ids
+     * @return Collection<int, Employee>
+     */
+    public function findMany(array $ids): Collection;
 
     public function loadRelations(Employee $employee, array $relations): Employee;
 }

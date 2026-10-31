@@ -1,7 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Input, Select, TreeSelect } from 'antd';
-import { useMemo, useState } from 'react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { App as AntApp, Button, Checkbox, Input, Select, TreeSelect } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
@@ -28,6 +28,8 @@ export default function Index({
     devices = [],
 }) {
     const can = usePage().props.can || {};
+    const { modal } = AntApp.useApp();
+    const [selectedIds, setSelectedIds] = useState([]);
     const [form, setForm] = useState({
         search: filters.search ?? '',
         department_ids: filters.department_ids ?? [],
@@ -41,6 +43,41 @@ export default function Index({
         () => buildOrgTreeData(departments, groups),
         [departments, groups],
     );
+
+    // Sahifa yoki filtr almashsa tanlov tozalanadi — ko‘rinmaydigan xodim tasodifan o‘chirilmasin.
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [employees.data]);
+
+    const pageIds = employees.data.map((employee) => employee.id);
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+    const someSelected = selectedIds.length > 0 && !allSelected;
+
+    const toggleOne = (id, checked) => {
+        setSelectedIds((current) => (checked ? [...current, id] : current.filter((item) => item !== id)));
+    };
+
+    const deleteSelected = () => {
+        modal.confirm({
+            title: 'Tanlangan xodimlarni o‘chirish',
+            content: `${selectedIds.length} ta xodim o‘chiriladi. Ular yozilgan Face ID qurilmalardan ham navbat orqali olib tashlanadi. Bu amalni qaytarib bo‘lmaydi.`,
+            okText: 'Ha, o‘chirish',
+            cancelText: 'Bekor qilish',
+            okButtonProps: { danger: true },
+            onOk: () => new Promise((resolve, reject) => {
+                router.post(route('admin.employees.bulk-destroy'), {
+                    employee_ids: selectedIds,
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setSelectedIds([]);
+                        resolve();
+                    },
+                    onError: reject,
+                });
+            }),
+        });
+    };
 
     const updateField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -205,6 +242,29 @@ export default function Index({
                 </div>
             </div>
 
+            {selectedIds.length > 0 ? (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-600/20 bg-brand-50 px-4 py-3 dark:border-brand-400/20 dark:bg-brand-950/40">
+                    <p className="text-sm font-bold text-ink">
+                        {selectedIds.length}
+                        {' ta xodim tanlandi'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button className="!rounded-lg !font-bold" onClick={() => setSelectedIds([])}>
+                            Bekor qilish
+                        </Button>
+                        <Button
+                            danger
+                            type="primary"
+                            className="!rounded-lg !font-bold"
+                            icon={<DeleteOutlined />}
+                            onClick={deleteSelected}
+                        >
+                            O‘chirish
+                        </Button>
+                    </div>
+                </div>
+            ) : null}
+
             <TableShell
                 empty={employees.data.length === 0}
                 createHref={route('admin.employees.create')}
@@ -220,6 +280,14 @@ export default function Index({
                 <table className="data-table">
                     <thead>
                         <tr>
+                            <th className="w-10">
+                                <Checkbox
+                                    checked={allSelected}
+                                    indeterminate={someSelected}
+                                    onChange={(e) => setSelectedIds(e.target.checked ? pageIds : [])}
+                                    aria-label="Sahifadagi barcha xodimlarni tanlash"
+                                />
+                            </th>
                             <th className="w-16">N#</th>
                             <th>F.I.Sh.</th>
                             <th>Karta</th>
@@ -234,9 +302,23 @@ export default function Index({
                     </thead>
                     <tbody>
                         {employees.data.map((employee, index) => (
-                            <tr key={employee.id}>
+                            <tr key={employee.id} className={selectedIds.includes(employee.id) ? 'bg-brand-50/70' : undefined}>
+                                <td>
+                                    <Checkbox
+                                        checked={selectedIds.includes(employee.id)}
+                                        onChange={(e) => toggleOne(employee.id, e.target.checked)}
+                                        aria-label={`«${employee.name}» ni tanlash`}
+                                    />
+                                </td>
                                 <td className="font-medium text-ink-subtle">{(employees.from ?? 1) + index}</td>
-                                <td className="font-bold text-ink">{employee.name}</td>
+                                <td>
+                                    <Link
+                                        href={route('admin.employees.show', employee.id)}
+                                        className="font-bold text-ink transition-colors duration-150 ease-productive hover:text-brand-700"
+                                    >
+                                        {employee.name}
+                                    </Link>
+                                </td>
                                 <td className="font-medium">{employee.card}</td>
                                 <td className="font-medium">{employee.gender_label || '—'}</td>
                                 <td className="font-medium">{employee.position || '—'}</td>

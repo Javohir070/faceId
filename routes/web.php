@@ -99,6 +99,9 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/pull', [EmployeeController::class, 'pullStore'])
             ->middleware('permission:'.$menuPermissions['employees-pull'])
             ->name('employees.pull.store');
+        Route::post('employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy'])
+            ->middleware('permission:'.$menuPermissions['employees'])
+            ->name('employees.bulk-destroy');
         Route::get('employees/export', [EmployeeController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.export');
