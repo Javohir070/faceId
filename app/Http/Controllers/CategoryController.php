@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Services\CategoryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,16 +17,18 @@ class CategoryController extends Controller
         private readonly CategoryService $categoryService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $this->categoryService->paginate(10),
+            'drawer' => $this->drawerState($request),
         ]);
     }
 
-    public function create(): Response
+    /** Alohida sahifa yo‘q: qo‘shish oynasi ro‘yxatdagi o‘ng panelda ochiladi. */
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Admin/Categories/Form');
+        return redirect()->route('admin.categories.index', ['create' => 1]);
     }
 
     public function store(StoreCategoryRequest $request): RedirectResponse
@@ -37,23 +40,15 @@ class CategoryController extends Controller
             ->with('success', 'Kategoriya muvaffaqiyatli yaratildi.');
     }
 
-    public function show(Category $category): Response
+    /** Alohida ko‘rish sahifasi yo‘q — nomi va qurilmalar soni ro‘yxatda; eski havola ro‘yxatga qaytaradi. */
+    public function show(Category $category): RedirectResponse
     {
-        return Inertia::render('Admin/Categories/Show', [
-            'category' => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'created_at' => $category->created_at,
-                'devices_count' => $category->devices()->count(),
-            ],
-        ]);
+        return redirect()->route('admin.categories.index');
     }
 
-    public function edit(Category $category): Response
+    public function edit(Category $category): RedirectResponse
     {
-        return Inertia::render('Admin/Categories/Form', [
-            'category' => $category->only(['id', 'name']),
-        ]);
+        return redirect()->route('admin.categories.index', ['edit' => $category->id]);
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
@@ -74,5 +69,23 @@ class CategoryController extends Controller
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'Kategoriya muvaffaqiyatli o\'chirildi.');
+    }
+
+    /**
+     * ?create=1 yoki ?edit={id} — eski create/edit havolalari panelni ochib keladi.
+     *
+     * @return array{mode: string, category?: array{id: int, name: string}}|null
+     */
+    private function drawerState(Request $request): ?array
+    {
+        if ($request->boolean('create')) {
+            return ['mode' => 'create'];
+        }
+
+        $category = $request->integer('edit')
+            ? Category::query()->find($request->integer('edit'), ['id', 'name'])
+            : null;
+
+        return $category === null ? null : ['mode' => 'edit', 'category' => $category->only(['id', 'name'])];
     }
 }

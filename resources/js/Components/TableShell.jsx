@@ -4,6 +4,7 @@ export default function TableShell({
     empty = false,
     emptyState,
     createHref,
+    onCreate,
     createLabel,
     footer,
     children,
@@ -14,7 +15,7 @@ export default function TableShell({
         <div className="table-shell" style={{ padding: '20px 24px' }}>
             {empty ? (
                 emptyState || (
-                    <EmptyState createHref={createHref} createLabel={createLabel} />
+                    <EmptyState createHref={createHref} onCreate={onCreate} createLabel={createLabel} />
                 )
             ) : (
                 <>

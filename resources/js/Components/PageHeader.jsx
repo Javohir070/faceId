@@ -28,6 +28,7 @@ export default function PageHeader({
     backHref,
     backLabel = 'Orqaga',
     createHref,
+    onCreate,
     createLabel = "Yangi qo'shish",
     actions,
 }) {
@@ -47,13 +48,13 @@ export default function PageHeader({
                         </p>
                     ) : null}
                 </div>
-                {actions || (createHref ? (
+                {actions || (createHref || onCreate ? (
                     <Button
                         type="primary"
                         size="large"
                         className="!h-11 shrink-0 !rounded-lg !px-5 !font-bold"
                         icon={<PlusOutlined />}
-                        onClick={() => router.visit(createHref)}
+                        onClick={() => (onCreate ? onCreate() : router.visit(createHref))}
                     >
                         {createLabel}
                     </Button>
@@ -110,7 +111,8 @@ export function RoleBadge({ children }) {
     return <span className="role-badge">{children}</span>;
 }
 
-export function ResourceActions({ showHref, editHref, deleteHref }) {
+/** onEdit berilsa tahrirlash sahifaga o‘tmaydi — shu sahifadagi panel (Drawer) ochiladi. */
+export function ResourceActions({ showHref, editHref, onEdit, deleteHref }) {
     return (
         <div className="flex items-center justify-end gap-2">
             {showHref ? (
@@ -125,13 +127,13 @@ export function ResourceActions({ showHref, editHref, deleteHref }) {
                     </button>
                 </Tooltip>
             ) : null}
-            {editHref ? (
+            {editHref || onEdit ? (
                 <Tooltip title="Tahrirlash">
                     <button
                         type="button"
                         className="table-action-edit"
                         aria-label="Tahrirlash"
-                        onClick={() => router.visit(editHref)}
+                        onClick={() => (onEdit ? onEdit() : router.visit(editHref))}
                     >
                         <EditOutlined aria-hidden="true" />
                     </button>
@@ -157,6 +159,7 @@ export function EmptyState({
     title = 'Hozircha ma’lumot yo‘q',
     description = 'Birinchi yozuvni qo‘shib, ushbu bo‘limni to‘ldiring.',
     createHref,
+    onCreate,
     createLabel = 'Birinchi yozuvni qo‘shish',
 }) {
     return (
@@ -170,8 +173,12 @@ export function EmptyState({
                     </div>
                 )}
             >
-                {createHref ? (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => router.visit(createHref)}>
+                {createHref || onCreate ? (
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => (onCreate ? onCreate() : router.visit(createHref))}
+                    >
                         {createLabel}
                     </Button>
                 ) : null}

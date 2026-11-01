@@ -25,4 +25,16 @@ class UpdateCategoryRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')->ignore($category->id)],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Kategoriya nomini kiriting.',
+            'name.max' => 'Nomi 255 belgidan oshmasin.',
+            'name.unique' => 'Bunday nomli kategoriya allaqachon bor.',
+        ];
+    }
 }
