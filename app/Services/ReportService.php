@@ -87,15 +87,19 @@ class ReportService
         return $event->device;
     }
 
+    /**
+     * Terminal ekranidagi davomat tugmasi (attendanceStatus) qurilma turidan ustun: bitta terminal
+     * "Ishga keldim" va "Chiqdim" ni ham yozadi. Tugma bosilmasa ("undefined" yoki yo‘q) — qurilma turi.
+     */
     private function resolveType(AccessControllerEvent $event, ?Device $device): int
     {
         $status = mb_strtolower((string) $event->attendance_status);
 
-        if (in_array($status, ['checkin', 'check_in', 'entry', 'in'], true)) {
+        if (in_array($status, ['checkin', 'check_in', 'breakin', 'overtimein', 'entry', 'in'], true)) {
             return Report::TYPE_ENTRY;
         }
 
-        if (in_array($status, ['checkout', 'check_out', 'exit', 'out'], true)) {
+        if (in_array($status, ['checkout', 'check_out', 'breakout', 'overtimeout', 'exit', 'out'], true)) {
             return Report::TYPE_EXIT;
         }
 

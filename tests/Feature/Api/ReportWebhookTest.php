@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ReportWebhookTest extends TestCase
@@ -96,6 +97,51 @@ class ReportWebhookTest extends TestCase
             'device_id' => Device::query()->where('ip_address', '10.0.0.9')->value('id'),
             'type' => Report::TYPE_EXIT,
         ]);
+    }
+
+    /**
+     * Terminal ekranidagi tugmalar ("Ishga keldim" / "Chiqdim", tanaffus, qo‘shimcha ish) hodisaga
+     * attendanceStatus bo‘lib yoziladi. Qurilma turi faqat tugma bosilmaganda hisobga olinadi.
+     *
+     * @return array<string, array{0: ?string, 1: int, 2: int}>
+     */
+    public static function attendanceStatuses(): array
+    {
+        return [
+            'ishga keldim' => ['checkIn', Device::TYPE_EXIT, Report::TYPE_ENTRY],
+            'chiqdim' => ['checkOut', Device::TYPE_ENTRY, Report::TYPE_EXIT],
+            'tanaffusga chiqdi' => ['breakOut', Device::TYPE_ENTRY, Report::TYPE_EXIT],
+            'tanaffusdan qaytdi' => ['breakIn', Device::TYPE_EXIT, Report::TYPE_ENTRY],
+            'qo‘shimcha ishga keldi' => ['overtimeIn', Device::TYPE_EXIT, Report::TYPE_ENTRY],
+            'qo‘shimcha ishdan ketdi' => ['overtimeOut', Device::TYPE_ENTRY, Report::TYPE_EXIT],
+            'tugma bosilmagan' => ['undefined', Device::TYPE_EXIT, Report::TYPE_EXIT],
+            'holat yo‘q' => [null, Device::TYPE_ENTRY, Report::TYPE_ENTRY],
+        ];
+    }
+
+    #[DataProvider('attendanceStatuses')]
+    public function test_terminal_attendance_button_decides_entry_or_exit(?string $status, int $deviceType, int $expected): void
+    {
+        Employee::factory()->create(['card' => '3003']);
+        $device = $this->registerDevice('10.0.0.20', 'Terminal', $deviceType);
+
+        $this->postJson('/api/webhooks/hikvision/events', [
+            'event_log' => json_encode([
+                'ipAddress' => '10.0.0.20',
+                'dateTime' => '2026-10-31T09:00:00+05:00',
+                'AccessControllerEvent' => array_filter([
+                    'employeeNoString' => '3003',
+                    'majorEventType' => 5,
+                    'subEventType' => 75,
+                    'currentVerifyMode' => 'face',
+                    'attendanceStatus' => $status,
+                ], fn ($value) => $value !== null),
+            ]),
+        ], [
+            'X-Webhook-Secret' => 'test-webhook-secret',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('reports', ['device_id' => $device->id, 'type' => $expected]);
     }
 
     private function registerDevice(string $ipAddress, string $name, int $type): Device
