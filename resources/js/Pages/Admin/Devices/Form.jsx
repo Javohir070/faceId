@@ -4,6 +4,7 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
+import { DEVICE_TYPE_HINTS, DEVICE_TYPE_OPTIONS } from '../../../utils/deviceTypes';
 
 export default function Form({ device, categories = [] }) {
     const isEdit = !!device;
@@ -65,12 +66,12 @@ export default function Form({ device, categories = [] }) {
                             placeholder="Turini tanlang"
                             value={data.type || undefined}
                             status={errors.type ? 'error' : undefined}
-                            options={[
-                                { value: 1, label: 'Kirish' },
-                                { value: 2, label: 'Chiqish' },
-                            ]}
+                            options={DEVICE_TYPE_OPTIONS}
                             onChange={(value) => setData('type', value)}
                         />
+                        {DEVICE_TYPE_HINTS[data.type] ? (
+                            <p className="mt-1.5 text-xs leading-5 text-ink-muted">{DEVICE_TYPE_HINTS[data.type]}</p>
+                        ) : null}
                     </FormField>
                 </div>
 

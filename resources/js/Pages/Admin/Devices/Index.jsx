@@ -14,13 +14,11 @@ import Pagination from '../../../Components/Pagination';
 import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
+import { DEVICE_TYPE_OPTIONS } from '../../../utils/deviceTypes';
 
 const LIVE_POLL_MS = 10000;
 
-const typeOptions = [
-    { value: 1, label: 'Kirish' },
-    { value: 2, label: 'Chiqish' },
-];
+const typeOptions = DEVICE_TYPE_OPTIONS;
 
 const statusOptions = [
     { value: '1', label: 'Ulangan' },

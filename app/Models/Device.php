@@ -21,6 +21,11 @@ class Device extends Model
 
     public const TYPE_EXIT = 2;
 
+    /** Bitta terminal ham kirish, ham chiqish: tugma yoki kun ichidagi navbat hal qiladi (ReportService). */
+    public const TYPE_BOTH = 3;
+
+    public const TYPES = [self::TYPE_ENTRY, self::TYPE_EXIT, self::TYPE_BOTH];
+
     /**
      * Hikvision Face ID ulanish ma'lumotlari shu modelda saqlanadi.
      * Bir nechta qurilma: har biri uchun alohida ip_address, port, user, password.
@@ -165,11 +170,17 @@ class Device extends Model
         return (int) $this->type === self::TYPE_EXIT;
     }
 
+    public function isEntryAndExit(): bool
+    {
+        return (int) $this->type === self::TYPE_BOTH;
+    }
+
     public function typeLabel(): string
     {
         return match ((int) $this->type) {
             self::TYPE_EXIT => 'Chiqish',
             self::TYPE_ENTRY => 'Kirish',
+            self::TYPE_BOTH => 'Kirish va chiqish',
             default => 'Noma’lum',
         };
     }

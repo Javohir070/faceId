@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Device;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +26,7 @@ class UpdateDeviceRequest extends FormRequest
             'use_https' => ['sometimes', 'boolean'],
             'user' => ['required', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'max:255'],
-            'type' => ['required', 'integer', Rule::in([1, 2])],
+            'type' => ['required', 'integer', Rule::in(Device::TYPES)],
             'order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'autoconnect' => ['sometimes', 'boolean'],
         ];

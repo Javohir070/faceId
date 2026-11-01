@@ -101,7 +101,7 @@ Events arrive through **three independent channels**, all converging on `ReportS
 
 Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`.
 
-Event times go through `ReportService::localEventTime()`, which converts the device's offset to `hikvision.event_timezone` (`HIKVISION_EVENT_TIMEZONE`, default `Asia/Tashkent`), so a terminal left on its factory UTC+8 zone still records Tashkent time. Entry vs exit comes from the terminal's attendance button (`attendanceStatus`: checkIn/breakIn/overtimeIn → entry, checkOut/breakOut/overtimeOut → exit) and falls back to the device type only when no button was pressed.
+Event times go through `ReportService::localEventTime()`, which converts the device's offset to `hikvision.event_timezone` (`HIKVISION_EVENT_TIMEZONE`, default `Asia/Tashkent`), so a terminal left on its factory UTC+8 zone still records Tashkent time. Entry vs exit comes from the terminal's attendance button (`attendanceStatus`: checkIn/breakIn/overtimeIn → entry, checkOut/breakOut/overtimeOut → exit) and falls back to the device type only when no button was pressed. A device of type `Device::TYPE_BOTH` ("Kirish va chiqish", one terminal for both directions) with no button alternates per employee and work day across all devices — entry, exit, entry… — starting each work day with an entry, shifting night shifts by 12 hours like the attendance grid, and repeating the previous type for a re-scan within 2 minutes (`ReportService::alternatingType()`).
 
 ## Reports
 

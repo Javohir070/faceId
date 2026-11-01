@@ -6,10 +6,18 @@ use App\Models\AccessControllerEvent;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Report;
+use App\Services\Reports\AttendanceCalculator;
 use Carbon\Carbon;
 
 class ReportService
 {
+    /** Shu oraliqda qayta tanilsa (terminal ikki marta o‘qisa) navbat almashmaydi. */
+    private const REPEAT_WINDOW_SECONDS = 120;
+
+    public function __construct(
+        private readonly AttendanceCalculator $calculator,
+    ) {}
+
     public function createFromAccessEvent(AccessControllerEvent $event): ?Report
     {
         if (! $this->shouldCreateReport($event)) {
@@ -18,8 +26,8 @@ class ReportService
 
         $employee = $this->resolveEmployee($event);
         $device = $this->resolveDevice($event);
-        $type = $this->resolveType($event, $device);
         $occurredAt = $event->event_time ?? now();
+        $type = $this->resolveType($event, $device, $employee, Carbon::parse($occurredAt));
         $employeeName = $employee?->name ?? $event->full_name ?? 'Noma’lum';
 
         // Event — tizim darajasidagi fakt: qo‘lda tortishni bo‘limga cheklangan foydalanuvchi boshlasa ham
@@ -89,9 +97,10 @@ class ReportService
 
     /**
      * Terminal ekranidagi davomat tugmasi (attendanceStatus) qurilma turidan ustun: bitta terminal
-     * "Ishga keldim" va "Chiqdim" ni ham yozadi. Tugma bosilmasa ("undefined" yoki yo‘q) — qurilma turi.
+     * "Ishga keldim" va "Chiqdim" ni ham yozadi. Tugma bosilmasa ("undefined" yoki yo‘q) — qurilma turi;
+     * "Kirish va chiqish" turidagi terminalda esa kun ichidagi navbat (alternatingType).
      */
-    private function resolveType(AccessControllerEvent $event, ?Device $device): int
+    private function resolveType(AccessControllerEvent $event, ?Device $device, ?Employee $employee, Carbon $occurredAt): int
     {
         $status = mb_strtolower((string) $event->attendance_status);
 
@@ -103,11 +112,55 @@ class ReportService
             return Report::TYPE_EXIT;
         }
 
+        if ($device?->isEntryAndExit()) {
+            return $this->alternatingType($employee, $occurredAt);
+        }
+
         if ($device !== null) {
             return $device->isExit() ? Report::TYPE_EXIT : Report::TYPE_ENTRY;
         }
 
         return Report::TYPE_ENTRY;
+    }
+
+    /**
+     * Xodimning shu ish kunidagi oldingi o‘tishiga qarab (barcha qurilmalar bo‘yicha): kirish bo‘lsa — chiqish,
+     * aks holda — kirish. Har ish kuni kirishdan boshlanadi; tungi smenada ish kuni 12 soat siljitiladi
+     * (Davomat bilan bir xil). Qayta tanish (REPEAT_WINDOW_SECONDS ichida) oldingi turini takrorlaydi.
+     */
+    private function alternatingType(?Employee $employee, Carbon $occurredAt): int
+    {
+        if ($employee === null) {
+            return Report::TYPE_ENTRY;
+        }
+
+        $previous = Report::query()
+            ->withoutGlobalScopes()
+            ->where('employee_id', $employee->id)
+            ->where('occurred_at', '<', $occurredAt->format('Y-m-d H:i:s'))
+            ->where('occurred_at', '>=', $occurredAt->copy()->subDay()->format('Y-m-d H:i:s'))
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->first(['id', 'type', 'occurred_at']);
+
+        if ($previous === null) {
+            return Report::TYPE_ENTRY;
+        }
+
+        if ($previous->occurred_at->diffInSeconds($occurredAt, true) <= self::REPEAT_WINDOW_SECONDS) {
+            return $previous->type;
+        }
+
+        $schedule = $employee->schedule;
+        $enter = $schedule?->enter_time?->format('H:i:s');
+        $exit = $schedule?->exit_time?->format('H:i:s');
+        $night = $enter !== null && $exit !== null && $this->calculator->isNightShift($enter, $exit);
+
+        if ($this->calculator->workDate($previous->occurred_at, $night) !== $this->calculator->workDate($occurredAt, $night)) {
+            return Report::TYPE_ENTRY;
+        }
+
+        return $previous->type === Report::TYPE_ENTRY ? Report::TYPE_EXIT : Report::TYPE_ENTRY;
     }
 
     /**

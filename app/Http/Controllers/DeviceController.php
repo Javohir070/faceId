@@ -10,6 +10,7 @@ use App\Services\DeviceService;
 use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,7 +26,7 @@ class DeviceController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-            'type' => ['nullable', 'integer', 'in:1,2'],
+            'type' => ['nullable', 'integer', Rule::in(Device::TYPES)],
             'is_online' => ['nullable', 'in:0,1'],
         ]);
 

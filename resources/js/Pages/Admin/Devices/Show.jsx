@@ -15,6 +15,7 @@ import { route } from '../../../routes';
 import ShowPage from '../../../Components/ShowPage';
 import StatusTag from '../../../Components/StatusTag';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
+import { DEVICE_TYPE_TONES } from '../../../utils/deviceTypes';
 
 function Field({ label, children }) {
     return (
@@ -463,7 +464,7 @@ export default function Show({ device }) {
                                     />
                                     {online ? 'Ulangan' : 'Ulanmagan'}
                                 </StatusTag>
-                                <StatusTag tone={device.type === 2 ? 'warning' : 'info'}>
+                                <StatusTag tone={DEVICE_TYPE_TONES[device.type] ?? 'neutral'}>
                                     {device.type_label || 'Tur noma’lum'}
                                 </StatusTag>
                                 {device.category?.name ? (
