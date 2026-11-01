@@ -334,7 +334,7 @@ class HikvisionEventPullService
             return 'invalid';
         }
 
-        $parsedTime = Carbon::parse($eventTime)->format('Y-m-d H:i:s');
+        $parsedTime = ReportService::localEventTime($eventTime);
 
         if ($employeeNo !== '' && $this->eventAlreadyStored($device, $employeeNo, $parsedTime)) {
             return 'duplicate';

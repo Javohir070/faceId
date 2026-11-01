@@ -111,6 +111,18 @@ class ReportService
     }
 
     /**
+     * Qurilma vaqtini hikvision.event_timezone (Asia/Tashkent) ga o‘giradi. Terminal boshqa zonada sozlangan
+     * bo‘lsa (masalan zavod sozlamasi UTC+8) ham hodisa haqiqiy Toshkent vaqtida saqlanadi; +05:00 vaqt
+     * o‘zgarmaydi. Zonasiz vaqt shu zonada deb olinadi.
+     */
+    public static function localEventTime(string $eventTime): string
+    {
+        $timezone = config('hikvision.event_timezone') ?: config('app.timezone');
+
+        return Carbon::parse($eventTime, $timezone)->setTimezone($timezone)->format('Y-m-d H:i:s');
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     public function createFromWebhookPayload(array $payload, ?string $picturePath = null): ?Report
@@ -119,7 +131,7 @@ class ReportService
             ?? data_get($payload, 'AccessControllerEvent.employeeNo');
         $eventTime = data_get($payload, 'dateTime');
         $deviceIp = data_get($payload, 'ipAddress');
-        $parsedTime = $eventTime ? Carbon::parse($eventTime)->format('Y-m-d H:i:s') : null;
+        $parsedTime = $eventTime ? self::localEventTime($eventTime) : null;
 
         if ($employeeNo && $deviceIp && $parsedTime) {
             $exists = AccessControllerEvent::query()

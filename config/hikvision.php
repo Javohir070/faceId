@@ -33,6 +33,10 @@ return [
 
     'webhook_port' => env('HIKVISION_WEBHOOK_PORT'),
 
+    // Hodisa vaqti saqlashdan oldin shu zonaga o‘giriladi: terminal boshqa zonada sozlangan bo‘lsa
+    // (zavod sozlamasi ko‘pincha UTC+8) ham kirish-chiqish Toshkent vaqtida yoziladi. +05:00 o‘zgarmaydi.
+    'event_timezone' => env('HIKVISION_EVENT_TIMEZONE', 'Asia/Tashkent'),
+
     'events_pull_enabled' => env('HIKVISION_EVENTS_PULL_ENABLED', true),
 
     'events_pull_interval_minutes' => max((int) env('HIKVISION_EVENTS_PULL_INTERVAL', 1), 1),

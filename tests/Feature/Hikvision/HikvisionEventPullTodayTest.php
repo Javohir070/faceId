@@ -82,4 +82,39 @@ class HikvisionEventPullTodayTest extends TestCase
             ->where('occurred_at', '2026-10-13 10:59:30')
             ->count());
     }
+
+    public function test_events_from_terminal_in_other_timezone_are_stored_in_tashkent_time(): void
+    {
+        Carbon::setTestNow('2026-11-01 18:00:00');
+
+        // Terminal Xitoy vaqtida (UTC+8): 20:52+08:00 — Toshkentda 17:52.
+        $device = Device::factory()->create(['ip_address' => '10.0.0.30', 'type' => Device::TYPE_ENTRY, 'is_online' => true]);
+        $employee = Employee::factory()->create(['card' => '900']);
+
+        Http::fake(fn () => Http::response([
+            'AcsEvent' => [
+                'responseStatusStrg' => 'OK',
+                'totalMatches' => 1,
+                'InfoList' => [[
+                    'major' => 5,
+                    'minor' => 75,
+                    'time' => '2026-11-01T20:52:05+08:00',
+                    'employeeNoString' => '900',
+                    'currentVerifyMode' => 'face',
+                    'attendanceStatus' => 'checkIn',
+                ]],
+            ],
+        ], 200));
+
+        $service = $this->app->make(HikvisionEventPullService::class);
+        $first = $service->pullToday($device);
+        $second = $service->pullToday($device);
+
+        $this->assertSame(1, $first['imported']);
+        $this->assertSame(1, $second['skipped_duplicate']);
+        $this->assertSame(
+            ['2026-11-01 17:52:05'],
+            Report::query()->where('employee_id', $employee->id)->pluck('occurred_at')->map->format('Y-m-d H:i:s')->all(),
+        );
+    }
 }

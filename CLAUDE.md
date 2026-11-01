@@ -101,6 +101,8 @@ Events arrive through **three independent channels**, all converging on `ReportS
 
 Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`.
 
+Event times go through `ReportService::localEventTime()`, which converts the device's offset to `hikvision.event_timezone` (`HIKVISION_EVENT_TIMEZONE`, default `Asia/Tashkent`), so a terminal left on its factory UTC+8 zone still records Tashkent time. Entry vs exit comes from the terminal's attendance button (`attendanceStatus`: checkIn/breakIn/overtimeIn → entry, checkOut/breakOut/overtimeOut → exit) and falls back to the device type only when no button was pressed.
+
 ## Reports
 
 `AccessControllerEvent` (raw device event) → `ReportService` → `Report` (normalized entry/exit row). Read-side lives in `ReportQueryService` + `App\Services\Reports\AttendanceCalculator`, driven by the `AttendanceReportType` enum (Entry, Exit, Late, LeftEarly, Present, Absent, WorkTime, Individual). Each type declares its own column set, whether it `requiresSchedule()`, and whether it `requiresBoundedDates()`.

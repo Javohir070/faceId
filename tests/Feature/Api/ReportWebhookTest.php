@@ -144,6 +144,28 @@ class ReportWebhookTest extends TestCase
         $this->assertDatabaseHas('reports', ['device_id' => $device->id, 'type' => $expected]);
     }
 
+    public function test_webhook_time_from_terminal_in_other_timezone_is_converted_to_tashkent(): void
+    {
+        Employee::factory()->create(['card' => '4004']);
+        $device = $this->registerDevice('10.0.0.31', 'Terminal UTC+8', Device::TYPE_ENTRY);
+
+        $this->postJson('/api/webhooks/hikvision/events', [
+            'event_log' => json_encode([
+                'ipAddress' => '10.0.0.31',
+                'dateTime' => '2026-11-01T20:52:05+08:00',
+                'AccessControllerEvent' => [
+                    'employeeNoString' => '4004',
+                    'majorEventType' => 5,
+                    'subEventType' => 75,
+                ],
+            ]),
+        ], [
+            'X-Webhook-Secret' => 'test-webhook-secret',
+        ])->assertOk();
+
+        $this->assertSame('2026-11-01 17:52:05', Report::query()->where('device_id', $device->id)->value('occurred_at')->format('Y-m-d H:i:s'));
+    }
+
     private function registerDevice(string $ipAddress, string $name, int $type): Device
     {
         $owner = User::factory()->create();
