@@ -19,7 +19,7 @@ class StoreScheduleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'enter_time' => ['required', 'date_format:H:i'],
-            'exit_time' => ['required', 'date_format:H:i', 'after:enter_time'],
+            'exit_time' => ['required', 'date_format:H:i', 'different:enter_time'],
         ];
     }
 
@@ -35,7 +35,7 @@ class StoreScheduleRequest extends FormRequest
             'enter_time.date_format' => 'Kirish vaqti SS:DD ko‘rinishida bo‘lsin (masalan 09:00).',
             'exit_time.required' => 'Chiqish vaqtini kiriting.',
             'exit_time.date_format' => 'Chiqish vaqti SS:DD ko‘rinishida bo‘lsin (masalan 18:00).',
-            'exit_time.after' => 'Chiqish vaqti kirish vaqtidan keyin bo‘lsin.',
+            'exit_time.different' => 'Chiqish vaqti kirish vaqtiga teng bo‘lmasin.',
         ];
     }
 }

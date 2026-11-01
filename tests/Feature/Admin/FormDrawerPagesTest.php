@@ -93,6 +93,27 @@ class FormDrawerPagesTest extends TestCase
                 ->where('drawer.record.exit_time', '18:00'));
     }
 
+    public function test_night_shift_schedule_can_be_saved_but_equal_times_cannot(): void
+    {
+        $admin = $this->createUserWithPermissions();
+
+        $this->actingAs($admin)
+            ->post(route('admin.schedules.store'), ['name' => 'Tungi smena', 'enter_time' => '20:00', 'exit_time' => '08:00'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.schedules.index'));
+
+        $schedule = Schedule::query()->where('name', 'Tungi smena')->firstOrFail();
+        $this->assertSame(['20:00', '08:00'], [$schedule->enter_time->format('H:i'), $schedule->exit_time->format('H:i')]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.schedules.update', $schedule), ['name' => 'Tungi smena', 'enter_time' => '22:00', 'exit_time' => '06:00'])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)
+            ->post(route('admin.schedules.store'), ['name' => 'Xato', 'enter_time' => '09:00', 'exit_time' => '09:00'])
+            ->assertSessionHasErrors(['exit_time' => 'Chiqish vaqti kirish vaqtiga teng bo‘lmasin.']);
+    }
+
     public function test_validation_messages_are_in_uzbek(): void
     {
         $admin = $this->createUserWithPermissions();

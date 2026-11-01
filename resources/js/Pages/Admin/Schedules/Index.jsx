@@ -7,6 +7,11 @@ import FormField from '../../../Components/FormField';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
 
+/** Chiqish kirishdan oldin bo‘lsa — tungi smena (AttendanceCalculator::isNightShift bilan bir xil). */
+function isNightShift(enter, exit) {
+    return Boolean(enter && exit) && exit < enter;
+}
+
 export default function Index({ schedules, drawer: initialDrawer = null }) {
     const drawer = useFormDrawer(initialDrawer, 'admin.schedules.index');
 
@@ -46,7 +51,12 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                 <td className="font-medium text-ink-subtle">{(schedules.from ?? 1) + index}</td>
                                 <td className="font-bold text-ink">{schedule.name}</td>
                                 <td className="font-medium">{schedule.enter_time}</td>
-                                <td className="font-medium">{schedule.exit_time}</td>
+                                <td className="font-medium">
+                                    {schedule.exit_time}
+                                    {isNightShift(schedule.enter_time, schedule.exit_time) ? (
+                                        <span className="ml-2 text-xs font-semibold text-ink-muted">ertasi kuni</span>
+                                    ) : null}
+                                </td>
                                 <td>
                                     <ResourceActions
                                         onEdit={() => drawer.openEdit({
@@ -107,6 +117,19 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                 />
                             </FormField>
                         </div>
+                        {isNightShift(data.enter_time, data.exit_time) ? (
+                            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-ink-muted">
+                                Tungi smena: xodim
+                                {' '}
+                                <span className="font-bold text-ink">{data.enter_time}</span>
+                                {' '}
+                                da kelib, ertasi kuni
+                                {' '}
+                                <span className="font-bold text-ink">{data.exit_time}</span>
+                                {' '}
+                                da ketadi. Davomatda ikkalasi bitta ish kuniga yoziladi.
+                            </p>
+                        ) : null}
                     </>
                 )}
             </FormDrawer>
