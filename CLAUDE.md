@@ -119,6 +119,7 @@ The **Davomat** page (`/admin/attendance`, permission `'Davomat'`) is a separate
 - Layout with Tailwind, interactive widgets with Ant Design. Icons come only from `@ant-design/icons` — no Feather/Lucide, no additional UI libraries.
 - Navigate with Inertia `Link` / `router` / `useForm`; never raw `<a>` or `fetch` for internal routes.
 - Reuse the shared components (`PageHeader`, `TableShell`, `FormCard`, `FormField`, `ShowPage`, `Pagination`, `FlashMessages`, `FaceCaptureField`) instead of re-writing CRUD markup.
+- Small reference lists (categories, departments, schedules, permissions) have no Form/Show pages: create and edit happen in a right-side drawer on the index (`FormDrawer` + `useFormDrawer`, `onCreate`/`onEdit` on `PageHeader`/`TableShell`/`ResourceActions`). Their controllers use `Concerns\OpensFormDrawer`; the old `create`/`edit`/`show` routes redirect to the index with `?create=1` / `?edit={id}` so existing links still open the drawer.
 - Never edit generated files under `public/build`.
 
 Design rules are specified in [DESIGN.md](DESIGN.md) and [PRODUCT.md](PRODUCT.md), enforced by `.cursor/rules/impeccable-frontend.mdc` and the `.impeccable/` detector.

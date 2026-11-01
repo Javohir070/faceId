@@ -39,8 +39,8 @@ class CategoryDrawerTest extends TestCase
             ->get(route('admin.categories.index', ['edit' => $category->id]))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('drawer.mode', 'edit')
-                ->where('drawer.category.id', $category->id)
-                ->where('drawer.category.name', 'Kirish'));
+                ->where('drawer.record.id', $category->id)
+                ->where('drawer.record.name', 'Kirish'));
 
         $this->actingAs($admin)
             ->get(route('admin.categories.index', ['edit' => 999999]))

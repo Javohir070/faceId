@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\OpensFormDrawer;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
@@ -13,6 +14,8 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
+    use OpensFormDrawer;
+
     public function __construct(
         private readonly CategoryService $categoryService,
     ) {}
@@ -21,7 +24,7 @@ class CategoryController extends Controller
     {
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $this->categoryService->paginate(10),
-            'drawer' => $this->drawerState($request),
+            'drawer' => $this->drawerState($request, fn (int $id): ?array => Category::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 
@@ -40,7 +43,7 @@ class CategoryController extends Controller
             ->with('success', 'Kategoriya muvaffaqiyatli yaratildi.');
     }
 
-    /** Alohida ko‘rish sahifasi yo‘q — nomi va qurilmalar soni ro‘yxatda; eski havola ro‘yxatga qaytaradi. */
+    /** Alohida ko‘rish sahifasi yo‘q — ma’lumot ro‘yxatda; eski havola ro‘yxatga qaytaradi. */
     public function show(Category $category): RedirectResponse
     {
         return redirect()->route('admin.categories.index');
@@ -69,23 +72,5 @@ class CategoryController extends Controller
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'Kategoriya muvaffaqiyatli o\'chirildi.');
-    }
-
-    /**
-     * ?create=1 yoki ?edit={id} — eski create/edit havolalari panelni ochib keladi.
-     *
-     * @return array{mode: string, category?: array{id: int, name: string}}|null
-     */
-    private function drawerState(Request $request): ?array
-    {
-        if ($request->boolean('create')) {
-            return ['mode' => 'create'];
-        }
-
-        $category = $request->integer('edit')
-            ? Category::query()->find($request->integer('edit'), ['id', 'name'])
-            : null;
-
-        return $category === null ? null : ['mode' => 'edit', 'category' => $category->only(['id', 'name'])];
     }
 }

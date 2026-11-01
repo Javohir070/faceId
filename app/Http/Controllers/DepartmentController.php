@@ -2,30 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\OpensFormDrawer;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Models\Department;
 use App\Services\DepartmentService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DepartmentController extends Controller
 {
+    use OpensFormDrawer;
+
     public function __construct(
         private readonly DepartmentService $departmentService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Admin/Departments/Index', [
             'departments' => $this->departmentService->paginate(10),
+            'drawer' => $this->drawerState($request, fn (int $id): ?array => Department::query()->visibleTo($request->user())->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 
-    public function create(): Response
+    /** Alohida sahifa yo‘q: qo‘shish oynasi ro‘yxatdagi o‘ng panelda ochiladi. */
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Admin/Departments/Form');
+        return redirect()->route('admin.departments.index', ['create' => 1]);
     }
 
     public function store(StoreDepartmentRequest $request): RedirectResponse
@@ -37,22 +43,15 @@ class DepartmentController extends Controller
             ->with('success', "Bo'lim muvaffaqiyatli yaratildi.");
     }
 
-    public function show(Department $department): Response
+    /** Alohida ko‘rish sahifasi yo‘q — ma’lumot ro‘yxatda; eski havola ro‘yxatga qaytaradi. */
+    public function show(Department $department): RedirectResponse
     {
-        return Inertia::render('Admin/Departments/Show', [
-            'department' => [
-                'id' => $department->id,
-                'name' => $department->name,
-                'created_at' => $department->created_at,
-            ],
-        ]);
+        return redirect()->route('admin.departments.index');
     }
 
-    public function edit(Department $department): Response
+    public function edit(Department $department): RedirectResponse
     {
-        return Inertia::render('Admin/Departments/Form', [
-            'department' => $department->only(['id', 'name']),
-        ]);
+        return redirect()->route('admin.departments.index', ['edit' => $department->id]);
     }
 
     public function update(UpdateDepartmentRequest $request, Department $department): RedirectResponse

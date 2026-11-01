@@ -25,4 +25,16 @@ class UpdateDepartmentRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('departments', 'name')->ignore($department->id)],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Bo‘lim nomini kiriting.',
+            'name.max' => 'Nomi 255 belgidan oshmasin.',
+            'name.unique' => 'Bunday nomli bo‘lim allaqachon bor.',
+        ];
+    }
 }

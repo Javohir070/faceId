@@ -1,21 +1,26 @@
+import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
+import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
+import FormField from '../../../Components/FormField';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
 
-export default function Index({ departments }) {
+export default function Index({ departments, drawer: initialDrawer = null }) {
+    const drawer = useFormDrawer(initialDrawer, 'admin.departments.index');
+
     return (
         <AdminLayout title="Bo'limlar">
             <PageHeader
                 title="Bo'limlar"
                 subtitle="Tashkilot bo'limlarini boshqaring."
-                createHref={route('admin.departments.create')}
+                onCreate={drawer.openCreate}
                 createLabel="Bo'lim qo'shish"
             />
             <TableShell
                 empty={departments.data.length === 0}
-                createHref={route('admin.departments.create')}
+                onCreate={drawer.openCreate}
                 createLabel="Bo'lim qo'shish"
                 footer={departments.data.length > 0 ? (
                     <Pagination
@@ -40,8 +45,7 @@ export default function Index({ departments }) {
                                 <td className="font-bold text-ink">{department.name}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={route('admin.departments.show', department.id)}
-                                        editHref={route('admin.departments.edit', department.id)}
+                                        onEdit={() => drawer.openEdit({ id: department.id, name: department.name })}
                                         deleteHref={route('admin.departments.destroy', department.id)}
                                     />
                                 </td>
@@ -50,6 +54,27 @@ export default function Index({ departments }) {
                     </tbody>
                 </table>
             </TableShell>
+
+            <FormDrawer
+                drawer={drawer}
+                title={{ create: 'Yangi bo‘lim', edit: 'Bo‘limni tahrirlash' }}
+                initialValues={(record) => ({ name: record?.name || '' })}
+                storeUrl={route('admin.departments.store')}
+                updateUrl={(record) => route('admin.departments.update', record.id)}
+            >
+                {({ data, setData, errors }) => (
+                    <FormField label="Nomi" error={errors.name} required>
+                        <Input
+                            autoFocus
+                            size="large"
+                            placeholder="Masalan: Buxgalteriya"
+                            value={data.name}
+                            status={errors.name ? 'error' : undefined}
+                            onChange={(e) => setData('name', e.target.value)}
+                        />
+                    </FormField>
+                )}
+            </FormDrawer>
         </AdminLayout>
     );
 }

@@ -21,4 +21,16 @@ class StorePermissionRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('permissions', 'name')->where('guard_name', 'web')],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Ruxsat nomini kiriting.',
+            'name.max' => 'Nomi 255 belgidan oshmasin.',
+            'name.unique' => 'Bunday nomli ruxsat allaqachon bor.',
+        ];
+    }
 }

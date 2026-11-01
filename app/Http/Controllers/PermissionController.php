@@ -2,30 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\OpensFormDrawer;
 use App\Http\Requests\StorePermissionRequest;
 use App\Http\Requests\UpdatePermissionRequest;
 use App\Services\PermissionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
 {
+    use OpensFormDrawer;
+
     public function __construct(
         private readonly PermissionService $permissionService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Admin/Permissions/Index', [
             'permissions' => $this->permissionService->paginate(10),
+            'drawer' => $this->drawerState($request, fn (int $id): ?array => Permission::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 
-    public function create(): Response
+    /** Alohida sahifa yo‘q: qo‘shish oynasi ro‘yxatdagi o‘ng panelda ochiladi. */
+    public function create(): RedirectResponse
     {
-        return Inertia::render('Admin/Permissions/Form');
+        return redirect()->route('admin.permissions.index', ['create' => 1]);
     }
 
     public function store(StorePermissionRequest $request): RedirectResponse
@@ -37,18 +43,15 @@ class PermissionController extends Controller
             ->with('success', 'Ruxsat muvaffaqiyatli yaratildi.');
     }
 
-    public function show(Permission $permission): Response
+    /** Alohida ko‘rish sahifasi yo‘q — ma’lumot ro‘yxatda; eski havola ro‘yxatga qaytaradi. */
+    public function show(Permission $permission): RedirectResponse
     {
-        return Inertia::render('Admin/Permissions/Show', [
-            'permission' => $permission->only(['id', 'name', 'guard_name', 'created_at']),
-        ]);
+        return redirect()->route('admin.permissions.index');
     }
 
-    public function edit(Permission $permission): Response
+    public function edit(Permission $permission): RedirectResponse
     {
-        return Inertia::render('Admin/Permissions/Form', [
-            'permission' => $permission->only(['id', 'name']),
-        ]);
+        return redirect()->route('admin.permissions.index', ['edit' => $permission->id]);
     }
 
     public function update(UpdatePermissionRequest $request, Permission $permission): RedirectResponse

@@ -1,21 +1,26 @@
+import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
+import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
+import FormField from '../../../Components/FormField';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
 
-export default function Index({ schedules }) {
+export default function Index({ schedules, drawer: initialDrawer = null }) {
+    const drawer = useFormDrawer(initialDrawer, 'admin.schedules.index');
+
     return (
         <AdminLayout title="Jadvallar">
             <PageHeader
                 title="Jadvallar"
                 subtitle="Kirish va chiqish vaqtlarini boshqaring."
-                createHref={route('admin.schedules.create')}
+                onCreate={drawer.openCreate}
                 createLabel="Jadval qo'shish"
             />
             <TableShell
                 empty={schedules.data.length === 0}
-                createHref={route('admin.schedules.create')}
+                onCreate={drawer.openCreate}
                 createLabel="Jadval qo'shish"
                 footer={schedules.data.length > 0 ? (
                     <Pagination
@@ -44,8 +49,12 @@ export default function Index({ schedules }) {
                                 <td className="font-medium">{schedule.exit_time}</td>
                                 <td>
                                     <ResourceActions
-                                        showHref={route('admin.schedules.show', schedule.id)}
-                                        editHref={route('admin.schedules.edit', schedule.id)}
+                                        onEdit={() => drawer.openEdit({
+                                            id: schedule.id,
+                                            name: schedule.name,
+                                            enter_time: schedule.enter_time,
+                                            exit_time: schedule.exit_time,
+                                        })}
                                         deleteHref={route('admin.schedules.destroy', schedule.id)}
                                     />
                                 </td>
@@ -54,6 +63,53 @@ export default function Index({ schedules }) {
                     </tbody>
                 </table>
             </TableShell>
+
+            <FormDrawer
+                drawer={drawer}
+                title={{ create: 'Yangi jadval', edit: 'Jadvalni tahrirlash' }}
+                initialValues={(record) => ({
+                    name: record?.name || '',
+                    enter_time: record?.enter_time || '',
+                    exit_time: record?.exit_time || '',
+                })}
+                storeUrl={route('admin.schedules.store')}
+                updateUrl={(record) => route('admin.schedules.update', record.id)}
+            >
+                {({ data, setData, errors }) => (
+                    <>
+                        <FormField label="Nomi" error={errors.name} required>
+                            <Input
+                                autoFocus
+                                size="large"
+                                placeholder="Masalan: Standart"
+                                value={data.name}
+                                status={errors.name ? 'error' : undefined}
+                                onChange={(e) => setData('name', e.target.value)}
+                            />
+                        </FormField>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField label="Kirish vaqti" error={errors.enter_time} required>
+                                <Input
+                                    type="time"
+                                    size="large"
+                                    value={data.enter_time}
+                                    status={errors.enter_time ? 'error' : undefined}
+                                    onChange={(e) => setData('enter_time', e.target.value)}
+                                />
+                            </FormField>
+                            <FormField label="Chiqish vaqti" error={errors.exit_time} required>
+                                <Input
+                                    type="time"
+                                    size="large"
+                                    value={data.exit_time}
+                                    status={errors.exit_time ? 'error' : undefined}
+                                    onChange={(e) => setData('exit_time', e.target.value)}
+                                />
+                            </FormField>
+                        </div>
+                    </>
+                )}
+            </FormDrawer>
         </AdminLayout>
     );
 }
