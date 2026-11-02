@@ -9,6 +9,7 @@ export default function Show({ role }) {
             <ShowPage
                 backHref={route('admin.roles.index')}
                 title={role.name}
+                resource="roles"
                 editHref={route('admin.roles.edit', role.id)}
                 deleteHref={route('admin.roles.destroy', role.id)}
             >

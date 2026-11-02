@@ -15,11 +15,13 @@ export default function Index({ categories, drawer: initialDrawer = null }) {
             <PageHeader
                 title="Kategoriyalar"
                 subtitle="Qurilmalar uchun kategoriyalarni boshqaring."
+                resource="categories"
                 onCreate={drawer.openCreate}
                 createLabel="Kategoriya qo'shish"
             />
             <TableShell
                 empty={categories.data.length === 0}
+                resource="categories"
                 onCreate={drawer.openCreate}
                 createLabel="Kategoriya qo'shish"
                 footer={categories.data.length > 0 ? (
@@ -47,6 +49,7 @@ export default function Index({ categories, drawer: initialDrawer = null }) {
                                 <td className="font-medium">{category.devices_count ?? 0}</td>
                                 <td>
                                     <ResourceActions
+                                        resource="categories"
                                         onEdit={() => drawer.openEdit({ id: category.id, name: category.name })}
                                         deleteHref={route('admin.categories.destroy', category.id)}
                                     />

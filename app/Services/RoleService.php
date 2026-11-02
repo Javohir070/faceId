@@ -23,6 +23,35 @@ class RoleService
     }
 
     /**
+     * Rol formasidagi jadval: har bir ko‘rish ruxsati qatori va uning qo‘shish/tahrirlash/o‘chirish ruxsati nomi.
+     * Amal ruxsatlari alohida qator bo‘lib chiqmaydi.
+     *
+     * @return array<string, array<int, array{id: int, name: string, create: ?string, edit: ?string, delete: ?string}>>
+     */
+    public function permissionMatrix(): array
+    {
+        $actions = collect(config('menu_permissions.actions'))
+            ->mapWithKeys(fn (array $names, string $resource): array => [config("menu_permissions.resources.{$resource}") => $names]);
+        $existing = Permission::query()->where('guard_name', 'web')->pluck('name')->flip();
+        $actionFor = fn (string $view, string $action): ?string => isset($actions[$view][$action], $existing[$actions[$view][$action]])
+            ? $actions[$view][$action]
+            : null;
+
+        return collect($this->groupedPermissions())
+            ->map(fn (Collection $group): array => $group
+                ->values()
+                ->map(fn (Permission $permission): array => [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                    'create' => $actionFor($permission->name, 'create'),
+                    'edit' => $actionFor($permission->name, 'edit'),
+                    'delete' => $actionFor($permission->name, 'delete'),
+                ])
+                ->all())
+            ->all();
+    }
+
+    /**
      * @return array<string, Collection<int, Permission>>
      */
     public function groupedPermissions(): array
@@ -30,6 +59,7 @@ class RoleService
         $menuPermissions = collect(config('menu_permissions.resources'))
             ->prepend(config('menu_permissions.home'), 'home')
             ->values();
+        $actionPermissions = collect(config('menu_permissions.actions'))->flatten();
 
         $settingsPermissions = collect([
             'Sozlamalar',
@@ -40,10 +70,14 @@ class RoleService
             'Xodim tortish',
         ]);
 
-        $permissions = $this->permissionRepository->allOrdered();
+        $permissions = $this->permissionRepository->allOrdered()
+            ->reject(fn (Permission $permission) => $actionPermissions->contains($permission->name));
 
         return [
-            'Asosiy' => $permissions->filter(fn (Permission $permission) => $menuPermissions->contains($permission->name)),
+            'Asosiy' => $permissions->filter(
+                fn (Permission $permission) => $menuPermissions->contains($permission->name)
+                    && ! $settingsPermissions->contains($permission->name)
+            ),
             'Sozlamalar' => $permissions->filter(fn (Permission $permission) => $settingsPermissions->contains($permission->name)),
             'Boshqa' => $permissions->filter(
                 fn (Permission $permission) => ! $menuPermissions->contains($permission->name)

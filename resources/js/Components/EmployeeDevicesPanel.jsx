@@ -1,9 +1,10 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { App as AntApp, Button, Checkbox, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import { route } from '../routes';
 
 export default function EmployeeDevicesPanel({ employeeId, devices }) {
+    const canRemove = Boolean(usePage().props.can?.['employees.delete']);
     const { modal } = AntApp.useApp();
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState('');
@@ -70,16 +71,18 @@ export default function EmployeeDevicesPanel({ employeeId, devices }) {
         <div className="rounded-xl border border-line bg-surface shadow-ambient">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
                 <h2 className="text-base font-extrabold text-ink">Qurilmalar</h2>
-                <Button
-                    danger
-                    type="primary"
-                    className="!font-bold"
-                    disabled={!selectedIds.length}
-                    loading={removing}
-                    onClick={removeSelected}
-                >
-                    O'chirish
-                </Button>
+                {canRemove ? (
+                    <Button
+                        danger
+                        type="primary"
+                        className="!font-bold"
+                        disabled={!selectedIds.length}
+                        loading={removing}
+                        onClick={removeSelected}
+                    >
+                        O'chirish
+                    </Button>
+                ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
@@ -109,14 +112,16 @@ export default function EmployeeDevicesPanel({ employeeId, devices }) {
                 <table className="data-table devices-table min-w-full">
                     <thead>
                         <tr>
-                            <th className="devices-table__checkbox">
-                                <Checkbox
-                                    checked={allVisibleSelected}
-                                    indeterminate={someVisibleSelected}
-                                    onChange={(e) => toggleAll(e.target.checked)}
-                                    disabled={!visible.length}
-                                />
-                            </th>
+                            {canRemove ? (
+                                <th className="devices-table__checkbox">
+                                    <Checkbox
+                                        checked={allVisibleSelected}
+                                        indeterminate={someVisibleSelected}
+                                        onChange={(e) => toggleAll(e.target.checked)}
+                                        disabled={!visible.length}
+                                    />
+                                </th>
+                            ) : null}
                             <th className="w-12">№</th>
                             <th>Nomi</th>
                         </tr>
@@ -124,18 +129,20 @@ export default function EmployeeDevicesPanel({ employeeId, devices }) {
                     <tbody>
                         {visible.length === 0 ? (
                             <tr>
-                                <td colSpan={3} className="py-10 text-center text-sm text-ink-muted">
+                                <td colSpan={canRemove ? 3 : 2} className="py-10 text-center text-sm text-ink-muted">
                                     Xodim hali hech qaysi qurilmaga biriktirilmagan.
                                 </td>
                             </tr>
                         ) : visible.map((device, index) => (
                             <tr key={device.id}>
-                                <td className="devices-table__checkbox">
-                                    <Checkbox
-                                        checked={selectedIds.includes(device.id)}
-                                        onChange={(e) => toggleOne(device.id, e.target.checked)}
-                                    />
-                                </td>
+                                {canRemove ? (
+                                    <td className="devices-table__checkbox">
+                                        <Checkbox
+                                            checked={selectedIds.includes(device.id)}
+                                            onChange={(e) => toggleOne(device.id, e.target.checked)}
+                                        />
+                                    </td>
+                                ) : null}
                                 <td className="font-medium text-ink-subtle">{index + 1}</td>
                                 <td>
                                     <button

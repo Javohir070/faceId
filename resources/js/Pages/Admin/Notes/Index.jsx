@@ -59,6 +59,7 @@ export default function Index({
             <PageHeader
                 title="Izohlar"
                 subtitle="Xodimlarning kechikish, erta ketish va yo‘qlama izohlarini boshqaring."
+                resource="notes"
                 createHref={route('admin.notes.create')}
                 createLabel="Izoh qo‘shish"
             />
@@ -118,6 +119,7 @@ export default function Index({
 
             <TableShell
                 empty={notes.data.length === 0}
+                resource="notes"
                 createHref={route('admin.notes.create')}
                 createLabel="Izoh qo‘shish"
                 footer={notes.data.length > 0 ? (
@@ -153,6 +155,7 @@ export default function Index({
                                 </td>
                                 <td>
                                     <ResourceActions
+                                        resource="notes"
                                         editHref={route('admin.notes.edit', note.id)}
                                         deleteHref={route('admin.notes.destroy', note.id)}
                                     />

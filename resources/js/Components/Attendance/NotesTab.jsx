@@ -8,7 +8,9 @@ import { route } from '../../routes';
 const TYPE_COLORS = { 1: 'warning', 2: 'processing', 3: 'error' };
 
 /** "Arizalar" tabi: tanlangan davrdagi izohlar (ish vaqtida ruxsatlar). */
-export default function NotesTab({ notes, canManage }) {
+export default function NotesTab({ notes, canEdit, canDelete }) {
+    const canManage = canEdit || canDelete;
+
     if (!notes) {
         return null;
     }
@@ -48,17 +50,19 @@ export default function NotesTab({ notes, canManage }) {
                                 {canManage && (
                                     <td className="py-3 pr-2">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Tooltip title="Tahrirlash">
-                                                <button
-                                                    type="button"
-                                                    className="table-action-edit"
-                                                    aria-label="Tahrirlash"
-                                                    onClick={() => router.visit(route('admin.notes.edit', note.id))}
-                                                >
-                                                    <EditOutlined aria-hidden="true" />
-                                                </button>
-                                            </Tooltip>
-                                            <DeleteButton href={route('admin.notes.destroy', note.id)} />
+                                            {canEdit ? (
+                                                <Tooltip title="Tahrirlash">
+                                                    <button
+                                                        type="button"
+                                                        className="table-action-edit"
+                                                        aria-label="Tahrirlash"
+                                                        onClick={() => router.visit(route('admin.notes.edit', note.id))}
+                                                    >
+                                                        <EditOutlined aria-hidden="true" />
+                                                    </button>
+                                                </Tooltip>
+                                            ) : null}
+                                            {canDelete ? <DeleteButton href={route('admin.notes.destroy', note.id)} /> : null}
                                         </div>
                                     </td>
                                 )}

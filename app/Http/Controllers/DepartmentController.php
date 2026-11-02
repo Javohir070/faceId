@@ -24,7 +24,7 @@ class DepartmentController extends Controller
     {
         return Inertia::render('Admin/Departments/Index', [
             'departments' => $this->departmentService->paginate(10),
-            'drawer' => $this->drawerState($request, fn (int $id): ?array => Department::query()->visibleTo($request->user())->find($id, ['id', 'name'])?->only(['id', 'name'])),
+            'drawer' => $this->drawerState($request, 'departments', fn (int $id): ?array => Department::query()->visibleTo($request->user())->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 

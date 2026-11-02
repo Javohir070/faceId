@@ -1,14 +1,17 @@
 import { router } from '@inertiajs/react';
 import { EditOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import { BackLink, DeleteButton } from './PageHeader';
+import { BackLink, DeleteButton, useActionAbility } from './PageHeader';
 
 export function ShowHeader({
+    resource,
     title,
     subtitle,
     editHref,
     deleteHref,
 }) {
+    const can = useActionAbility(resource);
+
     return (
         <div className="mb-5">
             <div className="page-header">
@@ -23,7 +26,7 @@ export function ShowHeader({
                     )}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    {editHref && (
+                    {editHref && can('edit') && (
                         <Button
                             type="primary"
                             size="large"
@@ -34,7 +37,7 @@ export function ShowHeader({
                             Tahrirlash
                         </Button>
                     )}
-                    {deleteHref && <DeleteButton href={deleteHref} />}
+                    {deleteHref && can('delete') && <DeleteButton href={deleteHref} />}
                 </div>
             </div>
         </div>
@@ -42,6 +45,7 @@ export function ShowHeader({
 }
 
 export default function ShowPage({
+    resource,
     backHref,
     backLabel,
     title,
@@ -55,6 +59,7 @@ export default function ShowPage({
         <>
             <BackLink href={backHref} label={backLabel} />
             <ShowHeader
+                resource={resource}
                 title={title}
                 subtitle={subtitle}
                 editHref={editHref}

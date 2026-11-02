@@ -43,11 +43,18 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin')->name('admin.')->group(function () {
         $menuPermissions = config('menu_permissions.resources');
+        $actionPermissions = config('menu_permissions.actions');
 
         Route::resource('categories', CategoryController::class)
-            ->middleware('permission:'.$menuPermissions['categories']);
+            ->middleware('permission:'.$menuPermissions['categories'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['categories']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['categories']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['categories']['delete']);
         Route::resource('devices', DeviceController::class)
-            ->middleware('permission:'.$menuPermissions['devices']);
+            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['devices']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['devices']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['devices']['delete']);
         Route::post('devices/{device}/connect', [DeviceActionController::class, 'connect'])
             ->middleware('permission:'.$menuPermissions['devices'])
             ->name('devices.connect');
@@ -64,7 +71,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['devices'])
             ->name('devices.restart');
         Route::post('devices/{device}/clear', [DeviceActionController::class, 'clear'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['delete']])
             ->name('devices.clear');
         Route::post('devices/{device}/sync-employees', [DeviceActionController::class, 'syncEmployees'])
             ->middleware('permission:'.$menuPermissions['devices'])
@@ -73,7 +80,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['devices'])
             ->name('devices.pull-employees');
         Route::post('devices/{device}/remove-employees', [DeviceActionController::class, 'removeEmployees'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['delete']])
             ->name('devices.remove-employees');
         Route::get('sync', [SyncController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['sync'])
@@ -85,14 +92,23 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['sync'])
             ->name('sync.transfer-one');
         Route::resource('departments', DepartmentController::class)
-            ->middleware('permission:'.$menuPermissions['departments']);
+            ->middleware('permission:'.$menuPermissions['departments'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['departments']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['departments']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['departments']['delete']);
         Route::post('groups/bulk-destroy', [GroupController::class, 'bulkDestroy'])
-            ->middleware('permission:'.$menuPermissions['groups'])
+            ->middleware(['permission:'.$menuPermissions['groups'], 'permission:'.$actionPermissions['groups']['delete']])
             ->name('groups.bulk-destroy');
         Route::resource('groups', GroupController::class)
-            ->middleware('permission:'.$menuPermissions['groups']);
+            ->middleware('permission:'.$menuPermissions['groups'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['groups']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['groups']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['groups']['delete']);
         Route::resource('schedules', ScheduleController::class)
-            ->middleware('permission:'.$menuPermissions['schedules']);
+            ->middleware('permission:'.$menuPermissions['schedules'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['schedules']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['schedules']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['schedules']['delete']);
         Route::get('employees/pull', [EmployeeController::class, 'pull'])
             ->middleware('permission:'.$menuPermissions['employees-pull'])
             ->name('employees.pull');
@@ -100,18 +116,24 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['employees-pull'])
             ->name('employees.pull.store');
         Route::post('employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy'])
-            ->middleware('permission:'.$menuPermissions['employees'])
+            ->middleware(['permission:'.$menuPermissions['employees'], 'permission:'.$actionPermissions['employees']['delete']])
             ->name('employees.bulk-destroy');
         Route::get('employees/export', [EmployeeController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.export');
         Route::resource('employees', EmployeeController::class)
-            ->middleware('permission:'.$menuPermissions['employees']);
+            ->middleware('permission:'.$menuPermissions['employees'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['employees']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['employees']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['employees']['delete']);
         Route::resource('notes', NoteController::class)
             ->except('show')
-            ->middleware('permission:'.$menuPermissions['notes']);
+            ->middleware('permission:'.$menuPermissions['notes'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['notes']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['notes']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['notes']['delete']);
         Route::post('employees/{employee}/remove-devices', [EmployeeController::class, 'removeDevices'])
-            ->middleware('permission:'.$menuPermissions['employees'])
+            ->middleware(['permission:'.$menuPermissions['employees'], 'permission:'.$actionPermissions['employees']['delete']])
             ->name('employees.remove-devices');
         Route::get('reports/pull', [ReportController::class, 'pull'])
             ->middleware('permission:'.$menuPermissions['reports-pull'])
@@ -132,17 +154,26 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:'.$menuPermissions['attendance'])
             ->name('attendance.export');
         Route::post('attendance/notes', [AttendanceController::class, 'storeNote'])
-            ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$menuPermissions['notes']])
+            ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$actionPermissions['notes']['create']])
             ->name('attendance.notes.store');
         Route::put('users/{user}/devices', [UserController::class, 'updateDevices'])
-            ->middleware('permission:'.$menuPermissions['users'])
+            ->middleware(['permission:'.$menuPermissions['users'], 'permission:'.$actionPermissions['users']['edit']])
             ->name('users.devices.update');
         Route::resource('users', UserController::class)
-            ->middleware('permission:'.$menuPermissions['users']);
+            ->middleware('permission:'.$menuPermissions['users'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['users']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['users']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['users']['delete']);
         Route::resource('roles', RoleController::class)
-            ->middleware('permission:'.$menuPermissions['roles']);
+            ->middleware('permission:'.$menuPermissions['roles'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['roles']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['roles']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['roles']['delete']);
         Route::resource('permissions', PermissionController::class)
-            ->middleware('permission:'.$menuPermissions['permissions']);
+            ->middleware('permission:'.$menuPermissions['permissions'])
+            ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['permissions']['create'])
+            ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['permissions']['edit'])
+            ->middlewareFor('destroy', 'permission:'.$actionPermissions['permissions']['delete']);
     });
 });
 require __DIR__.'/auth.php';

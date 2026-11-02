@@ -15,11 +15,13 @@ export default function Index({ permissions, drawer: initialDrawer = null }) {
             <PageHeader
                 title="Ruxsatlar"
                 subtitle="Tizim bo‘limlariga kirish huquqlarini boshqaring."
+                resource="permissions"
                 onCreate={drawer.openCreate}
                 createLabel="Ruxsat qo'shish"
             />
             <TableShell
                 empty={permissions.data.length === 0}
+                resource="permissions"
                 onCreate={drawer.openCreate}
                 createLabel="Ruxsat qo'shish"
                 footer={permissions.data.length > 0 ? (
@@ -45,6 +47,7 @@ export default function Index({ permissions, drawer: initialDrawer = null }) {
                                 <td className="font-bold text-ink">{permission.name}</td>
                                 <td>
                                     <ResourceActions
+                                        resource="permissions"
                                         onEdit={() => drawer.openEdit({ id: permission.id, name: permission.name })}
                                         deleteHref={route('admin.permissions.destroy', permission.id)}
                                     />

@@ -9,7 +9,7 @@ class BulkDestroyGroupsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(config('menu_permissions.resources')['groups']) ?? false;
+        return $this->user()?->can(config('menu_permissions.actions.groups.delete')) ?? false;
     }
 
     /**

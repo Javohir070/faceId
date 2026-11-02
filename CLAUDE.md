@@ -62,6 +62,13 @@ routes/web.php  →  Controller  →  Service  →  Repository (interface)  → 
 
 `super-admin` gets every permission; the `user` role gets only `home`.
 
+**Action permissions.** The permission in `resources` means *view*. Creating, editing and deleting are separate permissions in `menu_permissions.actions` (`'Xodimlarni qo‘shish'`, `'Xodimlarni tahrirlash'`, `'Xodimlarni o‘chirish'`), for categories, devices, departments, groups, schedules, employees, notes, users, roles and permissions. Enforce them twice:
+
+- **Server:** `->middlewareFor(['create', 'store'] / ['edit', 'update'] / 'destroy', 'permission:…')` on the resource route (they stack on the view permission). Extra destructive routes need the delete permission too: bulk-destroy, `employees.remove-devices`, `devices.clear`, `devices.remove-employees`. Other device operations (ping, connect, open, restart, sync, pull) stay under the view permission.
+- **UI:** the shared `can` prop has `employees.create` / `.edit` / `.delete` keys. Pass `resource="employees"` to `PageHeader`, `TableShell`, `EmptyState`, `ResourceActions`, `ShowHeader` / `ShowPage` and they hide the buttons; elsewhere check `can['employees.delete']`.
+
+A new action-guarded resource means a key in `actions`, the route middleware, and a migration that creates the rows (see `2026_11_02_100000_add_action_permissions.php`, which grants them to everyone holding the view permission so nobody loses access on deploy). Roles are edited as a matrix on the role form (`RoleService::permissionMatrix()`). `InteractsWithPermissions` grants a resource's action permissions along with its view permission; revoke them to test the restricted case (`ActionPermissionsTest`).
+
 ## Department scoping
 
 `Employee`, `Report` and `Group` boot `BelongsToDepartmentScope` as a **global scope**: any user whose role is not `super-admin` (`User::isDepartmentScoped()`) only ever sees rows matching their `department_id`, and sees nothing if their `department_id` is null. `Note` has no `department_id`; it boots `BelongsToEmployeeDepartmentScope`, which applies `whereHas('employee')` so the employee's scope decides. Consequences:

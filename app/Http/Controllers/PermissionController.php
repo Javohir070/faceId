@@ -24,7 +24,7 @@ class PermissionController extends Controller
     {
         return Inertia::render('Admin/Permissions/Index', [
             'permissions' => $this->permissionService->paginate(10),
-            'drawer' => $this->drawerState($request, fn (int $id): ?array => Permission::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
+            'drawer' => $this->drawerState($request, 'permissions', fn (int $id): ?array => Permission::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 

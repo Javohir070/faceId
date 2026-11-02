@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     ApiOutlined,
     CloudDownloadOutlined,
@@ -134,6 +134,7 @@ function runAction(deviceId, action, { modal, setBusy }) {
 }
 
 function DeviceEmployeesPanel({ deviceId, employees }) {
+    const canRemove = Boolean(usePage().props.can?.['devices.delete']);
     const { modal } = AntApp.useApp();
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState('');
@@ -218,16 +219,18 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
                         )
                     </span>
                 </h2>
-                <Button
-                    danger
-                    type="primary"
-                    className="!font-bold"
-                    disabled={!selectedIds.length}
-                    loading={removing}
-                    onClick={removeSelected}
-                >
-                    O'chirish
-                </Button>
+                {canRemove ? (
+                    <Button
+                        danger
+                        type="primary"
+                        className="!font-bold"
+                        disabled={!selectedIds.length}
+                        loading={removing}
+                        onClick={removeSelected}
+                    >
+                        O'chirish
+                    </Button>
+                ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
@@ -257,14 +260,16 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
                 <table className="data-table devices-table min-w-full">
                     <thead>
                         <tr>
-                            <th className="devices-table__checkbox">
-                                <Checkbox
-                                    checked={allVisibleSelected}
-                                    indeterminate={someVisibleSelected}
-                                    onChange={(e) => toggleAll(e.target.checked)}
-                                    disabled={!visible.length}
-                                />
-                            </th>
+                            {canRemove ? (
+                                <th className="devices-table__checkbox">
+                                    <Checkbox
+                                        checked={allVisibleSelected}
+                                        indeterminate={someVisibleSelected}
+                                        onChange={(e) => toggleAll(e.target.checked)}
+                                        disabled={!visible.length}
+                                    />
+                                </th>
+                            ) : null}
                             <th className="w-12">№</th>
                             <th>F.I.Sh.</th>
                             <th>Karta</th>
@@ -275,18 +280,20 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
                     <tbody>
                         {visible.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="py-10 text-center text-sm text-ink-muted">
+                                <td colSpan={canRemove ? 6 : 5} className="py-10 text-center text-sm text-ink-muted">
                                     Bu qurilmaga hali xodim biriktirilmagan.
                                 </td>
                             </tr>
                         ) : visible.map((employee, index) => (
                             <tr key={employee.id}>
-                                <td className="devices-table__checkbox">
-                                    <Checkbox
-                                        checked={selectedIds.includes(employee.id)}
-                                        onChange={(e) => toggleOne(employee.id, e.target.checked)}
-                                    />
-                                </td>
+                                {canRemove ? (
+                                    <td className="devices-table__checkbox">
+                                        <Checkbox
+                                            checked={selectedIds.includes(employee.id)}
+                                            onChange={(e) => toggleOne(employee.id, e.target.checked)}
+                                        />
+                                    </td>
+                                ) : null}
                                 <td className="font-medium text-ink-subtle">{from + index}</td>
                                 <td>
                                     <button
@@ -345,6 +352,7 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
 }
 
 function DeviceQuickActions({ device }) {
+    const canClear = Boolean(usePage().props.can?.['devices.delete']);
     const { modal } = AntApp.useApp();
     const [busy, setBusy] = useState(null);
 
@@ -418,14 +426,16 @@ function DeviceQuickActions({ device }) {
                 Qayta yuklash
             </Button>
 
-            <Button
-                danger
-                loading={busy === 'clear'}
-                disabled={Boolean(busy) && busy !== 'clear'}
-                onClick={() => run('clear')}
-            >
-                Tozalash
-            </Button>
+            {canClear ? (
+                <Button
+                    danger
+                    loading={busy === 'clear'}
+                    disabled={Boolean(busy) && busy !== 'clear'}
+                    onClick={() => run('clear')}
+                >
+                    Tozalash
+                </Button>
+            ) : null}
         </div>
     );
 }
@@ -442,6 +452,7 @@ export default function Show({ device }) {
                 backLabel="Qurilmalar ro‘yxati"
                 title={device.name}
                 subtitle={`${device.ip_address}:${device.port}`}
+                resource="devices"
                 editHref={route('admin.devices.edit', device.id)}
                 deleteHref={route('admin.devices.destroy', device.id)}
             >

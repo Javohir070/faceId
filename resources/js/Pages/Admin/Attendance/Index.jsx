@@ -111,7 +111,7 @@ export default function Index({
                         <Button size="large" icon={<DownloadOutlined />} href={exportHref()} className="!font-bold">
                             Hisobot
                         </Button>
-                        {can.notes && (
+                        {can['notes.create'] && (
                             <Button
                                 type="primary"
                                 size="large"
@@ -184,7 +184,7 @@ export default function Index({
 
             {isNotesTab ? (
                 <section className="rounded-xl border border-line bg-surface p-5">
-                    <NotesTab notes={notes} canManage={Boolean(can.notes)} />
+                    <NotesTab notes={notes} canEdit={Boolean(can['notes.edit'])} canDelete={Boolean(can['notes.delete'])} />
                 </section>
             ) : (
                 <div className="space-y-5">
@@ -219,7 +219,7 @@ export default function Index({
             <DayDrawer
                 day={day}
                 open={Boolean(day)}
-                canAddNote={Boolean(can.notes)}
+                canAddNote={Boolean(can['notes.create'])}
                 onClose={closeDay}
                 onAddNote={(employeeId, dt) => openNoteModal(employeeId, dt)}
             />

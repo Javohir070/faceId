@@ -11,17 +11,25 @@ use Illuminate\Http\Request;
 trait OpensFormDrawer
 {
     /**
+     * @param  string  $resource  menu_permissions.actions kaliti: mos ruxsat bo‘lmasa panel ochilmaydi
      * @param  callable(int): (array<string, mixed>|null)  $findRecord  panel uchun yozuv yoki null
      * @return array{mode: string, record?: array<string, mixed>}|null
      */
-    protected function drawerState(Request $request, callable $findRecord): ?array
+    protected function drawerState(Request $request, string $resource, callable $findRecord): ?array
     {
         if ($request->boolean('create')) {
-            return ['mode' => 'create'];
+            return $request->user()?->can(config("menu_permissions.actions.{$resource}.create"))
+                ? ['mode' => 'create']
+                : null;
         }
 
         $id = $request->integer('edit');
-        $record = $id > 0 ? $findRecord($id) : null;
+
+        if ($id <= 0 || ! $request->user()?->can(config("menu_permissions.actions.{$resource}.edit"))) {
+            return null;
+        }
+
+        $record = $findRecord($id);
 
         return $record === null ? null : ['mode' => 'edit', 'record' => $record];
     }

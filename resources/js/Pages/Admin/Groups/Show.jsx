@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     ApartmentOutlined,
     ArrowRightOutlined,
@@ -110,17 +110,18 @@ function EmployeesPanel({ group }) {
 }
 
 function SubgroupsPanel({ group }) {
+    const canCreate = Boolean(usePage().props.can?.['groups.create']);
     const createHref = `${route('admin.groups.create')}?parent_id=${group.id}`;
 
     return (
         <section className="table-shell self-start">
             <PanelHeader
                 title="Pastki guruhlar"
-                action={(
+                action={canCreate ? (
                     <Link href={createHref} className="table-action-view" aria-label="Pastki guruh qo‘shish" title="Pastki guruh qo‘shish">
                         <PlusOutlined aria-hidden="true" />
                     </Link>
-                )}
+                ) : null}
             />
             {group.children.length ? (
                 <ul>
@@ -150,12 +151,14 @@ function SubgroupsPanel({ group }) {
             ) : (
                 <div className="px-5 py-8 text-center">
                     <p className="text-sm text-ink-muted">Pastki guruh yo‘q.</p>
-                    <Link
-                        href={createHref}
-                        className="mt-2 inline-flex text-sm font-bold text-brand-700 hover:text-brand-600"
-                    >
-                        Pastki guruh qo‘shish
-                    </Link>
+                    {canCreate ? (
+                        <Link
+                            href={createHref}
+                            className="mt-2 inline-flex text-sm font-bold text-brand-700 hover:text-brand-600"
+                        >
+                            Pastki guruh qo‘shish
+                        </Link>
+                    ) : null}
                 </div>
             )}
         </section>
@@ -169,6 +172,7 @@ export default function Show({ group }) {
             <ShowHeader
                 title={group.name}
                 subtitle={<GroupPath group={group} />}
+                resource="groups"
                 editHref={route('admin.groups.edit', group.id)}
                 deleteHref={route('admin.groups.destroy', group.id)}
             />

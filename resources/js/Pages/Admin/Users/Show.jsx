@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { LinkOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { useState } from 'react';
@@ -16,6 +17,8 @@ function SectionTitle({ children }) {
 }
 
 function DevicesSection({ user, onLink }) {
+    const canLink = Boolean(usePage().props.can?.['users.edit']);
+
     if (user.is_super_admin) {
         return (
             <div>
@@ -37,9 +40,11 @@ function DevicesSection({ user, onLink }) {
                     Qurilmalar
                     {rows.length ? ` · ${rows.length}` : ''}
                 </h2>
-                <Button icon={<LinkOutlined />} className="!font-bold" onClick={onLink}>
-                    Qurilmalarni bog‘lash
-                </Button>
+                {canLink ? (
+                    <Button icon={<LinkOutlined />} className="!font-bold" onClick={onLink}>
+                        Qurilmalarni bog‘lash
+                    </Button>
+                ) : null}
             </div>
             {rows.length ? (
                 <ul className="overflow-hidden rounded-lg border border-line">
@@ -73,6 +78,7 @@ export default function Show({ user, devices = [] }) {
                 backHref={route('admin.users.index')}
                 title={user.name}
                 subtitle={user.email}
+                resource="users"
                 editHref={route('admin.users.edit', user.id)}
                 deleteHref={route('admin.users.destroy', user.id)}
                 maxWidth="max-w-2xl"

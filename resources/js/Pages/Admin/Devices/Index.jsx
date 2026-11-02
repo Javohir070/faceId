@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     CaretDownOutlined,
     CaretUpOutlined,
@@ -118,6 +118,7 @@ function runDeviceAction(deviceId, action, { modal, setBusy, busy }) {
 }
 
 function DeviceActionsMenu({ device }) {
+    const canClear = Boolean(usePage().props.can?.['devices.delete']);
     const { modal } = AntApp.useApp();
     const [busy, setBusy] = useState(null);
 
@@ -154,13 +155,13 @@ function DeviceActionsMenu({ device }) {
             disabled: Boolean(busy),
             onClick: () => run('restart'),
         },
-        {
+        ...(canClear ? [{
             key: 'clear',
             label: busy === 'clear' ? 'Tozalanmoqda…' : 'Tozalash',
             disabled: Boolean(busy),
             danger: true,
             onClick: () => run('clear'),
-        },
+        }] : []),
         {
             key: 'sync',
             label: busy === 'sync' ? 'Sinxronlanmoqda…' : 'Sinxronlash',
@@ -264,6 +265,7 @@ export default function Index({
             <PageHeader
                 title="Qurilmalar"
                 subtitle={`Hikvision Face ID — holat har ${LIVE_POLL_MS / 1000} soniyada yangilanadi. Onlayn (sahifa): ${onlineCount}/${devices.data.length}`}
+                resource="devices"
                 createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
             />
@@ -316,6 +318,7 @@ export default function Index({
 
             <TableShell
                 empty={devices.data.length === 0}
+                resource="devices"
                 createHref={route('admin.devices.create')}
                 createLabel="Qurilma qo'shish"
                 footer={devices.data.length > 0 ? (

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { LinkOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import { useState } from 'react';
@@ -29,6 +29,7 @@ function DevicesCell({ user }) {
 }
 
 export default function Index({ users, devices = [] }) {
+    const can = usePage().props.can || {};
     const [linking, setLinking] = useState(null);
 
     const pagination = (
@@ -44,11 +45,13 @@ export default function Index({ users, devices = [] }) {
             <PageHeader
                 title="Foydalanuvchilar"
                 subtitle="Tizimdagi barcha foydalanuvchilar ro'yxati"
+                resource="users"
                 createHref={route('admin.users.create')}
                 createLabel="Foydalanuvchi qo'shish"
             />
             <TableShell
                 empty={users.data.length === 0}
+                resource="users"
                 createHref={route('admin.users.create')}
                 createLabel="Foydalanuvchi qo'shish"
                 footer={users.data.length > 0 ? pagination : null}
@@ -107,7 +110,7 @@ export default function Index({ users, devices = [] }) {
                                     </td>
                                     <td>
                                         <div className="flex items-center justify-end gap-2">
-                                            {!user.is_super_admin ? (
+                                            {!user.is_super_admin && can['users.edit'] ? (
                                                 <Tooltip title="Qurilmalarni bog‘lash">
                                                     <button
                                                         type="button"
@@ -120,6 +123,7 @@ export default function Index({ users, devices = [] }) {
                                                 </Tooltip>
                                             ) : null}
                                             <ResourceActions
+                                                resource="users"
                                                 showHref={route('admin.users.show', user.id)}
                                                 editHref={route('admin.users.edit', user.id)}
                                                 deleteHref={route('admin.users.destroy', user.id)}

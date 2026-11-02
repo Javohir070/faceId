@@ -16,7 +16,7 @@ trait InteractsWithPermissions
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $names = $permissions ?? $this->allMenuPermissions();
+        $names = $this->withActionPermissions($permissions ?? $this->allMenuPermissions());
 
         foreach ($names as $name) {
             Permission::findOrCreate($name, 'web');
@@ -41,7 +41,7 @@ trait InteractsWithPermissions
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $names = $permissions ?? $this->allMenuPermissions();
+        $names = $this->withActionPermissions($permissions ?? $this->allMenuPermissions());
 
         foreach ($names as $name) {
             Permission::findOrCreate($name, 'web');
@@ -56,6 +56,26 @@ trait InteractsWithPermissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $user->fresh();
+    }
+
+    /**
+     * Bo‘lim ruxsati berilsa uning qo‘shish/tahrirlash/o‘chirish ruxsatlari ham beriladi — testlar odatda to‘liq
+     * boshqaruvni tekshiradi. Faqat ko‘rish holati: ActionPermissionsTest (revokePermissionTo).
+     *
+     * @param  list<string>  $names
+     * @return list<string>
+     */
+    protected function withActionPermissions(array $names): array
+    {
+        $resources = config('menu_permissions.resources');
+
+        foreach (config('menu_permissions.actions') as $resource => $actions) {
+            if (in_array($resources[$resource], $names, true)) {
+                $names = [...$names, ...array_values($actions)];
+            }
+        }
+
+        return array_values(array_unique($names));
     }
 
     /**

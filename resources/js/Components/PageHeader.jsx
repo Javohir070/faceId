@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     ArrowLeftOutlined,
     DeleteOutlined,
@@ -22,16 +22,29 @@ export function BackLink({ href, label = 'Orqaga' }) {
     );
 }
 
+/**
+ * Amal ruxsati: resource berilsa tugma `can['<resource>.create|edit|delete']` bo‘yicha chiqadi
+ * (config/menu_permissions.php → actions). Server ham shu ruxsatni tekshiradi.
+ */
+export function useActionAbility(resource) {
+    const can = usePage().props.can || {};
+
+    return (action) => !resource || Boolean(can[`${resource}.${action}`]);
+}
+
 export default function PageHeader({
     title,
     subtitle,
     backHref,
     backLabel = 'Orqaga',
+    resource,
     createHref,
     onCreate,
     createLabel = "Yangi qo'shish",
     actions,
 }) {
+    const can = useActionAbility(resource);
+
     return (
         <div className="mb-5">
             {backHref && <BackLink href={backHref} label={backLabel} />}
@@ -48,7 +61,7 @@ export default function PageHeader({
                         </p>
                     ) : null}
                 </div>
-                {actions || (createHref || onCreate ? (
+                {actions || ((createHref || onCreate) && can('create') ? (
                     <Button
                         type="primary"
                         size="large"
@@ -112,7 +125,9 @@ export function RoleBadge({ children }) {
 }
 
 /** onEdit berilsa tahrirlash sahifaga o‘tmaydi — shu sahifadagi panel (Drawer) ochiladi. */
-export function ResourceActions({ showHref, editHref, onEdit, deleteHref }) {
+export function ResourceActions({ resource, showHref, editHref, onEdit, deleteHref }) {
+    const can = useActionAbility(resource);
+
     return (
         <div className="flex items-center justify-end gap-2">
             {showHref ? (
@@ -127,7 +142,7 @@ export function ResourceActions({ showHref, editHref, onEdit, deleteHref }) {
                     </button>
                 </Tooltip>
             ) : null}
-            {editHref || onEdit ? (
+            {(editHref || onEdit) && can('edit') ? (
                 <Tooltip title="Tahrirlash">
                     <button
                         type="button"
@@ -139,7 +154,7 @@ export function ResourceActions({ showHref, editHref, onEdit, deleteHref }) {
                     </button>
                 </Tooltip>
             ) : null}
-            {deleteHref ? <DeleteButton href={deleteHref} /> : null}
+            {deleteHref && can('delete') ? <DeleteButton href={deleteHref} /> : null}
         </div>
     );
 }
@@ -158,10 +173,13 @@ export function FormActions({ cancelHref, processing, submitLabel = 'Saqlash' })
 export function EmptyState({
     title = 'Hozircha ma’lumot yo‘q',
     description = 'Birinchi yozuvni qo‘shib, ushbu bo‘limni to‘ldiring.',
+    resource,
     createHref,
     onCreate,
     createLabel = 'Birinchi yozuvni qo‘shish',
 }) {
+    const canCreate = useActionAbility(resource)('create');
+
     return (
         <div className="empty-state">
             <Empty
@@ -169,11 +187,13 @@ export function EmptyState({
                 description={(
                     <div>
                         <h2 className="text-base font-extrabold text-ink">{title}</h2>
-                        <p className="mt-2 max-w-md text-sm leading-6 text-ink-muted">{description}</p>
+                        <p className="mt-2 max-w-md text-sm leading-6 text-ink-muted">
+                            {canCreate ? description : 'Bu yerda hozircha yozuv yo‘q.'}
+                        </p>
                     </div>
                 )}
             >
-                {createHref || onCreate ? (
+                {(createHref || onCreate) && canCreate ? (
                     <Button
                         type="primary"
                         icon={<PlusOutlined />}

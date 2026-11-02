@@ -166,15 +166,17 @@ export default function Index({
                                 Qurilmadan tortish
                             </Link>
                         ) : null}
-                        <Button
-                            type="primary"
-                            size="large"
-                            className="!h-11 shrink-0 !rounded-lg !px-5 !font-bold"
-                            icon={<PlusOutlined />}
-                            onClick={() => router.visit(route('admin.employees.create'))}
-                        >
-                            Xodim qo&apos;shish
-                        </Button>
+                        {can['employees.create'] ? (
+                            <Button
+                                type="primary"
+                                size="large"
+                                className="!h-11 shrink-0 !rounded-lg !px-5 !font-bold"
+                                icon={<PlusOutlined />}
+                                onClick={() => router.visit(route('admin.employees.create'))}
+                            >
+                                Xodim qo&apos;shish
+                            </Button>
+                        ) : null}
                     </div>
                 )}
             />
@@ -267,6 +269,7 @@ export default function Index({
 
             <TableShell
                 empty={employees.data.length === 0}
+                resource="employees"
                 createHref={route('admin.employees.create')}
                 createLabel="Xodim qo'shish"
                 footer={employees.data.length > 0 ? (
@@ -280,14 +283,16 @@ export default function Index({
                 <table className="data-table">
                     <thead>
                         <tr>
-                            <th className="w-10">
-                                <Checkbox
-                                    checked={allSelected}
-                                    indeterminate={someSelected}
-                                    onChange={(e) => setSelectedIds(e.target.checked ? pageIds : [])}
-                                    aria-label="Sahifadagi barcha xodimlarni tanlash"
-                                />
-                            </th>
+                            {can['employees.delete'] ? (
+                                <th className="w-10">
+                                    <Checkbox
+                                        checked={allSelected}
+                                        indeterminate={someSelected}
+                                        onChange={(e) => setSelectedIds(e.target.checked ? pageIds : [])}
+                                        aria-label="Sahifadagi barcha xodimlarni tanlash"
+                                    />
+                                </th>
+                            ) : null}
                             <th className="w-16">N#</th>
                             <th>F.I.Sh.</th>
                             <th>Karta</th>
@@ -303,13 +308,15 @@ export default function Index({
                     <tbody>
                         {employees.data.map((employee, index) => (
                             <tr key={employee.id} className={selectedIds.includes(employee.id) ? 'bg-brand-50/70' : undefined}>
-                                <td>
-                                    <Checkbox
-                                        checked={selectedIds.includes(employee.id)}
-                                        onChange={(e) => toggleOne(employee.id, e.target.checked)}
-                                        aria-label={`«${employee.name}» ni tanlash`}
-                                    />
-                                </td>
+                                {can['employees.delete'] ? (
+                                    <td>
+                                        <Checkbox
+                                            checked={selectedIds.includes(employee.id)}
+                                            onChange={(e) => toggleOne(employee.id, e.target.checked)}
+                                            aria-label={`«${employee.name}» ni tanlash`}
+                                        />
+                                    </td>
+                                ) : null}
                                 <td className="font-medium text-ink-subtle">{(employees.from ?? 1) + index}</td>
                                 <td>
                                     <Link
@@ -336,6 +343,7 @@ export default function Index({
                                 </td>
                                 <td>
                                     <ResourceActions
+                                        resource="employees"
                                         showHref={route('admin.employees.show', employee.id)}
                                         editHref={route('admin.employees.edit', employee.id)}
                                         deleteHref={route('admin.employees.destroy', employee.id)}

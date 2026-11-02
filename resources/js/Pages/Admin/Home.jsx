@@ -20,14 +20,14 @@ import useInertiaPoll from '../../hooks/useInertiaPoll';
 
 const quickActions = [
     {
-        key: 'employees',
+        key: 'employees.create',
         href: route('admin.employees.create'),
         label: "Xodim qo'shish",
         icon: IdcardOutlined,
         primary: true,
     },
     {
-        key: 'devices',
+        key: 'devices.create',
         href: route('admin.devices.create'),
         label: "Qurilma qo'shish",
         icon: ClusterOutlined,
@@ -506,7 +506,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                         {' '}— xodimlarni tuzilma bo‘yicha guruhlang.
                                     </li>
                                 ) : null}
-                                {can.employees ? (
+                                {can['employees.create'] ? (
                                     <li className="px-4 py-3.5 sm:px-5">
                                         <Link href={route('admin.employees.create')} className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
                                             Xodim qo‘shing
@@ -514,7 +514,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                         {' '}— yuz ma’lumotlari va karta bilan.
                                     </li>
                                 ) : null}
-                                {can.devices ? (
+                                {can['devices.create'] ? (
                                     <li className="px-4 py-3.5 sm:px-5">
                                         <Link href={route('admin.devices.create')} className="font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400">
                                             Qurilma ulang
@@ -522,7 +522,7 @@ export default function Home({ stats = {}, recentEvents = [] }) {
                                         {' '}— keyin sinxronizatsiya qiling.
                                     </li>
                                 ) : null}
-                                {!can.departments && !can.employees && !can.devices ? (
+                                {!can.departments && !can['employees.create'] && !can['devices.create'] ? (
                                     <li className="px-4 py-5 sm:px-5">
                                         Chap menyu orqali sizga ruxsat berilgan bo‘limlarni oching.
                                     </li>

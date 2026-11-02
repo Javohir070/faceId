@@ -15,11 +15,13 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
             <PageHeader
                 title="Bo'limlar"
                 subtitle="Tashkilot bo'limlarini boshqaring."
+                resource="departments"
                 onCreate={drawer.openCreate}
                 createLabel="Bo'lim qo'shish"
             />
             <TableShell
                 empty={departments.data.length === 0}
+                resource="departments"
                 onCreate={drawer.openCreate}
                 createLabel="Bo'lim qo'shish"
                 footer={departments.data.length > 0 ? (
@@ -45,6 +47,7 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
                                 <td className="font-bold text-ink">{department.name}</td>
                                 <td>
                                     <ResourceActions
+                                        resource="departments"
                                         onEdit={() => drawer.openEdit({ id: department.id, name: department.name })}
                                         deleteHref={route('admin.departments.destroy', department.id)}
                                     />

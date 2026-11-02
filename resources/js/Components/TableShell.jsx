@@ -3,6 +3,7 @@ import { EmptyState } from './PageHeader';
 export default function TableShell({
     empty = false,
     emptyState,
+    resource,
     createHref,
     onCreate,
     createLabel,
@@ -15,7 +16,7 @@ export default function TableShell({
         <div className="table-shell" style={{ padding: '20px 24px' }}>
             {empty ? (
                 emptyState || (
-                    <EmptyState createHref={createHref} onCreate={onCreate} createLabel={createLabel} />
+                    <EmptyState resource={resource} createHref={createHref} onCreate={onCreate} createLabel={createLabel} />
                 )
             ) : (
                 <>

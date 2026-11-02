@@ -10,11 +10,13 @@ export default function Index({ roles }) {
             <PageHeader
                 title="Rollar"
                 subtitle="Foydalanuvchi rollari va ularga tegishli ruxsatlarni sozlang."
+                resource="roles"
                 createHref={route('admin.roles.create')}
                 createLabel="Rol qo'shish"
             />
             <TableShell
                 empty={roles.data.length === 0}
+                resource="roles"
                 createHref={route('admin.roles.create')}
                 createLabel="Rol qo'shish"
                 footer={roles.data.length > 0 ? (
@@ -40,6 +42,7 @@ export default function Index({ roles }) {
                                 <td className="font-bold text-ink">{role.name}</td>
                                 <td>
                                     <ResourceActions
+                                        resource="roles"
                                         showHref={route('admin.roles.show', role.id)}
                                         editHref={route('admin.roles.edit', role.id)}
                                         deleteHref={route('admin.roles.destroy', role.id)}

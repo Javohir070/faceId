@@ -108,7 +108,7 @@ function ProfileCard({ employee, canGroups }) {
     );
 }
 
-function NotesPanel({ employeeId, notes, canManage }) {
+function NotesPanel({ employeeId, notes, canCreate, canEdit }) {
     return (
         <section className="table-shell">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
@@ -119,7 +119,7 @@ function NotesPanel({ employeeId, notes, canManage }) {
                         {notes.length ? ` · jami ${notes.length} ta` : ''}
                     </p>
                 </div>
-                {canManage ? (
+                {canCreate ? (
                     <Link
                         href={`${route('admin.notes.create')}?employee_id=${employeeId}`}
                         className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-bold text-white transition-colors duration-150 ease-productive hover:bg-brand-700 dark:text-brand-950 dark:hover:bg-brand-500"
@@ -140,7 +140,7 @@ function NotesPanel({ employeeId, notes, canManage }) {
                                 </p>
                                 {note.note ? <p className="mt-1 text-sm text-ink-muted">{note.note}</p> : null}
                             </div>
-                            {canManage ? (
+                            {canEdit ? (
                                 <Tooltip title="Tahrirlash">
                                     <Link
                                         href={route('admin.notes.edit', note.id)}
@@ -202,6 +202,7 @@ export default function Show({
             <ShowHeader
                 title={employee.name}
                 subtitle={subtitle || null}
+                resource="employees"
                 editHref={route('admin.employees.edit', employee.id)}
                 deleteHref={route('admin.employees.destroy', employee.id)}
             />
@@ -231,14 +232,19 @@ export default function Show({
                         monthRange={monthRange}
                         onChange={(changes) => visit(changes, ['passes', 'passes_summary', 'filters'])}
                     />
-                    <NotesPanel employeeId={employee.id} notes={notes} canManage={Boolean(can.notes)} />
+                    <NotesPanel
+                        employeeId={employee.id}
+                        notes={notes}
+                        canCreate={Boolean(can['notes.create'])}
+                        canEdit={Boolean(can['notes.edit'])}
+                    />
                 </div>
             </div>
 
             <DayDrawer
                 day={day}
                 open={Boolean(day)}
-                canAddNote={Boolean(can.notes)}
+                canAddNote={Boolean(can['notes.create'])}
                 onClose={() => visit({ day: null }, ['day'])}
                 onAddNote={(employeeId, date) => router.visit(
                     `${route('admin.notes.create')}?employee_id=${employeeId}&dt=${date}`,

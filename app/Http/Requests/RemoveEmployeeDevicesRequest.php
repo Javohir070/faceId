@@ -9,7 +9,7 @@ class RemoveEmployeeDevicesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('Xodimlar') ?? false;
+        return $this->user()?->can(config('menu_permissions.actions.employees.delete')) ?? false;
     }
 
     /**

@@ -20,11 +20,13 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
             <PageHeader
                 title="Jadvallar"
                 subtitle="Kirish va chiqish vaqtlarini boshqaring."
+                resource="schedules"
                 onCreate={drawer.openCreate}
                 createLabel="Jadval qo'shish"
             />
             <TableShell
                 empty={schedules.data.length === 0}
+                resource="schedules"
                 onCreate={drawer.openCreate}
                 createLabel="Jadval qo'shish"
                 footer={schedules.data.length > 0 ? (
@@ -59,6 +61,7 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                 </td>
                                 <td>
                                     <ResourceActions
+                                        resource="schedules"
                                         onEdit={() => drawer.openEdit({
                                             id: schedule.id,
                                             name: schedule.name,

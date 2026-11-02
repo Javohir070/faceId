@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     ApartmentOutlined,
     ClusterOutlined,
@@ -133,11 +133,13 @@ function GroupRow({ node, depth, ctx }) {
             <div
                 className={`group/row flex items-center gap-3 border-t border-line px-4 py-2.5 transition-colors duration-150 ease-productive sm:px-5 ${checked ? 'bg-brand-50/70' : 'hover:bg-surface-muted'}`}
             >
-                <Checkbox
-                    checked={checked}
-                    onChange={(e) => ctx.select([node.id], e.target.checked)}
-                    aria-label={`«${node.title}» guruhini tanlash`}
-                />
+                {ctx.canDelete ? (
+                    <Checkbox
+                        checked={checked}
+                        onChange={(e) => ctx.select([node.id], e.target.checked)}
+                        aria-label={`«${node.title}» guruhini tanlash`}
+                    />
+                ) : null}
                 <div className={`flex min-w-0 flex-1 items-center gap-2.5 ${INDENT[Math.min(depth, INDENT.length - 1)]}`}>
                     {hasChildren ? (
                         <button
@@ -182,15 +184,17 @@ function GroupRow({ node, depth, ctx }) {
                             <EyeOutlined aria-hidden="true" />
                         </Link>
                     </Tooltip>
-                    <Tooltip title="Tahrirlash">
-                        <Link
-                            href={route('admin.groups.edit', node.id)}
-                            className="table-action-edit"
-                            aria-label={`«${node.title}» guruhini tahrirlash`}
-                        >
-                            <EditOutlined aria-hidden="true" />
-                        </Link>
-                    </Tooltip>
+                    {ctx.canEdit ? (
+                        <Tooltip title="Tahrirlash">
+                            <Link
+                                href={route('admin.groups.edit', node.id)}
+                                className="table-action-edit"
+                                aria-label={`«${node.title}» guruhini tahrirlash`}
+                            >
+                                <EditOutlined aria-hidden="true" />
+                            </Link>
+                        </Tooltip>
+                    ) : null}
                 </div>
             </div>
             {hasChildren && open ? (
@@ -214,13 +218,15 @@ function DepartmentSection({ node, ctx }) {
     return (
         <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-ambient">
             <div className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <Checkbox
-                    checked={allSelected}
-                    indeterminate={selectedCount > 0 && !allSelected}
-                    disabled={groupIds.length === 0}
-                    onChange={(e) => ctx.select(groupIds, e.target.checked)}
-                    aria-label={`«${node.title}» bo‘limidagi barcha guruhlarni tanlash`}
-                />
+                {ctx.canDelete ? (
+                    <Checkbox
+                        checked={allSelected}
+                        indeterminate={selectedCount > 0 && !allSelected}
+                        disabled={groupIds.length === 0}
+                        onChange={(e) => ctx.select(groupIds, e.target.checked)}
+                        aria-label={`«${node.title}» bo‘limidagi barcha guruhlarni tanlash`}
+                    />
+                ) : null}
                 <button
                     type="button"
                     className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left"
@@ -263,15 +269,17 @@ function DepartmentSection({ node, ctx }) {
                         <ToggleIcon open={open} />
                     </span>
                 </button>
-                <Tooltip title="Shu bo‘limga guruh qo‘shish">
-                    <Link
-                        href={`${route('admin.groups.create')}?department_id=${node.id}`}
-                        className="table-action-view hidden sm:inline-flex"
-                        aria-label={`«${node.title}» bo‘limiga guruh qo‘shish`}
-                    >
-                        <PlusOutlined aria-hidden="true" />
-                    </Link>
-                </Tooltip>
+                {ctx.canCreate ? (
+                    <Tooltip title="Shu bo‘limga guruh qo‘shish">
+                        <Link
+                            href={`${route('admin.groups.create')}?department_id=${node.id}`}
+                            className="table-action-view hidden sm:inline-flex"
+                            aria-label={`«${node.title}» bo‘limiga guruh qo‘shish`}
+                        >
+                            <PlusOutlined aria-hidden="true" />
+                        </Link>
+                    </Tooltip>
+                ) : null}
             </div>
 
             {open ? (
@@ -284,13 +292,17 @@ function DepartmentSection({ node, ctx }) {
                 ) : (
                     <div className="border-t border-line px-5 py-6 text-sm text-ink-muted">
                         Bu bo‘limda hali guruh yo‘q.
-                        {' '}
-                        <Link
-                            href={`${route('admin.groups.create')}?department_id=${node.id}`}
-                            className="font-bold text-brand-700 hover:text-brand-600"
-                        >
-                            Birinchisini qo‘shing
-                        </Link>
+                        {ctx.canCreate ? (
+                            <>
+                                {' '}
+                                <Link
+                                    href={`${route('admin.groups.create')}?department_id=${node.id}`}
+                                    className="font-bold text-brand-700 hover:text-brand-600"
+                                >
+                                    Birinchisini qo‘shing
+                                </Link>
+                            </>
+                        ) : null}
                     </div>
                 )
             ) : null}
@@ -318,7 +330,12 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
         setSelectedIds([]);
     }, [tree]);
 
+    const { can = {} } = usePage().props;
+
     const ctx = {
+        canCreate: Boolean(can['groups.create']),
+        canEdit: Boolean(can['groups.edit']),
+        canDelete: Boolean(can['groups.delete']),
         needle,
         selected,
         // Qidiruv paytida hamma narsa ochiq — topilgan guruh yashirinib qolmasin.
@@ -379,6 +396,7 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
             <PageHeader
                 title="Guruhlar"
                 subtitle="Bo‘limlar ichidagi guruhlar va ulardagi xodimlar."
+                resource="groups"
                 createHref={route('admin.groups.create')}
                 createLabel="Guruh qo‘shish"
             />
@@ -484,6 +502,7 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
                         <EmptyState
                             title="Hali guruh yo‘q"
                             description="Birinchi guruhni qo‘shing — u tanlangan bo‘lim ostida chiqadi."
+                            resource="groups"
                             createHref={route('admin.groups.create')}
                             createLabel="Guruh qo‘shish"
                         />

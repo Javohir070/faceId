@@ -8,7 +8,6 @@ use App\Services\RoleService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -27,7 +26,7 @@ class RoleController extends Controller
     public function create(): Response
     {
         return Inertia::render('Admin/Roles/Form', [
-            'permissions' => $this->serializeGroupedPermissions(),
+            'permissions' => $this->roleService->permissionMatrix(),
         ]);
     }
 
@@ -68,7 +67,7 @@ class RoleController extends Controller
                 'name' => $role->name,
                 'permissions' => $role->permissions->pluck('name')->values(),
             ],
-            'permissions' => $this->serializeGroupedPermissions(),
+            'permissions' => $this->roleService->permissionMatrix(),
         ]);
     }
 
@@ -94,18 +93,5 @@ class RoleController extends Controller
         return redirect()
             ->route('admin.roles.index')
             ->with('success', 'Rol muvaffaqiyatli o\'chirildi.');
-    }
-
-    /**
-     * @return array<string, array<int, array{id: int, name: string}>>
-     */
-    private function serializeGroupedPermissions(): array
-    {
-        return collect($this->roleService->groupedPermissions())
-            ->map(fn ($group) => $group->values()->map(fn (Permission $permission) => [
-                'id' => $permission->id,
-                'name' => $permission->name,
-            ])->all())
-            ->all();
     }
 }

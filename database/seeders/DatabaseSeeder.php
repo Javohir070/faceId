@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $permissions = [
             config('menu_permissions.home'),
             ...array_values(config('menu_permissions.resources')),
+            ...array_merge(...array_map('array_values', array_values(config('menu_permissions.actions')))),
             'Sozlamalar',
         ];
 
@@ -59,7 +61,7 @@ class DatabaseSeeder extends Seeder
         );
         $admin->syncRoles(['super-admin']);
 
-        $defaultDepartment = \App\Models\Department::query()->firstOrCreate(
+        $defaultDepartment = Department::query()->firstOrCreate(
             ['name' => 'Umumiy'],
         );
 

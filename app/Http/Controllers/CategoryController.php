@@ -24,7 +24,7 @@ class CategoryController extends Controller
     {
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $this->categoryService->paginate(10),
-            'drawer' => $this->drawerState($request, fn (int $id): ?array => Category::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
+            'drawer' => $this->drawerState($request, 'categories', fn (int $id): ?array => Category::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }
 

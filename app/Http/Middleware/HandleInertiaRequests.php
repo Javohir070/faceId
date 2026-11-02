@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -67,8 +68,27 @@ class HandleInertiaRequests extends Middleware
                 'users' => $user->can($menuPermissions['users']),
                 'roles' => $user->can($menuPermissions['roles']),
                 'permissions' => $user->can($menuPermissions['permissions']),
+                ...$this->actionAbilities($user),
             ] : null,
             'appName' => config('app.name'),
         ];
+    }
+
+    /**
+     * Tugmalar uchun: `employees.create`, `employees.edit`, `employees.delete` ko‘rinishidagi kalitlar.
+     *
+     * @return array<string, bool>
+     */
+    private function actionAbilities(User $user): array
+    {
+        $abilities = [];
+
+        foreach (config('menu_permissions.actions') as $resource => $actions) {
+            foreach ($actions as $action => $permission) {
+                $abilities["{$resource}.{$action}"] = $user->can($permission);
+            }
+        }
+
+        return $abilities;
     }
 }

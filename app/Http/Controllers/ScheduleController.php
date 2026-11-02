@@ -33,7 +33,7 @@ class ScheduleController extends Controller
 
         return Inertia::render('Admin/Schedules/Index', [
             'schedules' => $schedules,
-            'drawer' => $this->drawerState($request, fn (int $id): ?array => ($schedule = Schedule::query()->find($id)) === null ? null : [
+            'drawer' => $this->drawerState($request, 'schedules', fn (int $id): ?array => ($schedule = Schedule::query()->find($id)) === null ? null : [
                 'id' => $schedule->id,
                 'name' => $schedule->name,
                 'enter_time' => $schedule->enter_time?->format('H:i'),
