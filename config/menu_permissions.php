@@ -35,4 +35,11 @@ return [
         'roles' => ['create' => 'Rollarni qo‘shish', 'edit' => 'Rollarni tahrirlash', 'delete' => 'Rollarni o‘chirish'],
         'permissions' => ['create' => 'Ruxsatlarni qo‘shish', 'edit' => 'Ruxsatlarni tahrirlash', 'delete' => 'Ruxsatlarni o‘chirish'],
     ],
+
+    // `user` rolining standart huquqlari (DatabaseSeeder). O‘zgarsa mavjud bazalar uchun migratsiya ham kerak
+    // (2026_11_02_120000_grant_default_user_role_permissions).
+    'user_role' => [
+        'full' => ['employees', 'groups', 'reports', 'notes', 'schedules', 'sync', 'reports-pull', 'attendance'],
+        'view' => ['devices'],
+    ],
 ];

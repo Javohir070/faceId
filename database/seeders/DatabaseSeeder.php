@@ -48,9 +48,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'user',
             'guard_name' => 'web',
         ]);
-        $userRole->syncPermissions([
-            config('menu_permissions.home'),
-        ]);
+        $userRole->syncPermissions($this->userRolePermissions());
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@gmail.com'],
@@ -79,5 +77,25 @@ class DatabaseSeeder extends Seeder
         $testUser->syncRoles(['user']);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function userRolePermissions(): array
+    {
+        $resources = config('menu_permissions.resources');
+        $actions = config('menu_permissions.actions');
+        $names = [config('menu_permissions.home')];
+
+        foreach (config('menu_permissions.user_role.full') as $key) {
+            $names = [...$names, $resources[$key], ...array_values($actions[$key] ?? [])];
+        }
+
+        foreach (config('menu_permissions.user_role.view') as $key) {
+            $names[] = $resources[$key];
+        }
+
+        return $names;
     }
 }

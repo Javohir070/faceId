@@ -13,7 +13,8 @@ export default function Form({ user, roles = [], departments = [] }) {
         password: '',
         password_confirmation: '',
         department_id: user?.department_id || null,
-        roles: user?.roles || [],
+        // Yangi foydalanuvchiga standart rol belgilangan bo‘ladi.
+        roles: user?.roles || (roles.some((role) => role.name === 'user') ? ['user'] : []),
     });
 
     const isSuperAdmin = data.roles.includes('super-admin');
