@@ -113,10 +113,11 @@ class EmployeeController extends Controller
             ->with('success', $message);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('Admin/Employees/Form', [
             'suggestedCard' => Employee::generateUniqueCard(),
+            'departmentLocked' => $request->user()->isDepartmentScoped(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
@@ -205,6 +206,7 @@ class EmployeeController extends Controller
 
         return Inertia::render('Admin/Employees/Form', [
             'employee' => EmployeeResource::make($employee)->toArray($request),
+            'departmentLocked' => $request->user()->isDepartmentScoped(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),

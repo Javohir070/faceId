@@ -59,6 +59,7 @@ class StoreEmployeeRequest extends FormRequest
             'card.unique' => 'Bu karta raqami allaqachon band.',
             'gender.required' => 'Jinsni tanlang.',
             'gender.in' => 'Jins noto‘g‘ri: 1 — Erkak, 2 — Ayol.',
+            'department_id.required' => $this->departmentRequiredMessage(),
             'group_id.exists' => 'Guruh tanlangan bo‘limga tegishli emas.',
             'face.max' => 'Yuz rasmi hajmi 1 MB dan oshmasligi kerak.',
         ];

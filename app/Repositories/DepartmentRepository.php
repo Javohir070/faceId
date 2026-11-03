@@ -43,6 +43,6 @@ class DepartmentRepository implements DepartmentRepositoryInterface
 
     public function hasEmployees(Department $department): bool
     {
-        return $department->employees()->exists();
+        return $department->employees()->withoutGlobalScopes()->exists();
     }
 }

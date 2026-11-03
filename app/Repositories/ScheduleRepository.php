@@ -42,6 +42,7 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 
     public function hasEmployees(Schedule $schedule): bool
     {
-        return $schedule->employees()->exists();
+        // Jadval bo‘limlar orasida umumiy: boshqa bo‘lim xodimlari ham hisobga olinadi.
+        return $schedule->employees()->withoutGlobalScopes()->exists();
     }
 }

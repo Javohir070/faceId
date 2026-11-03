@@ -14,4 +14,14 @@ trait MergesScopedDepartmentId
             ]);
         }
     }
+
+    /**
+     * Bo‘limga bog‘langan foydalanuvchida bo‘lim tanlanmaydi: maydon bo‘sh bo‘lsa, unga bo‘lim biriktirilmagan.
+     */
+    protected function departmentRequiredMessage(): string
+    {
+        return $this->user()?->isDepartmentScoped()
+            ? 'Sizga bo‘lim biriktirilmagan. Administratorga murojaat qiling.'
+            : 'Bo‘limni tanlang.';
+    }
 }

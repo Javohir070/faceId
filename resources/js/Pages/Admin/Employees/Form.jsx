@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { Button, Input, Select, Space } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { LockOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMemo } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
@@ -27,8 +27,11 @@ export default function Form({
     departments = [],
     schedules = [],
     groups = [],
+    departmentLocked = false,
 }) {
     const isEdit = !!employee;
+    // Bo‘limga bog‘langan foydalanuvchi bo‘lim tanlamaydi: xodim doim uning bo‘limiga yoziladi (server ham shuni qiladi).
+    const lockedDepartment = departmentLocked ? (departments[0] ?? null) : null;
     const linkedDevices = employee?.devices ?? [];
     const cardLocked = isEdit && linkedDevices.length > 0;
 
@@ -37,7 +40,7 @@ export default function Form({
         card: employee?.card || suggestedCard || generateCardNumber(),
         gender: employee?.gender ?? null,
         position: employee?.position || '',
-        department_id: employee?.department_id || null,
+        department_id: employee?.department_id || lockedDepartment?.id || null,
         group_id: employee?.group_id || null,
         schedule_id: employee?.schedule_id || null,
         valid_from_dt: employee?.valid_from_dt || (isEdit ? '' : currentDateTimeLocal()),
@@ -150,25 +153,44 @@ export default function Form({
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField label="Bo'lim" error={errors.department_id} required>
-                                <Select
-                                    className="w-full"
-                                    size="large"
-                                    placeholder="Bo'lim tanlang"
-                                    value={data.department_id}
-                                    status={errors.department_id ? 'error' : undefined}
-                                    options={departments.map((department) => ({
-                                        value: department.id,
-                                        label: department.name,
-                                    }))}
-                                    onChange={(value) => {
-                                        setData({
-                                            ...data,
-                                            department_id: value,
-                                            group_id: null,
-                                        });
-                                    }}
-                                />
+                            <FormField
+                                label="Bo'lim"
+                                error={errors.department_id}
+                                required
+                                hint={departmentLocked
+                                    ? (lockedDepartment
+                                        ? 'Xodim sizning bo‘limingizga yoziladi.'
+                                        : 'Sizga bo‘lim biriktirilmagan. Administratorga murojaat qiling.')
+                                    : undefined}
+                            >
+                                {departmentLocked ? (
+                                    <Input
+                                        disabled
+                                        size="large"
+                                        prefix={<LockOutlined aria-hidden="true" />}
+                                        value={lockedDepartment?.name ?? '—'}
+                                        status={errors.department_id ? 'error' : undefined}
+                                    />
+                                ) : (
+                                    <Select
+                                        className="w-full"
+                                        size="large"
+                                        placeholder="Bo'lim tanlang"
+                                        value={data.department_id}
+                                        status={errors.department_id ? 'error' : undefined}
+                                        options={departments.map((department) => ({
+                                            value: department.id,
+                                            label: department.name,
+                                        }))}
+                                        onChange={(value) => {
+                                            setData({
+                                                ...data,
+                                                department_id: value,
+                                                group_id: null,
+                                            });
+                                        }}
+                                    />
+                                )}
                             </FormField>
 
                             <FormField
