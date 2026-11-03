@@ -48,6 +48,7 @@ class UpdateGroupRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'department_id.required' => $this->departmentRequiredMessage(),
             'parent_id.not_in' => 'Guruh o‘zini parent qilib tanlanmaydi.',
         ];
     }

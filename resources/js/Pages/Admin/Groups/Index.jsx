@@ -6,6 +6,7 @@ import {
     DeleteOutlined,
     EditOutlined,
     ExpandOutlined,
+    LockOutlined,
     EyeOutlined,
     PlusOutlined,
     RightOutlined,
@@ -324,11 +325,14 @@ export default function Index({
     tree = [],
     filters = {},
     departments = [],
+    departmentLocked = false,
     groups = [],
     drawer: initialDrawer = null,
 }) {
     const { modal } = AntApp.useApp();
     const drawer = useFormDrawer(initialDrawer, 'admin.groups.index');
+    // Bo‘limga bog‘langan foydalanuvchi bo‘lim tanlamaydi: guruh doim uning bo‘limiga yoziladi (server ham shuni qiladi).
+    const lockedDepartment = departmentLocked ? (departments[0] ?? null) : null;
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
     const [collapsed, setCollapsed] = useState(() => new Set());
@@ -534,7 +538,7 @@ export default function Index({
                 title={{ create: 'Yangi guruh', edit: 'Guruhni tahrirlash' }}
                 initialValues={(record, defaults) => ({
                     name: record?.name || '',
-                    department_id: record?.department_id || defaults?.department_id || null,
+                    department_id: record?.department_id || defaults?.department_id || lockedDepartment?.id || null,
                     parent_id: record?.parent_id || defaults?.parent_id || null,
                 })}
                 storeUrl={route('admin.groups.store')}
@@ -553,25 +557,44 @@ export default function Index({
                             />
                         </FormField>
 
-                        <FormField label="Bo‘lim" error={errors.department_id} required>
-                            <Select
-                                showSearch
-                                className="w-full"
-                                size="large"
-                                placeholder="Bo‘lim tanlang"
-                                optionFilterProp="label"
-                                value={data.department_id}
-                                status={errors.department_id ? 'error' : undefined}
-                                options={departments.map((department) => ({
-                                    value: department.id,
-                                    label: department.name,
-                                }))}
-                                onChange={(value) => setData({
-                                    ...data,
-                                    department_id: value,
-                                    parent_id: null,
-                                })}
-                            />
+                        <FormField
+                            label="Bo‘lim"
+                            error={errors.department_id}
+                            required
+                            hint={departmentLocked
+                                ? (lockedDepartment
+                                    ? 'Guruh sizning bo‘limingizga yoziladi.'
+                                    : 'Sizga bo‘lim biriktirilmagan. Administratorga murojaat qiling.')
+                                : undefined}
+                        >
+                            {departmentLocked ? (
+                                <Input
+                                    disabled
+                                    size="large"
+                                    prefix={<LockOutlined aria-hidden="true" />}
+                                    value={lockedDepartment?.name ?? '—'}
+                                    status={errors.department_id ? 'error' : undefined}
+                                />
+                            ) : (
+                                <Select
+                                    showSearch
+                                    className="w-full"
+                                    size="large"
+                                    placeholder="Bo‘lim tanlang"
+                                    optionFilterProp="label"
+                                    value={data.department_id}
+                                    status={errors.department_id ? 'error' : undefined}
+                                    options={departments.map((department) => ({
+                                        value: department.id,
+                                        label: department.name,
+                                    }))}
+                                    onChange={(value) => setData({
+                                        ...data,
+                                        department_id: value,
+                                        parent_id: null,
+                                    })}
+                                />
+                            )}
                         </FormField>
 
                         <FormField

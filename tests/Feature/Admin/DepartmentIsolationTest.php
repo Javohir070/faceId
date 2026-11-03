@@ -257,6 +257,47 @@ class DepartmentIsolationTest extends TestCase
                 ->has('departments', 2));
     }
 
+    public function test_group_panel_locks_department_for_user_but_not_for_super_admin(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('admin.groups.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('departmentLocked', true)
+                ->has('departments', 1)
+                ->where('departments.0.id', $this->own->id));
+
+        $this->actingAs($this->createUserWithPermissions())
+            ->get(route('admin.groups.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('departmentLocked', false)
+                ->has('departments', 2));
+    }
+
+    public function test_new_group_always_gets_the_users_department(): void
+    {
+        $this->actingAs($this->user)
+            ->post(route('admin.groups.store'), ['name' => 'Bolimsiz yuborilgan'])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($this->user)
+            ->post(route('admin.groups.store'), ['name' => 'Begonaga yuborilgan', 'department_id' => $this->other->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('groups', ['name' => 'Bolimsiz yuborilgan', 'department_id' => $this->own->id]);
+        $this->assertDatabaseHas('groups', ['name' => 'Begonaga yuborilgan', 'department_id' => $this->own->id]);
+    }
+
+    public function test_user_without_department_gets_a_clear_message_when_adding_group(): void
+    {
+        $this->user->update(['department_id' => null]);
+
+        $this->actingAs($this->user->fresh())
+            ->post(route('admin.groups.store'), ['name' => 'Sinov', 'department_id' => $this->other->id])
+            ->assertSessionHasErrors(['department_id' => 'Sizga bo‘lim biriktirilmagan. Administratorga murojaat qiling.']);
+
+        $this->assertDatabaseMissing('groups', ['name' => 'Sinov']);
+    }
+
     public function test_schedule_used_by_another_department_cannot_be_deleted(): void
     {
         $shared = Schedule::factory()->create();

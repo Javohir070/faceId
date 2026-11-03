@@ -47,6 +47,7 @@ class GroupController extends Controller
             'tree' => $this->groupService->treeForIndex($filters['department_id']),
             'filters' => $filters,
             'departments' => $departments->map->only(['id', 'name'])->values(),
+            'departmentLocked' => $request->user()->isDepartmentScoped(),
             'groups' => $groups->map->only(['id', 'name', 'department_id'])->values(),
             'drawer' => $drawer,
         ]);
