@@ -60,11 +60,11 @@ routes/web.php  →  Controller  →  Service  →  Repository (interface)  → 
 5. `resources/js/routes.js` — URL builders (see below)
 6. `database/seeders/DatabaseSeeder.php` picks it up automatically from config, but existing installs need a **migration** that creates the permission row (see `2026_08_03_161000_add_groups_permission.php` for the pattern)
 
-`super-admin` gets every permission; the `user` role gets only `home`.
+`super-admin` gets every permission. The `user` role is defined by `menu_permissions.user_role`: full access to employees, groups, reports, notes, schedules, sync, event pull and attendance, view-only on devices (`2026_11_02_120000_grant_default_user_role_permissions.php` adds it on existing installs).
 
 **Action permissions.** The permission in `resources` means *view*. Creating, editing and deleting are separate permissions in `menu_permissions.actions` (`'Xodimlarni qo‘shish'`, `'Xodimlarni tahrirlash'`, `'Xodimlarni o‘chirish'`), for categories, devices, departments, groups, schedules, employees, notes, users, roles and permissions. Enforce them twice:
 
-- **Server:** `->middlewareFor(['create', 'store'] / ['edit', 'update'] / 'destroy', 'permission:…')` on the resource route (they stack on the view permission). Extra destructive routes need the delete permission too: bulk-destroy, `employees.remove-devices`, `devices.clear`, `devices.remove-employees`. Other device operations (ping, connect, open, restart, sync, pull) stay under the view permission.
+- **Server:** `->middlewareFor(['create', 'store'] / ['edit', 'update'] / 'destroy', 'permission:…')` on the resource route (they stack on the view permission). Extra destructive routes need the delete permission too: bulk-destroy, `employees.remove-devices`, `devices.clear`, `devices.remove-employees`. Connect, disconnect, open, restart, sync and pull on a device need the edit permission too; only ping stays under the view permission.
 - **UI:** the shared `can` prop has `employees.create` / `.edit` / `.delete` keys. Pass `resource="employees"` to `PageHeader`, `TableShell`, `EmptyState`, `ResourceActions`, `ShowHeader` / `ShowPage` and they hide the buttons; elsewhere check `can['employees.delete']`.
 
 A new action-guarded resource means a key in `actions`, the route middleware, and a migration that creates the rows (see `2026_11_02_100000_add_action_permissions.php`, which grants them to everyone holding the view permission so nobody loses access on deploy). Roles are edited as a matrix on the role form (`RoleService::permissionMatrix()`). `InteractsWithPermissions` grants a resource's action permissions along with its view permission; revoke them to test the restricted case (`ActionPermissionsTest`).
@@ -106,7 +106,7 @@ Events arrive through **three independent channels**, all converging on `ReportS
 2. `devices:stream-events` — persistent alertStream connection
 3. `devices:pull-events` — scheduled polling fallback
 
-Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`.
+Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`. `createFromWebhookPayload()` takes a per-event cache lock so channels arriving at the same moment cannot both insert; this needs a cache store shared between processes (`database` in production, not `array`). The stream and pull channels always record the device's panel IP and pass the `Device` explicitly, because a terminal behind NAT reports its internal IP and several terminals can share one public IP; the webhook still resolves the device by IP alone.
 
 Event times go through `ReportService::localEventTime()`, which converts the device's offset to `hikvision.event_timezone` (`HIKVISION_EVENT_TIMEZONE`, default `Asia/Tashkent`), so a terminal left on its factory UTC+8 zone still records Tashkent time. Entry vs exit comes from the terminal's attendance button (`attendanceStatus`: checkIn/breakIn/overtimeIn → entry, checkOut/breakOut/overtimeOut → exit) and falls back to the device type only when no button was pressed. A device of type `Device::TYPE_BOTH` ("Kirish va chiqish", one terminal for both directions) with no button alternates per employee and work day across all devices — entry, exit, entry… — starting each work day with an entry, shifting night shifts by 12 hours like the attendance grid, and repeating the previous type for a re-scan within 2 minutes (`ReportService::alternatingType()`).
 
@@ -126,7 +126,7 @@ The **Davomat** page (`/admin/attendance`, permission `'Davomat'`) is a separate
 - Layout with Tailwind, interactive widgets with Ant Design. Icons come only from `@ant-design/icons` — no Feather/Lucide, no additional UI libraries.
 - Navigate with Inertia `Link` / `router` / `useForm`; never raw `<a>` or `fetch` for internal routes.
 - Reuse the shared components (`PageHeader`, `TableShell`, `FormCard`, `FormField`, `ShowPage`, `Pagination`, `FlashMessages`, `FaceCaptureField`) instead of re-writing CRUD markup.
-- Small reference lists (categories, departments, schedules, permissions) have no Form/Show pages: create and edit happen in a right-side drawer on the index (`FormDrawer` + `useFormDrawer`, `onCreate`/`onEdit` on `PageHeader`/`TableShell`/`ResourceActions`). Their controllers use `Concerns\OpensFormDrawer`; the old `create`/`edit`/`show` routes redirect to the index with `?create=1` / `?edit={id}` so existing links still open the drawer.
+- Small reference lists (categories, departments, schedules, permissions) have no Form/Show pages: create and edit happen in a right-side drawer on the index (`FormDrawer` + `useFormDrawer`, `onCreate`/`onEdit` on `PageHeader`/`TableShell`/`ResourceActions`). Their controllers use `Concerns\OpensFormDrawer`; the old `create`/`edit`/`show` routes redirect to the index with `?create=1` / `?edit={id}` so existing links still open the drawer. Groups use the same drawer on their tree index but keep a real Show page; `?create=1` also takes `parent_id` / `department_id` to prefill it.
 - Never edit generated files under `public/build`.
 
 Design rules are specified in [DESIGN.md](DESIGN.md) and [PRODUCT.md](PRODUCT.md), enforced by `.cursor/rules/impeccable-frontend.mdc` and the `.impeccable/` detector.
