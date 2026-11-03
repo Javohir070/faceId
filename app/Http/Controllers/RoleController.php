@@ -19,7 +19,7 @@ class RoleController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Roles/Index', [
-            'roles' => $this->roleService->paginate(12),
+            'roles' => $this->roleService->paginate(20),
         ]);
     }
 

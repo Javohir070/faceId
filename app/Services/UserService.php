@@ -17,7 +17,7 @@ class UserService
         private readonly RoleRepositoryInterface $roleRepository,
     ) {}
 
-    public function paginate(int $perPage = 12): LengthAwarePaginator
+    public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return $this->userRepository->paginate($perPage);
     }

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class UserRepository implements UserRepositoryInterface
 {
-    public function paginate(int $perPage = 12): LengthAwarePaginator
+    public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return User::query()
             ->with(['roles', 'department:id,name', 'assignedDevices:id'])

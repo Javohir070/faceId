@@ -24,7 +24,7 @@ class NoteController extends Controller
         $filters = $request->validate($this->filterRules());
 
         return Inertia::render('Admin/Notes/Index', [
-            'notes' => $this->noteService->paginate(12, $filters),
+            'notes' => $this->noteService->paginate(20, $filters),
             'filters' => [
                 'employee_id' => isset($filters['employee_id']) ? (int) $filters['employee_id'] : null,
                 'type' => isset($filters['type']) ? (int) $filters['type'] : null,

@@ -23,7 +23,7 @@ class CategoryController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('Admin/Categories/Index', [
-            'categories' => $this->categoryService->paginate(10),
+            'categories' => $this->categoryService->paginate(20),
             'drawer' => $this->drawerState($request, 'categories', fn (int $id): ?array => Category::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
         ]);
     }

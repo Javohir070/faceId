@@ -11,7 +11,7 @@ class DeviceRepository implements DeviceRepositoryInterface
     /**
      * @param  array{search?:?string, category_id?:?int, type?:?int, is_online?:?string}  $filters
      */
-    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
         $query = Device::query()
             ->with(['category:id,name', 'owner:id,name']);

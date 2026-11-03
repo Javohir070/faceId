@@ -14,7 +14,7 @@ export default function Pagination({
     const pageLinks = links.slice(1, -1);
     const activeLink = pageLinks.find((link) => link.active);
     const current = Number(activeLink?.label) || 1;
-    const pageSize = Math.max(Number(perPage) || 10, 1);
+    const pageSize = Math.max(Number(perPage) || 20, 1);
 
     const visitPage = (page) => {
         const target = pageLinks.find((link) => Number(link.label) === page);

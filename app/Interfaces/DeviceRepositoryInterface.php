@@ -10,7 +10,7 @@ interface DeviceRepositoryInterface
     /**
      * @param  array{search?:?string, category_id?:?int, type?:?int, is_online?:?string}  $filters
      */
-    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator;
+    public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator;
 
     public function create(array $data): Device;
 

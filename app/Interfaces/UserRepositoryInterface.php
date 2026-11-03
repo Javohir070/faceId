@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 interface UserRepositoryInterface
 {
-    public function paginate(int $perPage = 12): LengthAwarePaginator;
+    public function paginate(int $perPage = 20): LengthAwarePaginator;
 
     public function create(array $data): User;
 

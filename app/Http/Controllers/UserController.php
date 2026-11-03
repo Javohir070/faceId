@@ -20,7 +20,7 @@ class UserController extends Controller
 
     public function index(): Response
     {
-        $users = $this->userService->paginate(12);
+        $users = $this->userService->paginate(20);
 
         $users->getCollection()->transform(function (User $user): array {
             return [

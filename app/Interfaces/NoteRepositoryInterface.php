@@ -17,7 +17,7 @@ interface NoteRepositoryInterface
     /**
      * @param  array{employee_id?:?int, department_id?:?int, group_id?:?int, type?:?int, date_from?:?string, date_to?:?string, search?:?string}  $filters
      */
-    public function paginate(int $perPage = 12, array $filters = [], string $pageName = 'page'): LengthAwarePaginator;
+    public function paginate(int $perPage = 20, array $filters = [], string $pageName = 'page'): LengthAwarePaginator;
 
     public function create(array $data): Note;
 

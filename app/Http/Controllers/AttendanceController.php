@@ -180,7 +180,7 @@ class AttendanceController extends Controller
     private function notes(array $filters, AttendancePeriod $period, Request $request): LengthAwarePaginator
     {
         $range = $period->toArray();
-        $notes = $this->noteService->paginate(12, [
+        $notes = $this->noteService->paginate(20, [
             'date_from' => $range['start'],
             'date_to' => $range['end'],
             'search' => $filters['search'] ?? null,

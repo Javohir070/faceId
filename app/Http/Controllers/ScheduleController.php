@@ -22,7 +22,7 @@ class ScheduleController extends Controller
 
     public function index(Request $request): Response
     {
-        $schedules = $this->scheduleService->paginate(10);
+        $schedules = $this->scheduleService->paginate(20);
 
         $schedules->getCollection()->transform(fn (Schedule $schedule): array => [
             'id' => $schedule->id,

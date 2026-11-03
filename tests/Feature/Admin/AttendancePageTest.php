@@ -165,10 +165,10 @@ class AttendancePageTest extends TestCase
     public function test_notes_tab_has_own_pagination_and_skips_grid(): void
     {
         $employee = $this->employee();
-        // (xodim, sana, tur) unikal — 10 sana × 2 tur
-        Note::factory()->count(13)->sequence(fn ($s) => [
-            'dt' => '2026-10-'.(12 + $s->index % 10),
-            'type' => $s->index < 10 ? NoteType::LeftEarly : NoteType::CameLate,
+        // (xodim, sana, tur) unikal — 11 sana × 2 tur
+        Note::factory()->count(21)->sequence(fn ($s) => [
+            'dt' => '2026-10-'.(12 + $s->index % 11),
+            'type' => $s->index < 11 ? NoteType::LeftEarly : NoteType::CameLate,
         ])->create(['employee_id' => $employee->id]);
 
         $this->actingAs($this->admin())

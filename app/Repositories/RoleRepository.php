@@ -9,7 +9,7 @@ use Spatie\Permission\Models\Role;
 
 class RoleRepository implements RoleRepositoryInterface
 {
-    public function paginate(int $perPage = 12): LengthAwarePaginator
+    public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return Role::query()
             ->with('permissions')

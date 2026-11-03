@@ -77,7 +77,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     /**
      * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
      */
-    public function paginate(int $perPage = 12, array $filters = []): LengthAwarePaginator
+    public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
         return $this->filteredQuery($filters)
             ->paginate($perPage)
