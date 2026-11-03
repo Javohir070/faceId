@@ -60,7 +60,7 @@ routes/web.php  →  Controller  →  Service  →  Repository (interface)  → 
 5. `resources/js/routes.js` — URL builders (see below)
 6. `database/seeders/DatabaseSeeder.php` picks it up automatically from config, but existing installs need a **migration** that creates the permission row (see `2026_08_03_161000_add_groups_permission.php` for the pattern)
 
-`super-admin` gets every permission. The `user` role is defined by `menu_permissions.user_role`: full access to employees, groups, reports, notes, schedules, sync, event pull and attendance, view-only on devices (`2026_11_02_120000_grant_default_user_role_permissions.php` adds it on existing installs).
+`super-admin` gets every permission. The `user` role is defined by `menu_permissions.user_role`: full access to employees, groups, reports, notes, schedules, sync and attendance, view-only on devices, and no categories, permissions, employee pull or event pull (`2026_11_02_120000_grant_default_user_role_permissions.php` and `2026_11_03_100000_remove_extra_permissions_from_user_role.php` bring existing installs in line).
 
 **Action permissions.** The permission in `resources` means *view*. Creating, editing and deleting are separate permissions in `menu_permissions.actions` (`'Xodimlarni qo‘shish'`, `'Xodimlarni tahrirlash'`, `'Xodimlarni o‘chirish'`), for categories, devices, departments, groups, schedules, employees, notes, users, roles and permissions. Enforce them twice:
 

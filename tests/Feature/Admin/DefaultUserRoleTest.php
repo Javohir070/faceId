@@ -8,6 +8,7 @@ use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -42,7 +43,6 @@ class DefaultUserRoleTest extends TestCase
             'izohlar' => ['admin.notes.index'],
             'izoh qo‘shish' => ['admin.notes.create'],
             'hisobotlar' => ['admin.reports.index'],
-            'event tortish' => ['admin.reports.pull'],
             'sinxronizatsiya' => ['admin.sync.index'],
             'davomat' => ['admin.attendance.index'],
             'guruhlar' => ['admin.groups.index'],
@@ -72,6 +72,7 @@ class DefaultUserRoleTest extends TestCase
             'rollar' => ['admin.roles.index'],
             'ruxsatlar' => ['admin.permissions.index'],
             'xodim tortish' => ['admin.employees.pull'],
+            'event tortish' => ['admin.reports.pull'],
         ];
     }
 
@@ -81,6 +82,19 @@ class DefaultUserRoleTest extends TestCase
         $this->actingAs($this->regularUser())
             ->get(route($routeName))
             ->assertForbidden();
+    }
+
+    public function test_menu_hides_permissions_categories_and_pull_pages(): void
+    {
+        $this->actingAs($this->regularUser())
+            ->get(route('home.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can', fn ($can) => $can['permissions'] === false
+                    && $can['categories'] === false
+                    && $can['employees-pull'] === false
+                    && $can['reports-pull'] === false
+                    && $can['employees'] === true
+                    && $can['reports'] === true));
     }
 
     public function test_full_access_resources_can_be_created_edited_and_deleted(): void
@@ -136,6 +150,41 @@ class DefaultUserRoleTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $seeded = Role::findByName('user', 'web')->permissions->pluck('name')->all();
 
-        $this->assertEqualsCanonicalizing([...$seeded, $extra], $names);
+        // Event tortish o‘sha migratsiyada standart edi; keyingi migratsiya uni olib tashlaydi.
+        $this->assertEqualsCanonicalizing([...$seeded, $extra, 'Event tortish'], $names);
+    }
+
+    public function test_migration_removes_extra_permissions_from_user_role_only(): void
+    {
+        $removed = [
+            'Ruxsatlar', 'Ruxsatlarni qo‘shish', 'Ruxsatlarni tahrirlash', 'Ruxsatlarni o‘chirish',
+            'Kategoriyalar', 'Kategoriyalarni qo‘shish', 'Kategoriyalarni tahrirlash', 'Kategoriyalarni o‘chirish',
+            'Xodim tortish',
+            'Event tortish',
+        ];
+        $kept = ['Bosh sahifa', 'Xodimlar', 'Xodimlarni qo‘shish', 'Hisobotlar', "Bo'limlar"];
+
+        foreach ([...$removed, ...$kept] as $name) {
+            Permission::findOrCreate($name, 'web');
+        }
+
+        $userRole = Role::findOrCreate('user', 'web');
+        $userRole->syncPermissions([...$removed, ...$kept]);
+        $manager = Role::findOrCreate('Menejer', 'web');
+        $manager->syncPermissions($removed);
+
+        $migration = require database_path('migrations/2026_11_03_100000_remove_extra_permissions_from_user_role.php');
+        $migration->up();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->assertEqualsCanonicalizing($kept, $userRole->fresh()->permissions->pluck('name')->all());
+        // Boshqa rollarga tegilmaydi.
+        $this->assertEqualsCanonicalizing($removed, $manager->fresh()->permissions->pluck('name')->all());
+
+        $migration->down();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Qo‘lda berilganini bilib bo‘lmaydi: faqat oldingi standart (Event tortish) qaytadi.
+        $this->assertEqualsCanonicalizing([...$kept, 'Event tortish'], $userRole->fresh()->permissions->pluck('name')->all());
     }
 }
