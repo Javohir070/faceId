@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\Report;
 use App\Services\Reports\AttendanceCalculator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ReportService
 {
@@ -18,14 +19,18 @@ class ReportService
         private readonly AttendanceCalculator $calculator,
     ) {}
 
-    public function createFromAccessEvent(AccessControllerEvent $event): ?Report
+    /**
+     * @param  Device|null  $device  Event qaysi ulanishdan kelgani aniq bo‘lsa (oqim, tortish). Webhookda IP bo‘yicha topiladi:
+     *                               bitta ochiq IP ortida bir nechta terminal bo‘lsa IP yetarli emas.
+     */
+    public function createFromAccessEvent(AccessControllerEvent $event, ?Device $device = null): ?Report
     {
         if (! $this->shouldCreateReport($event)) {
             return null;
         }
 
         $employee = $this->resolveEmployee($event);
-        $device = $this->resolveDevice($event);
+        $device ??= $this->resolveDevice($event);
         $occurredAt = $event->event_time ?? now();
         $type = $this->resolveType($event, $device, $employee, Carbon::parse($occurredAt));
         $employeeName = $employee?->name ?? $event->full_name ?? 'Noma’lum';
@@ -178,7 +183,7 @@ class ReportService
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function createFromWebhookPayload(array $payload, ?string $picturePath = null): ?Report
+    public function createFromWebhookPayload(array $payload, ?string $picturePath = null, ?Device $device = null): ?Report
     {
         $employeeNo = data_get($payload, 'AccessControllerEvent.employeeNoString')
             ?? data_get($payload, 'AccessControllerEvent.employeeNo');
@@ -186,18 +191,31 @@ class ReportService
         $deviceIp = data_get($payload, 'ipAddress');
         $parsedTime = $eventTime ? self::localEventTime($eventTime) : null;
 
-        if ($employeeNo && $deviceIp && $parsedTime) {
-            $exists = AccessControllerEvent::query()
-                ->where('device_ip', $deviceIp)
-                ->where('employee_no', (string) $employeeNo)
-                ->where('event_time', $parsedTime)
-                ->exists();
-
-            if ($exists) {
-                return null;
-            }
+        if (! $employeeNo || ! $deviceIp || ! $parsedTime) {
+            return $this->storeAccessEvent($payload, $employeeNo, $parsedTime, $deviceIp, $picturePath, $device);
         }
 
+        // Oqim, jonli tortish va webhook bir xil eventni bir paytda olib kelishi mumkin:
+        // tekshirish va yozish orasida boshqa jarayon yozib ulgurmasligi uchun event bo‘yicha qulf.
+        return Cache::lock('hikvision.event.'.sha1("{$deviceIp}|{$employeeNo}|{$parsedTime}"), 10)
+            ->block(5, function () use ($payload, $employeeNo, $parsedTime, $deviceIp, $picturePath, $device): ?Report {
+                $exists = AccessControllerEvent::query()
+                    ->where('device_ip', $deviceIp)
+                    ->where('employee_no', (string) $employeeNo)
+                    ->where('event_time', $parsedTime)
+                    ->exists();
+
+                return $exists
+                    ? null
+                    : $this->storeAccessEvent($payload, $employeeNo, $parsedTime, $deviceIp, $picturePath, $device);
+            });
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function storeAccessEvent(array $payload, mixed $employeeNo, ?string $parsedTime, mixed $deviceIp, ?string $picturePath, ?Device $device): ?Report
+    {
         $event = AccessControllerEvent::create([
             'employee_no' => $employeeNo,
             'card_no' => data_get($payload, 'AccessControllerEvent.cardNo'),
@@ -215,6 +233,6 @@ class ReportService
             'payload' => $payload,
         ]);
 
-        return $this->createFromAccessEvent($event);
+        return $this->createFromAccessEvent($event, $device);
     }
 }

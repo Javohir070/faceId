@@ -129,12 +129,12 @@ class HikvisionAlertStreamService
      */
     private function handleEvent(Device $device, array $event, ?callable $onEvent, string $deviceIp): void
     {
-        if (! isset($event['ipAddress'])) {
-            $event['ipAddress'] = $deviceIp;
-        }
+        // NAT orqasidagi terminal event ichida o‘zining ichki IP sini yuboradi: panelda saqlangan manzil asosiy,
+        // aks holda event qurilmasiz qoladi va tortish kanali bilan dublikat bo‘ladi.
+        $event['ipAddress'] = $deviceIp;
 
         try {
-            $report = $this->reportService->createFromWebhookPayload($event);
+            $report = $this->reportService->createFromWebhookPayload($event, null, $device);
         } catch (\Throwable $exception) {
             // Bitta event xatosi butun streamni uzmasin.
             Log::error('Hikvision: alertStream eventni saqlashda xatolik', [

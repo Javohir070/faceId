@@ -354,7 +354,7 @@ class HikvisionEventPullService
             ],
         ];
 
-        $report = $this->reportService->createFromWebhookPayload($payload);
+        $report = $this->reportService->createFromWebhookPayload($payload, null, $device);
 
         return $report !== null ? 'imported' : 'duplicate';
     }
