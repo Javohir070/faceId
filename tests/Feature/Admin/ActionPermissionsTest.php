@@ -195,13 +195,20 @@ class ActionPermissionsTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_device_operations_stay_under_view_permission(): void
+    public function test_only_device_ping_stays_under_view_permission(): void
     {
         $device = Device::factory()->create();
+        $user = $this->userWith('devices');
 
-        $this->actingAs($this->userWith('devices'))
+        $this->actingAs($user)
             ->post(route('admin.devices.ping', $device))
             ->assertRedirect();
+
+        foreach (['connect', 'disconnect', 'open', 'restart', 'sync-employees', 'pull-employees'] as $action) {
+            $this->actingAs($user)
+                ->post(route("admin.devices.{$action}", $device))
+                ->assertForbidden();
+        }
     }
 
     public function test_linking_devices_to_user_needs_user_edit_permission(): void

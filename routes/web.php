@@ -56,28 +56,28 @@ Route::middleware('auth')->group(function () {
             ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['devices']['edit'])
             ->middlewareFor('destroy', 'permission:'.$actionPermissions['devices']['delete']);
         Route::post('devices/{device}/connect', [DeviceActionController::class, 'connect'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.connect');
         Route::post('devices/{device}/disconnect', [DeviceActionController::class, 'disconnect'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.disconnect');
         Route::post('devices/{device}/ping', [DeviceActionController::class, 'ping'])
             ->middleware('permission:'.$menuPermissions['devices'])
             ->name('devices.ping');
         Route::post('devices/{device}/open', [DeviceActionController::class, 'open'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.open');
         Route::post('devices/{device}/restart', [DeviceActionController::class, 'restart'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.restart');
         Route::post('devices/{device}/clear', [DeviceActionController::class, 'clear'])
             ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['delete']])
             ->name('devices.clear');
         Route::post('devices/{device}/sync-employees', [DeviceActionController::class, 'syncEmployees'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.sync-employees');
         Route::post('devices/{device}/pull-employees', [DeviceActionController::class, 'pullEmployees'])
-            ->middleware('permission:'.$menuPermissions['devices'])
+            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.pull-employees');
         Route::post('devices/{device}/remove-employees', [DeviceActionController::class, 'removeEmployees'])
             ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['delete']])

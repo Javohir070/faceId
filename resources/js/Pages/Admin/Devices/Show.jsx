@@ -352,7 +352,9 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
 }
 
 function DeviceQuickActions({ device }) {
-    const canClear = Boolean(usePage().props.can?.['devices.delete']);
+    const { can = {} } = usePage().props;
+    const canClear = Boolean(can['devices.delete']);
+    const canOperate = Boolean(can['devices.edit']);
     const { modal } = AntApp.useApp();
     const [busy, setBusy] = useState(null);
 
@@ -370,61 +372,65 @@ function DeviceQuickActions({ device }) {
                 Tekshirish
             </Button>
 
-            {device.is_connected ? (
-                <Button
-                    icon={<PoweroffOutlined />}
-                    loading={busy === 'disconnect'}
-                    disabled={Boolean(busy) && busy !== 'disconnect'}
-                    onClick={() => run('disconnect')}
-                >
-                    Uzish
-                </Button>
-            ) : (
-                <Button
-                    icon={<LinkOutlined />}
-                    loading={busy === 'connect'}
-                    disabled={Boolean(busy) && busy !== 'connect'}
-                    onClick={() => run('connect')}
-                >
-                    Ulash
-                </Button>
-            )}
+            {canOperate ? (
+                <>
+                    {device.is_connected ? (
+                        <Button
+                            icon={<PoweroffOutlined />}
+                            loading={busy === 'disconnect'}
+                            disabled={Boolean(busy) && busy !== 'disconnect'}
+                            onClick={() => run('disconnect')}
+                        >
+                            Uzish
+                        </Button>
+                    ) : (
+                        <Button
+                            icon={<LinkOutlined />}
+                            loading={busy === 'connect'}
+                            disabled={Boolean(busy) && busy !== 'connect'}
+                            onClick={() => run('connect')}
+                        >
+                            Ulash
+                        </Button>
+                    )}
 
-            <Button
-                icon={<SyncOutlined />}
-                loading={busy === 'sync'}
-                disabled={Boolean(busy) && busy !== 'sync'}
-                onClick={() => run('sync')}
-            >
-                Sinxronlash
-            </Button>
+                    <Button
+                        icon={<SyncOutlined />}
+                        loading={busy === 'sync'}
+                        disabled={Boolean(busy) && busy !== 'sync'}
+                        onClick={() => run('sync')}
+                    >
+                        Sinxronlash
+                    </Button>
 
-            <Button
-                icon={<CloudDownloadOutlined />}
-                loading={busy === 'pull'}
-                disabled={Boolean(busy) && busy !== 'pull'}
-                onClick={() => run('pull')}
-            >
-                Xodimlarni tortish
-            </Button>
+                    <Button
+                        icon={<CloudDownloadOutlined />}
+                        loading={busy === 'pull'}
+                        disabled={Boolean(busy) && busy !== 'pull'}
+                        onClick={() => run('pull')}
+                    >
+                        Xodimlarni tortish
+                    </Button>
 
-            <Button
-                icon={<UnlockOutlined />}
-                loading={busy === 'open'}
-                disabled={Boolean(busy) && busy !== 'open'}
-                onClick={() => run('open')}
-            >
-                Eshikni ochish
-            </Button>
+                    <Button
+                        icon={<UnlockOutlined />}
+                        loading={busy === 'open'}
+                        disabled={Boolean(busy) && busy !== 'open'}
+                        onClick={() => run('open')}
+                    >
+                        Eshikni ochish
+                    </Button>
 
-            <Button
-                icon={<ReloadOutlined />}
-                loading={busy === 'restart'}
-                disabled={Boolean(busy) && busy !== 'restart'}
-                onClick={() => run('restart')}
-            >
-                Qayta yuklash
-            </Button>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        loading={busy === 'restart'}
+                        disabled={Boolean(busy) && busy !== 'restart'}
+                        onClick={() => run('restart')}
+                    >
+                        Qayta yuklash
+                    </Button>
+                </>
+            ) : null}
 
             {canClear ? (
                 <Button
