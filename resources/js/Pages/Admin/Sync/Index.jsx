@@ -74,7 +74,7 @@ function PanelTable({
         && !allVisibleSelected;
 
     return (
-        <div className="flex min-h-[520px] flex-1 flex-col rounded-xl border border-line bg-surface shadow-ambient">
+        <div className="flex flex-col rounded-xl border border-line bg-surface shadow-ambient">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
                 <div>
                     <h2 className="text-base font-extrabold text-ink">{title}</h2>
@@ -505,7 +505,7 @@ export default function Index({ devices = [], employees = [], categories = [], d
                 </div>
             )}
 
-            <div className="grid gap-4 xl:grid-cols-2">
+            <div className="grid items-start gap-4 xl:grid-cols-2">
                 <PanelTable
                     title="Qurilmalar"
                     subtitle="Qayerga yuboriladi"

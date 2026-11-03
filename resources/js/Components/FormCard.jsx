@@ -19,7 +19,7 @@ export default function FormCard({
     children,
 }) {
     return (
-        <>
+        <div className={`mx-auto w-full ${widthClass[width] || ''}`.trim()}>
             {(title || backHref) && (
                 <PageHeader
                     title={title}
@@ -29,7 +29,7 @@ export default function FormCard({
             )}
             <form
                 onSubmit={onSubmit}
-                className={`card space-y-5 ${widthClass[width] || ''}`.trim()}
+                className="card space-y-5"
             >
                 {children}
                 {cancelHref && (
@@ -40,6 +40,6 @@ export default function FormCard({
                     />
                 )}
             </form>
-        </>
+        </div>
     );
 }
