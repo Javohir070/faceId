@@ -139,7 +139,7 @@ class GroupAdminTest extends TestCase
                 ->where('group.employees.0.name', 'Aziz'));
     }
 
-    public function test_create_form_is_prefilled_from_query(): void
+    public function test_create_drawer_is_prefilled_from_query(): void
     {
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['groups'],
@@ -151,24 +151,82 @@ class GroupAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('admin.groups.create', ['parent_id' => $backend->id]))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('defaults.department_id', $it->id)
-                ->where('defaults.parent_id', $backend->id));
+            ->assertRedirect(route('admin.groups.index', ['create' => 1, 'parent_id' => $backend->id]));
 
         $this->actingAs($admin)
-            ->get(route('admin.groups.create', ['department_id' => $hr->id]))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('defaults.department_id', $hr->id)
-                ->where('defaults.parent_id', null));
+            ->get(route('admin.groups.create'))
+            ->assertRedirect(route('admin.groups.index', ['create' => 1]));
 
         $this->actingAs($admin)
-            ->get(route('admin.groups.create', ['department_id' => 999999, 'parent_id' => 999999]))
+            ->get(route('admin.groups.index', ['create' => 1, 'parent_id' => $backend->id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('defaults.department_id', null)
-                ->where('defaults.parent_id', null));
+                ->component('Admin/Groups/Index')
+                ->where('drawer.mode', 'create')
+                ->where('drawer.defaults.department_id', $it->id)
+                ->where('drawer.defaults.parent_id', $backend->id));
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.index', ['create' => 1, 'department_id' => $hr->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('drawer.defaults.department_id', $hr->id)
+                ->where('drawer.defaults.parent_id', null));
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.index', ['create' => 1, 'department_id' => 999999, 'parent_id' => 999999]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('drawer.defaults.department_id', null)
+                ->where('drawer.defaults.parent_id', null));
+    }
+
+    public function test_edit_link_opens_drawer_on_the_list(): void
+    {
+        $admin = $this->createUserWithPermissions();
+
+        $department = Department::factory()->create();
+        $parent = Group::factory()->create(['department_id' => $department->id]);
+        $child = Group::factory()->create([
+            'name' => 'Pastki',
+            'department_id' => $department->id,
+            'parent_id' => $parent->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.edit', $child))
+            ->assertRedirect(route('admin.groups.index', ['edit' => $child->id]));
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.index', ['edit' => $child->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('drawer.mode', 'edit')
+                ->where('drawer.record.id', $child->id)
+                ->where('drawer.record.name', 'Pastki')
+                ->where('drawer.record.department_id', $department->id)
+                ->where('drawer.record.parent_id', $parent->id)
+                ->has('groups', 2)
+                ->where('tree.0.children.0.children.0.department_id', $department->id)
+                ->where('tree.0.children.0.children.0.parent_id', $parent->id));
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.index', ['edit' => 999999]))
+            ->assertInertia(fn (Assert $page) => $page->where('drawer', null));
+    }
+
+    public function test_edit_drawer_does_not_open_for_another_department(): void
+    {
+        $own = Department::factory()->create();
+        $other = Group::factory()->create(['department_id' => Department::factory()->create()->id]);
+        $user = $this->createDepartmentUserWithPermissions($own->id);
+
+        $this->actingAs($user)
+            ->get(route('admin.groups.index', ['edit' => $other->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('drawer', null)
+                ->has('groups', 0));
     }
 
     public function test_unauthorized_user_cannot_access_groups(): void

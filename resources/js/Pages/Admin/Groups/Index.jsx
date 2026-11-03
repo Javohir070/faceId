@@ -18,6 +18,8 @@ import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { EmptyState } from '../../../Components/PageHeader';
+import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
+import FormField from '../../../Components/FormField';
 import InitialsAvatar from '../../../Components/InitialsAvatar';
 import SummaryStat from '../../../Components/SummaryStat';
 
@@ -186,13 +188,19 @@ function GroupRow({ node, depth, ctx }) {
                     </Tooltip>
                     {ctx.canEdit ? (
                         <Tooltip title="Tahrirlash">
-                            <Link
-                                href={route('admin.groups.edit', node.id)}
+                            <button
+                                type="button"
                                 className="table-action-edit"
                                 aria-label={`«${node.title}» guruhini tahrirlash`}
+                                onClick={() => ctx.openEdit({
+                                    id: node.id,
+                                    name: node.title,
+                                    department_id: node.department_id,
+                                    parent_id: node.parent_id,
+                                })}
                             >
                                 <EditOutlined aria-hidden="true" />
-                            </Link>
+                            </button>
                         </Tooltip>
                     ) : null}
                 </div>
@@ -271,13 +279,14 @@ function DepartmentSection({ node, ctx }) {
                 </button>
                 {ctx.canCreate ? (
                     <Tooltip title="Shu bo‘limga guruh qo‘shish">
-                        <Link
-                            href={`${route('admin.groups.create')}?department_id=${node.id}`}
+                        <button
+                            type="button"
                             className="table-action-view hidden sm:inline-flex"
                             aria-label={`«${node.title}» bo‘limiga guruh qo‘shish`}
+                            onClick={() => ctx.openCreate({ department_id: node.id })}
                         >
                             <PlusOutlined aria-hidden="true" />
-                        </Link>
+                        </button>
                     </Tooltip>
                 ) : null}
             </div>
@@ -295,12 +304,13 @@ function DepartmentSection({ node, ctx }) {
                         {ctx.canCreate ? (
                             <>
                                 {' '}
-                                <Link
-                                    href={`${route('admin.groups.create')}?department_id=${node.id}`}
+                                <button
+                                    type="button"
                                     className="font-bold text-brand-700 hover:text-brand-600"
+                                    onClick={() => ctx.openCreate({ department_id: node.id })}
                                 >
                                     Birinchisini qo‘shing
-                                </Link>
+                                </button>
                             </>
                         ) : null}
                     </div>
@@ -310,8 +320,15 @@ function DepartmentSection({ node, ctx }) {
     );
 }
 
-export default function Index({ tree = [], filters = {}, departments = [] }) {
+export default function Index({
+    tree = [],
+    filters = {},
+    departments = [],
+    groups = [],
+    drawer: initialDrawer = null,
+}) {
     const { modal } = AntApp.useApp();
+    const drawer = useFormDrawer(initialDrawer, 'admin.groups.index');
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
     const [collapsed, setCollapsed] = useState(() => new Set());
@@ -336,6 +353,8 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
         canCreate: Boolean(can['groups.create']),
         canEdit: Boolean(can['groups.edit']),
         canDelete: Boolean(can['groups.delete']),
+        openCreate: drawer.openCreate,
+        openEdit: drawer.openEdit,
         needle,
         selected,
         // Qidiruv paytida hamma narsa ochiq — topilgan guruh yashirinib qolmasin.
@@ -397,7 +416,7 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
                 title="Guruhlar"
                 subtitle="Bo‘limlar ichidagi guruhlar va ulardagi xodimlar."
                 resource="groups"
-                createHref={route('admin.groups.create')}
+                onCreate={drawer.openCreate}
                 createLabel="Guruh qo‘shish"
             />
 
@@ -503,12 +522,85 @@ export default function Index({ tree = [], filters = {}, departments = [] }) {
                             title="Hali guruh yo‘q"
                             description="Birinchi guruhni qo‘shing — u tanlangan bo‘lim ostida chiqadi."
                             resource="groups"
-                            createHref={route('admin.groups.create')}
+                            onCreate={drawer.openCreate}
                             createLabel="Guruh qo‘shish"
                         />
                     )}
                 </div>
             )}
+
+            <FormDrawer
+                drawer={drawer}
+                title={{ create: 'Yangi guruh', edit: 'Guruhni tahrirlash' }}
+                initialValues={(record, defaults) => ({
+                    name: record?.name || '',
+                    department_id: record?.department_id || defaults?.department_id || null,
+                    parent_id: record?.parent_id || defaults?.parent_id || null,
+                })}
+                storeUrl={route('admin.groups.store')}
+                updateUrl={(record) => route('admin.groups.update', record.id)}
+            >
+                {({ data, setData, errors }) => (
+                    <>
+                        <FormField label="Guruh nomi" error={errors.name} required>
+                            <Input
+                                autoFocus
+                                size="large"
+                                placeholder="Masalan: Backend jamoa"
+                                value={data.name}
+                                status={errors.name ? 'error' : undefined}
+                                onChange={(e) => setData('name', e.target.value)}
+                            />
+                        </FormField>
+
+                        <FormField label="Bo‘lim" error={errors.department_id} required>
+                            <Select
+                                showSearch
+                                className="w-full"
+                                size="large"
+                                placeholder="Bo‘lim tanlang"
+                                optionFilterProp="label"
+                                value={data.department_id}
+                                status={errors.department_id ? 'error' : undefined}
+                                options={departments.map((department) => ({
+                                    value: department.id,
+                                    label: department.name,
+                                }))}
+                                onChange={(value) => setData({
+                                    ...data,
+                                    department_id: value,
+                                    parent_id: null,
+                                })}
+                            />
+                        </FormField>
+
+                        <FormField
+                            label="Yuqori guruh"
+                            error={errors.parent_id}
+                            hint={data.department_id
+                                ? 'Bo‘sh qoldirsangiz — bo‘lim ostida ildiz guruh bo‘ladi.'
+                                : 'Avval bo‘limni tanlang.'}
+                        >
+                            <Select
+                                allowClear
+                                showSearch
+                                className="w-full"
+                                size="large"
+                                placeholder="Ixtiyoriy — yuqori guruh"
+                                optionFilterProp="label"
+                                value={data.parent_id}
+                                status={errors.parent_id ? 'error' : undefined}
+                                disabled={!data.department_id}
+                                options={groups
+                                    .filter((item) => item.department_id === data.department_id
+                                        && item.id !== drawer.panel?.record?.id)
+                                    .map((item) => ({ value: item.id, label: item.name }))}
+                                onChange={(value) => setData('parent_id', value ?? null)}
+                            />
+                        </FormField>
+                    </>
+                )}
+            </FormDrawer>
         </AdminLayout>
     );
 }

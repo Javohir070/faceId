@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { route } from '../routes';
 
 /**
- * Ro‘yxat sahifasidagi o‘ng panel holati: { mode: 'create' } | { mode: 'edit', record }.
+ * Ro‘yxat sahifasidagi o‘ng panel holati: { mode: 'create', defaults? } | { mode: 'edit', record }.
  * initial — serverdan keladigan `drawer` prop (eski create/edit havolalari shu bilan panelni ochadi).
  */
 export function useFormDrawer(initial, indexRoute) {
@@ -26,7 +26,7 @@ export function useFormDrawer(initial, indexRoute) {
 
     return {
         panel,
-        openCreate: () => setPanel({ mode: 'create' }),
+        openCreate: (defaults) => setPanel({ mode: 'create', defaults }),
         openEdit: (record) => setPanel({ mode: 'edit', record }),
         close,
         done: () => setPanel(null),
@@ -82,7 +82,7 @@ export default function FormDrawer({ drawer, title, initialValues, storeUrl, upd
                 <DrawerForm
                     key={record ? `edit-${record.id}` : 'create'}
                     record={record}
-                    initialValues={initialValues(record)}
+                    initialValues={initialValues(record, panel.defaults)}
                     storeUrl={storeUrl}
                     updateUrl={record ? updateUrl(record) : null}
                     onDone={done}

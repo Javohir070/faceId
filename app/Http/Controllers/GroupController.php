@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\OpensFormDrawer;
 use App\Http\Requests\BulkDestroyGroupsRequest;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
@@ -14,6 +15,8 @@ use Inertia\Response;
 
 class GroupController extends Controller
 {
+    use OpensFormDrawer;
+
     public function __construct(
         private readonly GroupService $groupService,
     ) {}
@@ -24,29 +27,37 @@ class GroupController extends Controller
             'department_id' => $request->integer('department_id') ?: null,
         ];
 
-        return Inertia::render('Admin/Groups/Index', [
-            'tree' => $this->groupService->treeForIndex($filters['department_id']),
-            'filters' => $filters,
-            'departments' => $this->groupService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
         $departments = $this->groupService->getDepartmentsForForm();
         $groups = $this->groupService->getGroupsForForm();
 
-        // ?parent_id= (pastki guruh qo‘shish) yoki ?department_id= — faqat foydalanuvchiga ko‘rinadiganlari olinadi.
-        $parent = $groups->firstWhere('id', $request->integer('parent_id') ?: null);
-        $department = $departments->firstWhere('id', $parent?->department_id ?? ($request->integer('department_id') ?: null));
+        $drawer = $this->drawerState($request, 'groups', fn (int $id): ?array => Group::query()->find($id)?->only(['id', 'name', 'department_id', 'parent_id']));
 
-        return Inertia::render('Admin/Groups/Form', [
-            'departments' => $departments->map->only(['id', 'name'])->values(),
-            'groups' => $groups->map->only(['id', 'name', 'department_id'])->values(),
-            'defaults' => [
+        if (($drawer['mode'] ?? null) === 'create') {
+            // ?parent_id= (pastki guruh qo‘shish) yoki ?department_id= — faqat foydalanuvchiga ko‘rinadiganlari olinadi.
+            $parent = $groups->firstWhere('id', $request->integer('parent_id') ?: null);
+            $department = $departments->firstWhere('id', $parent?->department_id ?? ($request->integer('department_id') ?: null));
+
+            $drawer['defaults'] = [
                 'department_id' => $department?->id,
                 'parent_id' => $department ? $parent?->id : null,
-            ],
+            ];
+        }
+
+        return Inertia::render('Admin/Groups/Index', [
+            'tree' => $this->groupService->treeForIndex($filters['department_id']),
+            'filters' => $filters,
+            'departments' => $departments->map->only(['id', 'name'])->values(),
+            'groups' => $groups->map->only(['id', 'name', 'department_id'])->values(),
+            'drawer' => $drawer,
+        ]);
+    }
+
+    /** Alohida sahifa yo‘q: qo‘shish oynasi ro‘yxatdagi o‘ng panelda ochiladi. */
+    public function create(Request $request): RedirectResponse
+    {
+        return redirect()->route('admin.groups.index', [
+            'create' => 1,
+            ...array_filter($request->only(['parent_id', 'department_id'])),
         ]);
     }
 
@@ -66,13 +77,9 @@ class GroupController extends Controller
         ]);
     }
 
-    public function edit(Group $group): Response
+    public function edit(Group $group): RedirectResponse
     {
-        return Inertia::render('Admin/Groups/Form', [
-            'group' => $group->only(['id', 'name', 'department_id', 'parent_id']),
-            'departments' => $this->groupService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
-            'groups' => $this->groupService->getGroupsForForm($group->id)->map->only(['id', 'name', 'department_id'])->values(),
-        ]);
+        return redirect()->route('admin.groups.index', ['edit' => $group->id]);
     }
 
     public function update(UpdateGroupRequest $request, Group $group): RedirectResponse

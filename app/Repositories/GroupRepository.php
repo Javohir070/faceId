@@ -96,6 +96,8 @@ class GroupRepository implements GroupRepositoryInterface
                 'type' => 'group',
                 'id' => $group->id,
                 'title' => $group->name,
+                'department_id' => $group->department_id,
+                'parent_id' => $group->parent_id,
                 'checkable' => true,
                 'employees_count' => (int) $employeeCounts->get($group->id, 0),
                 'children' => $byParent->get($group->id, collect())
