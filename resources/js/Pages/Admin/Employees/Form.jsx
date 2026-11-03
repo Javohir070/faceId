@@ -13,13 +13,12 @@ function generateCardNumber() {
     return String(Math.floor(10000000 + Math.random() * 90000000));
 }
 
-// "o'zbekiston" deb yozilsa ham "Oʻzbekiston" topilsin: apostrof turlari qidiruvda hisobga olinmaydi.
-function normalizeSearch(text) {
-    return String(text || '').toLowerCase().replace(/['ʻʼ‘’`]/g, '');
-}
+// datetime-local maydoni uchun hozirgi mahalliy vaqt: YYYY-MM-DDTHH:mm.
+function currentDateTimeLocal() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
 
-function filterCountry(input, option) {
-    return normalizeSearch(option?.label).includes(normalizeSearch(input));
+    return now.toISOString().slice(0, 16);
 }
 
 export default function Form({
@@ -28,7 +27,6 @@ export default function Form({
     departments = [],
     schedules = [],
     groups = [],
-    countries = [],
 }) {
     const isEdit = !!employee;
     const linkedDevices = employee?.devices ?? [];
@@ -38,12 +36,11 @@ export default function Form({
         name: employee?.name || '',
         card: employee?.card || suggestedCard || generateCardNumber(),
         gender: employee?.gender ?? null,
-        country: employee?.country || 'UZ',
         position: employee?.position || '',
         department_id: employee?.department_id || null,
         group_id: employee?.group_id || null,
         schedule_id: employee?.schedule_id || null,
-        valid_from_dt: employee?.valid_from_dt || '',
+        valid_from_dt: employee?.valid_from_dt || (isEdit ? '' : currentDateTimeLocal()),
         valid_to_dt: employee?.valid_to_dt || '',
         face: null,
         remove_face: false,
@@ -125,7 +122,7 @@ export default function Form({
                             </FormField>
                         </div>
 
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <FormField label="Jins" error={errors.gender} required>
                                 <Select
                                     className="w-full"
@@ -138,20 +135,6 @@ export default function Form({
                                         { value: 2, label: 'Ayol' },
                                     ]}
                                     onChange={(value) => setData('gender', value)}
-                                />
-                            </FormField>
-
-                            <FormField label="Davlat" error={errors.country} required>
-                                <Select
-                                    className="w-full"
-                                    size="large"
-                                    showSearch
-                                    filterOption={filterCountry}
-                                    placeholder="Davlat tanlang"
-                                    value={data.country}
-                                    status={errors.country ? 'error' : undefined}
-                                    options={countries}
-                                    onChange={(value) => setData('country', value)}
                                 />
                             </FormField>
 

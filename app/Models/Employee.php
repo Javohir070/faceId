@@ -20,9 +20,6 @@ class Employee extends Model
 
     public const GENDER_FEMALE = 2;
 
-    /** Mahalliy mehmon davlati — qolgan har qanday davlat xorijiy hisoblanadi. */
-    public const LOCAL_COUNTRY = 'UZ';
-
     /**
      * @var list<string>
      */
@@ -30,7 +27,6 @@ class Employee extends Model
         'name',
         'card',
         'gender',
-        'country',
         'position',
         'schedule_id',
         'valid_from_dt',
@@ -71,21 +67,6 @@ class Employee extends Model
                 $employee->expiry_notified_at = null;
             }
         });
-    }
-
-    public function isForeign(): bool
-    {
-        return $this->country !== self::LOCAL_COUNTRY;
-    }
-
-    /** O‘zbekcha davlat nomi (`config/countries.php`); noma’lum kod bo‘lsa kodning o‘zi. */
-    public function countryName(): ?string
-    {
-        if ($this->country === null) {
-            return null;
-        }
-
-        return config('countries.'.$this->country) ?? $this->country;
     }
 
     public function genderLabel(): string

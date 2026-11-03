@@ -102,7 +102,6 @@ function ProfileCard({ employee, canGroups }) {
                     </span>
                 </DetailRow>
                 <DetailRow label="Jins">{employee.gender_label || '—'}</DetailRow>
-                <DetailRow label="Davlat">{employee.country_name || '—'}</DetailRow>
             </dl>
         </section>
     );

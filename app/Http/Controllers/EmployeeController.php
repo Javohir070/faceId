@@ -38,7 +38,7 @@ class EmployeeController extends Controller
     {
         $filters = $request->validate($this->filterRules());
 
-        $employees = $this->employeeService->paginate(12, $filters);
+        $employees = $this->employeeService->paginate(20, $filters);
 
         return Inertia::render('Admin/Employees/Index', [
             'employees' => $employees->through(
@@ -120,7 +120,6 @@ class EmployeeController extends Controller
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
-            'countries' => collect(config('countries'))->map(fn (string $label, string $value): array => ['value' => $value, 'label' => $label])->values(),
         ]);
     }
 
@@ -209,7 +208,6 @@ class EmployeeController extends Controller
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
-            'countries' => collect(config('countries'))->map(fn (string $label, string $value): array => ['value' => $value, 'label' => $label])->values(),
         ]);
     }
 
