@@ -64,7 +64,11 @@ class ReportController extends Controller
 
         return Inertia::render('Admin/Reports/Pull', [
             'devices' => $devices,
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
+            // Filtrda faqat foydalanuvchi ko‘radigan qurilmalar kategoriyalari.
+            'categories' => Category::query()
+                ->whereIn('id', $devices->pluck('category.id')->filter())
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -105,21 +109,15 @@ class ReportController extends Controller
                 ->with('error', $message.' Qurilma ulanishi yoki login/parolni tekshiring.');
         }
 
-        if ($result['failed'] > 0) {
-            return redirect()
-                ->route('admin.reports.index', [
-                    'date_from' => $startTime->toDateString(),
-                    'date_to' => $endTime->toDateString(),
-                ])
-                ->with('error', $message);
-        }
-
-        return redirect()
-            ->route('admin.reports.index', [
+        // Hisobotlar ruxsati bo‘lmasa natija shu sahifada ko‘rinadi: hisobotlarga o‘tsa 403 chiqardi.
+        $target = $request->user()->can(config('menu_permissions.resources')['reports'])
+            ? route('admin.reports.index', [
                 'date_from' => $startTime->toDateString(),
                 'date_to' => $endTime->toDateString(),
             ])
-            ->with('success', $message);
+            : route('admin.reports.pull');
+
+        return redirect($target)->with($result['failed'] > 0 ? 'error' : 'success', $message);
     }
 
     public function export(Request $request): BinaryFileResponse

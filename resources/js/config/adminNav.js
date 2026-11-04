@@ -54,6 +54,7 @@ export const adminNavGroups = [
                 href: route('admin.reports.index'),
                 icon: BarChartOutlined,
             },
+            { key: 'reports-pull', href: route('admin.reports.pull'), label: 'Event tortish', icon: HistoryOutlined },
             {
                 key: 'settings',
                 label: 'Sozlamalar',
@@ -62,13 +63,6 @@ export const adminNavGroups = [
                     { key: 'users', href: route('admin.users.index'), label: 'Foydalanuvchilar', icon: TeamOutlined },
                     { key: 'roles', href: route('admin.roles.index'), label: 'Rollar', icon: SafetyCertificateOutlined },
                     { key: 'permissions', href: route('admin.permissions.index'), label: 'Ruxsatlar', icon: KeyOutlined },
-                    {
-                        key: 'reports-pull',
-                        permission: 'reports-pull',
-                        href: route('admin.reports.pull'),
-                        label: 'Event tortish',
-                        icon: HistoryOutlined,
-                    },
                     {
                         key: 'employees-pull',
                         permission: 'employees-pull',

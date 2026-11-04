@@ -27,7 +27,6 @@ function runDeviceAction(deviceId, action, { modal, setBusy, busy }) {
         restart: route('admin.devices.restart', deviceId),
         clear: route('admin.devices.clear', deviceId),
         sync: route('admin.devices.sync-employees', deviceId),
-        pull: route('admin.devices.pull-employees', deviceId),
     };
 
     const url = routes[action];
@@ -52,11 +51,6 @@ function runDeviceAction(deviceId, action, { modal, setBusy, busy }) {
             title: 'Xodimlarni sinxronlash',
             content: 'Faqat ushbu qurilmaga ulangan xodimlar qayta yuboriladi. Davom etasizmi?',
             okText: 'Ha, sinxronlash',
-        },
-        pull: {
-            title: 'Xodimlarni tortish',
-            content: 'Qurilmadagi xodimlar bazaga yuklanadi. Bir xil karta (employeeNo) dublikat yaratilmaydi. Davom etasizmi?',
-            okText: 'Ha, tortish',
         },
     };
 
@@ -131,12 +125,6 @@ export default function DeviceActionsMenu({ device }) {
             label: busy === 'sync' ? 'Sinxronlanmoqda…' : 'Sinxronlash',
             disabled: Boolean(busy),
             onClick: () => run('sync'),
-        },
-        {
-            key: 'pull',
-            label: busy === 'pull' ? 'Tortilmoqda…' : 'Xodimlarni tortish',
-            disabled: Boolean(busy),
-            onClick: () => run('pull'),
         },
     ] : [];
 

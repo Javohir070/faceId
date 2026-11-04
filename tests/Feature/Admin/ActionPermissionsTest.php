@@ -204,7 +204,7 @@ class ActionPermissionsTest extends TestCase
             ->post(route('admin.devices.ping', $device))
             ->assertRedirect();
 
-        foreach (['connect', 'disconnect', 'open', 'restart', 'sync-employees', 'pull-employees'] as $action) {
+        foreach (['connect', 'disconnect', 'open', 'restart', 'sync-employees'] as $action) {
             $this->actingAs($user)
                 ->post(route("admin.devices.{$action}", $device))
                 ->assertForbidden();
@@ -303,7 +303,7 @@ class ActionPermissionsTest extends TestCase
 
     public function test_role_form_shows_permissions_as_a_matrix(): void
     {
-        foreach (['Xodimlar', 'Foydalanuvchilar', 'Hisobotlar'] as $name) {
+        foreach (['Xodimlar', 'Foydalanuvchilar', 'Hisobotlar', 'Event tortish'] as $name) {
             Permission::findOrCreate($name, 'web');
         }
 
@@ -320,6 +320,9 @@ class ActionPermissionsTest extends TestCase
                         && $main['Xodimlar']['edit'] === 'Xodimlarni tahrirlash'
                         && $main['Xodimlar']['delete'] === 'Xodimlarni o‘chirish'
                         && $main['Hisobotlar']['edit'] === null
+                        // Event tortish menyuda alohida: Sozlamalar ichida emas.
+                        && $main->has('Event tortish')
+                        && ! $settings->has('Event tortish')
                         // Foydalanuvchilar faqat bir guruhda; amal ruxsatlari alohida qator emas.
                         && ! $main->has('Foydalanuvchilar')
                         && $settings['Foydalanuvchilar']['delete'] === 'Foydalanuvchilarni o‘chirish'

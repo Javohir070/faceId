@@ -76,9 +76,6 @@ Route::middleware('auth')->group(function () {
         Route::post('devices/{device}/sync-employees', [DeviceActionController::class, 'syncEmployees'])
             ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
             ->name('devices.sync-employees');
-        Route::post('devices/{device}/pull-employees', [DeviceActionController::class, 'pullEmployees'])
-            ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['edit']])
-            ->name('devices.pull-employees');
         Route::post('devices/{device}/remove-employees', [DeviceActionController::class, 'removeEmployees'])
             ->middleware(['permission:'.$menuPermissions['devices'], 'permission:'.$actionPermissions['devices']['delete']])
             ->name('devices.remove-employees');

@@ -43,6 +43,7 @@ class DefaultUserRoleTest extends TestCase
             'izohlar' => ['admin.notes.index'],
             'izoh qo‘shish' => ['admin.notes.create'],
             'hisobotlar' => ['admin.reports.index'],
+            'event tortish' => ['admin.reports.pull'],
             'sinxronizatsiya' => ['admin.sync.index'],
             'davomat' => ['admin.attendance.index'],
             'guruhlar' => ['admin.groups.index'],
@@ -72,7 +73,6 @@ class DefaultUserRoleTest extends TestCase
             'rollar' => ['admin.roles.index'],
             'ruxsatlar' => ['admin.permissions.index'],
             'xodim tortish' => ['admin.employees.pull'],
-            'event tortish' => ['admin.reports.pull'],
         ];
     }
 
@@ -84,7 +84,7 @@ class DefaultUserRoleTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_menu_hides_permissions_categories_and_pull_pages(): void
+    public function test_menu_hides_permissions_categories_and_employee_pull(): void
     {
         $this->actingAs($this->regularUser())
             ->get(route('home.index'))
@@ -92,7 +92,7 @@ class DefaultUserRoleTest extends TestCase
                 ->where('can', fn ($can) => $can['permissions'] === false
                     && $can['categories'] === false
                     && $can['employees-pull'] === false
-                    && $can['reports-pull'] === false
+                    && $can['reports-pull'] === true
                     && $can['employees'] === true
                     && $can['reports'] === true));
     }
@@ -120,7 +120,7 @@ class DefaultUserRoleTest extends TestCase
 
         $this->actingAs($user)->get(route('admin.devices.show', $device))->assertOk();
 
-        foreach (['connect', 'disconnect', 'open', 'restart', 'clear', 'sync-employees', 'pull-employees'] as $action) {
+        foreach (['connect', 'disconnect', 'open', 'restart', 'clear', 'sync-employees'] as $action) {
             $this->actingAs($user)
                 ->post(route("admin.devices.{$action}", $device))
                 ->assertForbidden();
@@ -150,8 +150,7 @@ class DefaultUserRoleTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $seeded = Role::findByName('user', 'web')->permissions->pluck('name')->all();
 
-        // Event tortish o‘sha migratsiyada standart edi; keyingi migratsiya uni olib tashlaydi.
-        $this->assertEqualsCanonicalizing([...$seeded, $extra, 'Event tortish'], $names);
+        $this->assertEqualsCanonicalizing([...$seeded, $extra], $names);
     }
 
     public function test_migration_removes_extra_permissions_from_user_role_only(): void
@@ -186,5 +185,28 @@ class DefaultUserRoleTest extends TestCase
 
         // Qo‘lda berilganini bilib bo‘lmaydi: faqat oldingi standart (Event tortish) qaytadi.
         $this->assertEqualsCanonicalizing([...$kept, 'Event tortish'], $userRole->fresh()->permissions->pluck('name')->all());
+    }
+
+    public function test_migration_gives_event_pull_to_every_role(): void
+    {
+        $kept = Permission::findOrCreate('Hisobotlar', 'web');
+        $userRole = Role::findOrCreate('user', 'web');
+        $userRole->syncPermissions([$kept]);
+        $manager = Role::findOrCreate('Menejer', 'web');
+        $manager->syncPermissions([$kept]);
+
+        $migration = require database_path('migrations/2026_11_04_100000_grant_event_pull_to_all_roles.php');
+        $migration->up();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->assertEqualsCanonicalizing(['Hisobotlar', 'Event tortish'], $userRole->fresh()->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(['Hisobotlar', 'Event tortish'], $manager->fresh()->permissions->pluck('name')->all());
+
+        $migration->down();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // Boshqa rolda oldin bor edimi, bilib bo‘lmaydi: faqat `user` dan olinadi.
+        $this->assertEqualsCanonicalizing(['Hisobotlar'], $userRole->fresh()->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(['Hisobotlar', 'Event tortish'], $manager->fresh()->permissions->pluck('name')->all());
     }
 }

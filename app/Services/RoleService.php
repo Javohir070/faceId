@@ -66,7 +66,6 @@ class RoleService
             'Foydalanuvchilar',
             'Rollar',
             'Ruxsatlar',
-            'Event tortish',
             'Xodim tortish',
         ]);
 

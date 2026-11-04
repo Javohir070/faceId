@@ -1,7 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import {
     ApiOutlined,
-    CloudDownloadOutlined,
     LinkOutlined,
     PoweroffOutlined,
     ReloadOutlined,
@@ -37,7 +36,6 @@ function runAction(deviceId, action, { modal, setBusy }) {
         restart: route('admin.devices.restart', deviceId),
         clear: route('admin.devices.clear', deviceId),
         sync: route('admin.devices.sync-employees', deviceId),
-        pull: route('admin.devices.pull-employees', deviceId),
     };
 
     const url = routes[action];
@@ -97,25 +95,6 @@ function runAction(deviceId, action, { modal, setBusy }) {
             title: 'Xodimlarni sinxronlash',
             content: 'Faqat ushbu qurilmaga ulangan xodimlar qayta yuboriladi. Davom etasizmi?',
             okText: 'Ha, sinxronlash',
-            cancelText: 'Bekor qilish',
-            onOk: () => new Promise((resolve, reject) => {
-                setBusy(action);
-                router.post(url, {}, {
-                    preserveScroll: true,
-                    onSuccess: resolve,
-                    onError: reject,
-                    onFinish: () => setBusy(null),
-                });
-            }),
-        });
-        return;
-    }
-
-    if (action === 'pull') {
-        modal.confirm({
-            title: 'Xodimlarni tortish',
-            content: 'Qurilmadagi xodimlar bazaga yuklanadi. Bir xil karta (employeeNo) dublikat yaratilmaydi. Davom etasizmi?',
-            okText: 'Ha, tortish',
             cancelText: 'Bekor qilish',
             onOk: () => new Promise((resolve, reject) => {
                 setBusy(action);
@@ -401,15 +380,6 @@ function DeviceQuickActions({ device }) {
                         onClick={() => run('sync')}
                     >
                         Sinxronlash
-                    </Button>
-
-                    <Button
-                        icon={<CloudDownloadOutlined />}
-                        loading={busy === 'pull'}
-                        disabled={Boolean(busy) && busy !== 'pull'}
-                        onClick={() => run('pull')}
-                    >
-                        Xodimlarni tortish
                     </Button>
 
                     <Button

@@ -64,6 +64,7 @@ class ReportPullPageTest extends TestCase
 
         $admin = $this->createUserWithPermissions([
             config('menu_permissions.resources')['reports-pull'],
+            config('menu_permissions.resources')['reports'],
         ]);
 
         $owner = User::factory()->create();
@@ -132,6 +133,79 @@ class ReportPullPageTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.reports.pull'))
             ->assertForbidden();
+    }
+
+    public function test_user_pulls_events_only_from_own_devices(): void
+    {
+        Http::fake();
+
+        $user = $this->createDepartmentUserWithPermissions(Department::factory()->create()->id, [
+            config('menu_permissions.resources')['reports-pull'],
+        ]);
+
+        $created = Device::factory()->create(['name' => 'O‘zi qo‘shgan', 'user_id' => $user->id]);
+        $linked = Device::factory()->create(['name' => 'Biriktirilgan', 'user_id' => User::factory()]);
+        $linked->users()->attach($user->id);
+        $foreign = Device::factory()->create(['name' => 'Begona', 'user_id' => User::factory()]);
+
+        $this->actingAs($user)
+            ->get(route('admin.reports.pull'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('devices', 2)
+                ->where('devices', fn ($devices) => collect($devices)->pluck('id')->sort()->values()->all()
+                    === collect([$created->id, $linked->id])->sort()->values()->all()));
+
+        $this->actingAs($user)
+            ->post(route('admin.reports.pull.store'), [
+                'device_ids' => [$foreign->id],
+                'date_from' => '2026-08-05',
+                'date_to' => '2026-08-05',
+            ])
+            ->assertSessionHasErrors('device_ids.0');
+
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'AcsEvent'));
+    }
+
+    public function test_pull_page_lists_only_categories_of_own_devices(): void
+    {
+        $user = $this->createDepartmentUserWithPermissions(Department::factory()->create()->id, [
+            config('menu_permissions.resources')['reports-pull'],
+        ]);
+
+        $own = Category::factory()->create(['name' => 'O‘z kategoriyasi']);
+        Device::factory()->create(['user_id' => $user->id, 'category_id' => $own->id]);
+        Device::factory()->create([
+            'user_id' => User::factory(),
+            'category_id' => Category::factory()->create(['name' => 'Begona kategoriya']),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.reports.pull'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('categories', 1)
+                ->where('categories.0.id', $own->id));
+    }
+
+    public function test_user_without_reports_permission_stays_on_pull_page_after_pull(): void
+    {
+        Http::fake(['*AcsEvent*' => Http::response([
+            'AcsEvent' => ['searchID' => 'biocontrol-search', 'responseStatusStrg' => 'OK', 'numOfMatches' => 0, 'InfoList' => []],
+        ], 200)]);
+
+        $user = $this->createDepartmentUserWithPermissions(Department::factory()->create()->id, [
+            config('menu_permissions.resources')['reports-pull'],
+        ]);
+        $device = Device::factory()->create(['user_id' => $user->id, 'is_online' => true]);
+
+        $this->actingAs($user)
+            ->post(route('admin.reports.pull.store'), [
+                'device_ids' => [$device->id],
+                'date_from' => '2026-08-05',
+                'date_to' => '2026-08-05',
+            ])
+            ->assertRedirect(route('admin.reports.pull'))
+            ->assertSessionHas('success');
     }
 
     public function test_pull_requests_all_access_minors_with_stable_search_id_and_paginates(): void

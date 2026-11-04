@@ -24,7 +24,6 @@ const routeBuilders = {
     'admin.devices.restart': (id) => `/admin/devices/${id}/restart`,
     'admin.devices.clear': (id) => `/admin/devices/${id}/clear`,
     'admin.devices.sync-employees': (id) => `/admin/devices/${id}/sync-employees`,
-    'admin.devices.pull-employees': (id) => `/admin/devices/${id}/pull-employees`,
     'admin.devices.remove-employees': (id) => `/admin/devices/${id}/remove-employees`,
 
     'admin.sync.index': () => '/admin/sync',

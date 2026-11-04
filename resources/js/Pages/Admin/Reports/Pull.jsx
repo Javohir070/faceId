@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Button, Checkbox, DatePicker, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
@@ -8,6 +8,7 @@ import PageHeader from '../../../Components/PageHeader';
 import StatusTag from '../../../Components/StatusTag';
 
 export default function Pull({ devices = [], categories = [] }) {
+    const { can = {} } = usePage().props;
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null);
@@ -80,14 +81,14 @@ export default function Pull({ devices = [], categories = [] }) {
             <PageHeader
                 title="Event tortish"
                 subtitle="Tanlangan sana oralig‘ida qurilmalardan kirish/chiqish yozuvlarini tortib oladi. Takrorlar bazaga yozilmaydi."
-                actions={(
+                actions={can.reports ? (
                     <Link
                         href={route('admin.reports.index')}
                         className="inline-flex h-10 items-center rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
                     >
                         Hisobotlarga qaytish
                     </Link>
-                )}
+                ) : null}
             />
 
             <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
