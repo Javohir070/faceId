@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\MergesScopedDepartmentId;
 use App\Models\Employee;
+use App\Rules\AvailableSchedule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -57,7 +58,7 @@ class UpdateEmployeeRequest extends FormRequest
             ],
             'gender' => ['required', 'integer', Rule::in([1, 2])],
             'position' => ['nullable', 'string', 'max:255'],
-            'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],
+            'schedule_id' => ['required', 'integer', new AvailableSchedule($this->integer('department_id'))],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
             'group_id' => [
                 'nullable',

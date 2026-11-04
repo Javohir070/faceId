@@ -2,13 +2,25 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\MergesScopedDepartmentId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreScheduleRequest extends FormRequest
 {
+    use MergesScopedDepartmentId;
+
     public function authorize(): bool
     {
         return $this->user()?->can('Jadvallar') ?? false;
+    }
+
+    /**
+     * Super-admin yaratgan jadval umumiy bo‘ladi, boshqa foydalanuvchida bo‘lim o‘zidan olinadi.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['department_id' => null]);
+        $this->mergeScopedDepartmentId();
     }
 
     /**
@@ -17,6 +29,7 @@ class StoreScheduleRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'department_id' => [$this->user()?->isDepartmentScoped() ? 'required' : 'nullable', 'integer'],
             'name' => ['required', 'string', 'max:255'],
             'enter_time' => ['required', 'date_format:H:i'],
             'exit_time' => ['required', 'date_format:H:i', 'different:enter_time'],
@@ -29,6 +42,7 @@ class StoreScheduleRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'department_id.required' => $this->departmentRequiredMessage(),
             'name.required' => 'Jadval nomini kiriting.',
             'name.max' => 'Nomi 255 belgidan oshmasin.',
             'enter_time.required' => 'Kirish vaqtini kiriting.',

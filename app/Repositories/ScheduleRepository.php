@@ -12,6 +12,7 @@ class ScheduleRepository implements ScheduleRepositoryInterface
     public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return Schedule::query()
+            ->with('department:id,name')
             ->latest('enter_time')
             ->paginate($perPage);
     }
@@ -42,7 +43,7 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 
     public function hasEmployees(Schedule $schedule): bool
     {
-        // Jadval bo‘limlar orasida umumiy: boshqa bo‘lim xodimlari ham hisobga olinadi.
+        // Umumiy jadvalni boshqa bo‘lim xodimlari ham ishlatadi: ular ham hisobga olinadi.
         return $schedule->employees()->withoutGlobalScopes()->exists();
     }
 }

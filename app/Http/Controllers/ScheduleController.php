@@ -25,21 +25,32 @@ class ScheduleController extends Controller
         $schedules = $this->scheduleService->paginate(20);
 
         $schedules->getCollection()->transform(fn (Schedule $schedule): array => [
-            'id' => $schedule->id,
-            'name' => $schedule->name,
-            'enter_time' => $schedule->enter_time?->format('H:i'),
-            'exit_time' => $schedule->exit_time?->format('H:i'),
+            ...$this->formFields($schedule),
+            'department' => $schedule->department?->name,
+            'can_manage' => $schedule->canBeManagedBy($request->user()),
         ]);
 
         return Inertia::render('Admin/Schedules/Index', [
             'schedules' => $schedules,
-            'drawer' => $this->drawerState($request, 'schedules', fn (int $id): ?array => ($schedule = Schedule::query()->find($id)) === null ? null : [
-                'id' => $schedule->id,
-                'name' => $schedule->name,
-                'enter_time' => $schedule->enter_time?->format('H:i'),
-                'exit_time' => $schedule->exit_time?->format('H:i'),
-            ]),
+            'drawer' => $this->drawerState($request, 'schedules', function (int $id) use ($request): ?array {
+                $schedule = Schedule::query()->find($id);
+
+                return $schedule?->canBeManagedBy($request->user()) ? $this->formFields($schedule) : null;
+            }),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formFields(Schedule $schedule): array
+    {
+        return [
+            'id' => $schedule->id,
+            'name' => $schedule->name,
+            'enter_time' => $schedule->enter_time?->format('H:i'),
+            'exit_time' => $schedule->exit_time?->format('H:i'),
+        ];
     }
 
     /** Alohida sahifa yo‘q: qo‘shish oynasi ro‘yxatdagi o‘ng panelda ochiladi. */
@@ -77,8 +88,10 @@ class ScheduleController extends Controller
             ->with('success', 'Jadval muvaffaqiyatli yangilandi.');
     }
 
-    public function destroy(Schedule $schedule): RedirectResponse
+    public function destroy(Request $request, Schedule $schedule): RedirectResponse
     {
+        abort_unless($schedule->canBeManagedBy($request->user()), 403);
+
         if ($error = $this->scheduleService->delete($schedule)) {
             return redirect()->back()->with('error', $error);
         }

@@ -300,7 +300,8 @@ class DepartmentIsolationTest extends TestCase
 
     public function test_schedule_used_by_another_department_cannot_be_deleted(): void
     {
-        $shared = Schedule::factory()->create();
+        // Umumiy jadvalni bu foydalanuvchi umuman o‘chira olmaydi, shuning uchun o‘z bo‘limi jadvali olinadi.
+        $shared = Schedule::factory()->create(['department_id' => $this->own->id]);
         $this->foreign->update(['schedule_id' => $shared->id]);
 
         $this->actingAs($this->user)

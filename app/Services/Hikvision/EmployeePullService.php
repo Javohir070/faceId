@@ -324,7 +324,8 @@ class EmployeePullService
     {
         $name = (string) config('hikvision.employees_pull_schedule', 'Standart');
 
-        return Schedule::query()->firstOrCreate(
+        // Import jadvali umumiy bo‘ladi: uni tortgan foydalanuvchi yoki bo‘limga bog‘liq emas.
+        return Schedule::query()->withoutGlobalScopes()->whereNull('department_id')->firstOrCreate(
             ['name' => $name],
             [
                 'enter_time' => '09:00',

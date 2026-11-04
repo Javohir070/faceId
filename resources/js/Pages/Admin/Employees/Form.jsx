@@ -9,6 +9,11 @@ import FaceCaptureField from '../../../Components/FaceCaptureField';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
 
+// Bo‘lim jadvali faqat shu bo‘lim xodimiga beriladi, umumiy jadval (bo‘limsiz) hammaga.
+function isScheduleAvailable(schedule, departmentId) {
+    return schedule.department_id === null || schedule.department_id === departmentId;
+}
+
 // datetime-local maydoni uchun hozirgi mahalliy vaqt: YYYY-MM-DDTHH:mm.
 function currentDateTimeLocal() {
     const now = new Date();
@@ -54,6 +59,10 @@ export default function Form({
             .filter((group) => group.department_id === data.department_id)
             .map((group) => ({ value: group.id, label: group.name }));
     }, [groups, data.department_id]);
+
+    const scheduleOptions = useMemo(() => schedules
+        .filter((schedule) => isScheduleAvailable(schedule, data.department_id))
+        .map((schedule) => ({ value: schedule.id, label: schedule.name })), [schedules, data.department_id]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -173,6 +182,10 @@ export default function Form({
                                                 ...data,
                                                 department_id: value,
                                                 group_id: null,
+                                                schedule_id: schedules.some((schedule) => schedule.id === data.schedule_id
+                                                    && isScheduleAvailable(schedule, value))
+                                                    ? data.schedule_id
+                                                    : null,
                                             });
                                         }}
                                     />
@@ -210,10 +223,7 @@ export default function Form({
                                     placeholder="Jadval tanlang"
                                     value={data.schedule_id}
                                     status={errors.schedule_id ? 'error' : undefined}
-                                    options={schedules.map((schedule) => ({
-                                        value: schedule.id,
-                                        label: schedule.name,
-                                    }))}
+                                    options={scheduleOptions}
                                     onChange={(value) => setData('schedule_id', value)}
                                 />
                             </FormField>

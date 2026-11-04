@@ -80,7 +80,8 @@ class Employee extends Model
 
     public function schedule(): BelongsTo
     {
-        return $this->belongsTo(Schedule::class);
+        // Xodimning jadvali davomat va hisobotda doim kerak, foydalanuvchiga ko‘rinmasa ham.
+        return $this->belongsTo(Schedule::class)->withoutGlobalScopes();
     }
 
     public function department(): BelongsTo

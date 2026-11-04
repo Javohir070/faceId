@@ -1,10 +1,13 @@
+import { LockOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
 import FormField from '../../../Components/FormField';
+import InputError from '../../../Components/InputError';
 import Pagination from '../../../Components/Pagination';
+import StatusTag from '../../../Components/StatusTag';
 import TableShell from '../../../Components/TableShell';
 
 /** Chiqish kirishdan oldin bo‘lsa — tungi smena (AttendanceCalculator::isNightShift bilan bir xil). */
@@ -42,6 +45,7 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                         <tr>
                             <th className="w-16">N#</th>
                             <th>Nomi</th>
+                            <th>Bo&apos;lim</th>
                             <th>Kirish vaqti</th>
                             <th>Chiqish vaqti</th>
                             <th className="text-right">Amallar</th>
@@ -52,6 +56,9 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                             <tr key={schedule.id}>
                                 <td className="font-medium text-ink-subtle">{(schedules.from ?? 1) + index}</td>
                                 <td className="font-bold text-ink">{schedule.name}</td>
+                                <td className="font-medium">
+                                    {schedule.department ?? <StatusTag tone="neutral">Umumiy</StatusTag>}
+                                </td>
                                 <td className="font-medium">{schedule.enter_time}</td>
                                 <td className="font-medium">
                                     {schedule.exit_time}
@@ -60,16 +67,23 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                     ) : null}
                                 </td>
                                 <td>
-                                    <ResourceActions
-                                        resource="schedules"
-                                        onEdit={() => drawer.openEdit({
-                                            id: schedule.id,
-                                            name: schedule.name,
-                                            enter_time: schedule.enter_time,
-                                            exit_time: schedule.exit_time,
-                                        })}
-                                        deleteHref={route('admin.schedules.destroy', schedule.id)}
-                                    />
+                                    {schedule.can_manage ? (
+                                        <ResourceActions
+                                            resource="schedules"
+                                            onEdit={() => drawer.openEdit({
+                                                id: schedule.id,
+                                                name: schedule.name,
+                                                enter_time: schedule.enter_time,
+                                                exit_time: schedule.exit_time,
+                                            })}
+                                            deleteHref={route('admin.schedules.destroy', schedule.id)}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-end gap-1.5 whitespace-nowrap text-xs font-semibold text-ink-subtle">
+                                            <LockOutlined aria-hidden="true" />
+                                            Faqat ko‘rish
+                                        </div>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -90,6 +104,7 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
             >
                 {({ data, setData, errors }) => (
                     <>
+                        <InputError message={errors.department_id} />
                         <FormField label="Nomi" error={errors.name} required>
                             <Input
                                 autoFocus

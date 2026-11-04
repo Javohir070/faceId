@@ -118,7 +118,7 @@ class EmployeeController extends Controller
         return Inertia::render('Admin/Employees/Form', [
             'departmentLocked' => $request->user()->isDepartmentScoped(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
-            'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
+            'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name', 'department_id'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
         ]);
     }
@@ -207,7 +207,7 @@ class EmployeeController extends Controller
             'employee' => EmployeeResource::make($employee)->toArray($request),
             'departmentLocked' => $request->user()->isDepartmentScoped(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
-            'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),
+            'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name', 'department_id'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id'])->values(),
         ]);
     }
