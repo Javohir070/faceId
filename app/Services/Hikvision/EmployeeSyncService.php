@@ -10,6 +10,7 @@ use App\Jobs\Hikvision\SyncEmployeeJob;
 use App\Jobs\Hikvision\TransferEmployeesJob;
 use App\Models\Device;
 use App\Models\Employee;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -511,21 +512,40 @@ class EmployeeSyncService
 
             return $synced;
         } catch (\Throwable $exception) {
+            $message = $this->failureMessage($exception);
+
             $employee->devices()->syncWithoutDetaching([
                 $device->id => [
                     'synced_at' => null,
-                    'sync_error' => $exception->getMessage(),
+                    'sync_error' => $message,
                 ],
             ]);
 
             Log::error('Hikvision: xodim sync xatoligi', [
                 'device_id' => $device->id,
                 'employee_id' => $employee->id,
-                'message' => $exception->getMessage(),
+                'message' => $message,
             ]);
 
             return false;
         }
+    }
+
+    /**
+     * IsapiClient javobni o‘zi exception qilmaydi, shuning uchun RequestException faqat aloqa uzilganda
+     * chiqadi. Uning matnida terminalning birinchi Digest javobi (401) turadi va parol xatodek ko‘rinadi.
+     */
+    private function failureMessage(\Throwable $exception): string
+    {
+        if (! $exception instanceof RequestException) {
+            return $exception->getMessage();
+        }
+
+        $curlError = $exception->response->transferStats?->getHandlerErrorData();
+
+        return is_int($curlError) && $curlError > 0
+            ? sprintf('Terminal bilan aloqa uzildi (cURL %d)', $curlError)
+            : 'Terminal bilan aloqa uzildi';
     }
 
     private function hasUsableFace(Employee $employee): bool

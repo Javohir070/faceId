@@ -202,7 +202,9 @@ Jadvalda **Ping: 2026-07-21 16:30** — oxirgi tekshiruv vaqti.
 
 ## Yuz rasmi optimizatsiyasi
 
-Hikvision odatda **512 KB** dan katta rasmlarni rad etadi. `FaceImageOptimizer` avtomatik resize va JPEG siqish qiladi.
+Terminal **200 KB** dan katta rasmni qabul qilmaydi: 2026-11-04 da Nukus terminalida 207–253 KB rasmlar rad etildi, 318–478 KB da ulanish uzildi, xodim esa terminalda yuzsiz qoldi. `FaceImageOptimizer` yuborishdan oldin har bir rasmni JPEG va `hikvision.max_face_image_bytes` ichiga keltiradi: avval sifatni, keyin o‘lchamni kamaytiradi, EXIF burilishini saqlaydi. Bazadagi asl rasm o‘zgarmaydi.
+
+Eski yuz faqat terminal `...AlreadyExist...` deb javob bersa o‘chirilib qayta yuklanadi. Boshqa rad etishda eski yuz terminalda qoladi.
 
 ## Xatoliklarni hal qilish
 
@@ -210,7 +212,9 @@ Hikvision odatda **512 KB** dan katta rasmlarni rad etadi. `FaceImageOptimizer` 
 |--------|--------|
 | 401 Unauthorized | Digest auth, login/parolni tekshiring |
 | employeeNoAlreadyExist | Avtomatik Modify rejimiga o'tiladi |
-| Face upload 400 | Rasm hajmi/formati; optimizer ishlayaptimi? |
+| `Terminal yuz rasmini qabul qilmadi: <sabab>` | Terminalning o‘z javobi (`subStatusCode`). Log: `Hikvision: yuz yuklashda xatolik` |
+| `Terminal bilan aloqa uzildi (cURL N)` | Terminal Digest 401 yuborgandan keyin ulanish uzilgan, parol xato emas. Laravel buni `HTTP request returned status code 401` deb ko‘rsatadi, `EmployeeSyncService::failureMessage()` tarjima qiladi |
+| `login yoki parol rad etildi (HTTP 401)` | Haqiqiy 401: qurilma login/parolini tekshiring |
 | Port yoki protokol noto‘g‘ri | Port **80** (HTTP) yoki **443** (HTTPS) ni sinab ko‘ring; 8000 ko‘pincha ISAPI emas |
 | Connection was reset (cURL 56) | HTTP o‘rniga HTTPS yoqing yoki portni 80/443 ga o‘zgartiring |
 | Holat yangilanmayapti | `php artisan schedule:work` yoki cron ishlayotganini tekshiring |

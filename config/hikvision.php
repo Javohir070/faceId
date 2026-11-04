@@ -96,7 +96,8 @@ return [
 
     'plan_template_no' => '1',
 
-    'max_face_image_bytes' => 512 * 1024,
+    // Terminal bundan kattasini qabul qilmaydi: 207–253 KB rad etildi, 318–478 KB da ulanish uzildi.
+    'max_face_image_bytes' => 200 * 1024,
 
     'verify_ssl' => env('HIKVISION_VERIFY_SSL', false),
 

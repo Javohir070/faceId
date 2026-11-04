@@ -6,6 +6,7 @@ use App\Exceptions\HikvisionConnectionException;
 use App\Models\Device;
 use App\Models\Employee;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 
 class HikvisionUserService
@@ -352,7 +353,6 @@ class HikvisionUserService
     }
 
     /**
-     * @param  mixed  $items
      * @return list<array<string, mixed>>
      */
     private function normalizeUserInfoList(mixed $items): array
@@ -372,15 +372,11 @@ class HikvisionUserService
     {
         $employee->loadMissing('face');
 
-        if ($this->addUser($device, $employee)) {
-            return $this->syncFace($device, $employee);
+        if (! $this->addUser($device, $employee)) {
+            $this->updateUser($device, $employee);
         }
 
-        if ($this->updateUser($device, $employee)) {
-            return $this->syncFace($device, $employee);
-        }
-
-        return false;
+        return $this->syncFace($device, $employee);
     }
 
     public function addUser(Device $device, Employee $employee): bool
@@ -418,7 +414,7 @@ class HikvisionUserService
         return false;
     }
 
-    public function updateUser(Device $device, Employee $employee): bool
+    public function updateUser(Device $device, Employee $employee): void
     {
         $response = $this->client->request(
             $device,
@@ -434,7 +430,7 @@ class HikvisionUserService
                 'employee_no' => $employee->card,
             ]);
 
-            return true;
+            return;
         }
 
         Log::error('Hikvision: user yangilashda xatolik', [
@@ -444,7 +440,7 @@ class HikvisionUserService
             'body' => $response->body(),
         ]);
 
-        return false;
+        throw new \RuntimeException('Terminal xodimni qabul qilmadi: '.$this->rejectionReason($response));
     }
 
     public function deleteUser(Device $device, string $employeeNo): bool
@@ -498,21 +494,37 @@ class HikvisionUserService
                 'employee_id' => $employee->id,
             ]);
 
-            return false;
+            throw new \RuntimeException('Yuz rasmi buzilgan, qaytadan yuklang');
         }
 
-        // Avval yuklash — muvaffaqiyatsiz bo‘lsa eski yuz o‘chib ketmasin.
-        if ($this->uploadFace($device, $employee->card, $binary)) {
-            return true;
+        $response = $this->uploadFace($device, $employee->card, $binary);
+
+        // Eski yuz faqat terminal "allaqachon bor" desa o‘chiriladi: boshqa sabab bilan
+        // (hajm, sifat) rad etilganda yangisi ham o‘tmaydi va xodim yuzsiz qolib ketadi.
+        if (! $response->successful() && str_contains($response->body(), 'AlreadyExist')) {
+            $this->deleteFace($device, $employee->card);
+            $response = $this->uploadFace($device, $employee->card, $binary);
         }
 
-        // Ba’zi qurilmalar mavjud yuz ustiga yozishni rad etadi — o‘chirib qayta urinish.
-        $this->deleteFace($device, $employee->card);
+        if (! $response->successful()) {
+            throw new \RuntimeException('Terminal yuz rasmini qabul qilmadi: '.$this->rejectionReason($response));
+        }
 
-        return $this->uploadFace($device, $employee->card, $binary);
+        return true;
     }
 
-    public function uploadFace(Device $device, string $employeeNo, string $imageBytes): bool
+    private function rejectionReason(Response $response): string
+    {
+        if ($response->status() === 401) {
+            return 'login yoki parol rad etildi (HTTP 401)';
+        }
+
+        return preg_match('/subStatusCode"?\s*[:>]\s*"?(\w+)/', $response->body(), $matches) === 1
+            ? sprintf('%s (HTTP %d)', $matches[1], $response->status())
+            : sprintf('HTTP %d', $response->status());
+    }
+
+    public function uploadFace(Device $device, string $employeeNo, string $imageBytes): Response
     {
         $optimized = $this->optimizer->optimize($imageBytes);
 
@@ -537,7 +549,7 @@ class HikvisionUserService
                 'employee_no' => $employeeNo,
             ]);
 
-            return true;
+            return $response;
         }
 
         Log::error('Hikvision: yuz yuklashda xatolik', [
@@ -547,7 +559,7 @@ class HikvisionUserService
             'body' => $response->body(),
         ]);
 
-        return false;
+        return $response;
     }
 
     public function deleteFace(Device $device, string $employeeNo): bool
