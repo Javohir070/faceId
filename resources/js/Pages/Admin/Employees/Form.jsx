@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
-import { Button, Input, Select, Space } from 'antd';
-import { LockOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Input, Select } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
 import { useMemo } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
@@ -8,10 +8,6 @@ import EmployeeDevicesPanel from '../../../Components/EmployeeDevicesPanel';
 import FaceCaptureField from '../../../Components/FaceCaptureField';
 import FormCard from '../../../Components/FormCard';
 import FormField from '../../../Components/FormField';
-
-function generateCardNumber() {
-    return String(Math.floor(10000000 + Math.random() * 90000000));
-}
 
 // datetime-local maydoni uchun hozirgi mahalliy vaqt: YYYY-MM-DDTHH:mm.
 function currentDateTimeLocal() {
@@ -23,7 +19,6 @@ function currentDateTimeLocal() {
 
 export default function Form({
     employee,
-    suggestedCard = '',
     departments = [],
     schedules = [],
     groups = [],
@@ -37,7 +32,7 @@ export default function Form({
 
     const { data, setData, post, processing, errors } = useForm({
         name: employee?.name || '',
-        card: employee?.card || suggestedCard || generateCardNumber(),
+        card: employee?.card || '',
         gender: employee?.gender ?? null,
         position: employee?.position || '',
         department_id: employee?.department_id || lockedDepartment?.id || null,
@@ -93,35 +88,26 @@ export default function Form({
                             </FormField>
 
                             <FormField
-                                label="Karta"
+                                label="JSHSHIR"
                                 error={errors.card}
                                 required
                                 hint={cardLocked
-                                    ? 'Karta raqamini o‘zgartirish uchun avval xodimni qurilmalardan o‘chiring.'
+                                    ? 'JSHSHIRni o‘zgartirish uchun avval xodimni qurilmalardan o‘chiring.'
                                     : undefined}
                             >
-                                <Space.Compact className="w-full">
-                                    <Input
-                                        size="large"
-                                        value={data.card}
-                                        status={errors.card ? 'error' : undefined}
-                                        inputMode="numeric"
-                                        maxLength={14}
-                                        placeholder="1–14 xonali son"
-                                        disabled={cardLocked}
-                                        onChange={(e) => {
-                                            const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
-                                            setData('card', digits);
-                                        }}
-                                    />
-                                    <Button
-                                        size="large"
-                                        icon={<ReloadOutlined />}
-                                        title="Yangi raqam generatsiya qilish"
-                                        disabled={cardLocked}
-                                        onClick={() => setData('card', generateCardNumber())}
-                                    />
-                                </Space.Compact>
+                                <Input
+                                    size="large"
+                                    value={data.card}
+                                    status={errors.card ? 'error' : undefined}
+                                    inputMode="numeric"
+                                    maxLength={14}
+                                    placeholder="14 xonali son"
+                                    disabled={cardLocked}
+                                    onChange={(e) => {
+                                        const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
+                                        setData('card', digits);
+                                    }}
+                                />
                             </FormField>
                         </div>
 

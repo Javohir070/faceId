@@ -73,7 +73,7 @@ A new action-guarded resource means a key in `actions`, the route middleware, an
 
 `Employee`, `Report` and `Group` boot `BelongsToDepartmentScope` as a **global scope**: any user whose role is not `super-admin` (`User::isDepartmentScoped()`) only ever sees rows matching their `department_id`, and sees nothing if their `department_id` is null. `Note` has no `department_id`; it boots `BelongsToEmployeeDepartmentScope`, which applies `whereHas('employee')` so the employee's scope decides. Consequences:
 
-- Cross-department lookups need `withoutGlobalScopes()` (e.g. `Employee::generateUniqueCard()`). Device imports are system-level facts and bypass the scope even when a scoped user starts them: `ReportService` resolves the employee and de-duplicates unscoped, and `EmployeePullService` finds existing cards unscoped (but skips, rather than edits, another department's employee).
+- Cross-department lookups need `withoutGlobalScopes()`. Device imports are system-level facts and bypass the scope even when a scoped user starts them: `ReportService` resolves the employee and de-duplicates unscoped, and `EmployeePullService` finds existing cards unscoped (but skips, rather than edits, another department's employee).
 - The `exists:` validation rule queries the table directly and **ignores global scopes** — validate references to scoped models with a closure over `Model::query()` (see `StoreNoteRequest`).
 - New models holding a `department_id` should probably add the same scope; models that belong to an employee should use `BelongsToEmployeeDepartmentScope`.
 - Store/update requests merge the scoped department via `App\Http\Requests\Concerns\MergesScopedDepartmentId`. The employee form and the group drawer receive `departmentLocked` and show the user's department read-only instead of a select; `DepartmentIsolationTest` walks the pages a scoped user can open and asserts another department's employee never appears.
@@ -86,6 +86,8 @@ A new action-guarded resource means a key in `actions`, the route middleware, an
 Full reference: [docs/hikvision-integration.md](docs/hikvision-integration.md).
 
 Device credentials (IP, port, https, user, encrypted password) live in the `devices` table via Admin → Qurilmalar — **not in `.env`**. `config/hikvision.php` only holds timeouts, intervals, and webhook/ISAPI defaults.
+
+`employees.card` holds the employee's **JSHSHIR** and is the terminal's `employeeNo`; events resolve to employees through it. The UI calls it "JSHSHIR", never "Karta": no physical cards are issued, so the terminal's separate Card field stays unused. A new or changed number must be exactly 14 digits, but device imports and older rows may hold other lengths, so an unchanged number is not re-validated on edit. It is personal data: Telegram messages show names only. Keep the column name, renaming it would touch the event link and every sync path.
 
 ```
 Controller / Console command

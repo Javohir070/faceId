@@ -37,15 +37,21 @@ class UpdateEmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'card' => [
                 'required',
-                'digits_between:1,14',
                 Rule::unique('employees', 'card')->ignore($employee->id),
+                // Qurilmadan tortilgan eski raqam o‘zgartirilmaguncha xodimning boshqa ma’lumotlari tahrirlanaveradi.
                 function (string $attribute, mixed $value, \Closure $fail) use ($employee): void {
                     if ((string) $value === (string) $employee->card) {
                         return;
                     }
 
                     if ($employee->devices()->exists()) {
-                        $fail('Karta raqamini o‘zgartirish uchun avval xodimni barcha qurilmalardan o‘chiring.');
+                        $fail('JSHSHIRni o‘zgartirish uchun avval xodimni barcha qurilmalardan o‘chiring.');
+
+                        return;
+                    }
+
+                    if (preg_match('/^\d{14}$/', (string) $value) !== 1) {
+                        $fail('JSHSHIR aniq 14 xonali son bo‘lishi kerak.');
                     }
                 },
             ],
@@ -73,8 +79,8 @@ class UpdateEmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'card.digits_between' => 'Karta raqami 1 dan 14 xonagacha son bo‘lishi kerak.',
-            'card.unique' => 'Bu karta raqami allaqachon band.',
+            'card.required' => 'JSHSHIR kiriting.',
+            'card.unique' => 'Bu JSHSHIR boshqa xodimda bor.',
             'gender.required' => 'Jinsni tanlang.',
             'gender.in' => 'Jins noto‘g‘ri: 1 — Erkak, 2 — Ayol.',
             'department_id.required' => $this->departmentRequiredMessage(),

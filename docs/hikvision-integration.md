@@ -80,7 +80,7 @@ Bir nechta qurilma qo'shishingiz mumkin — har biri o'z IP/login/parol bilan is
 
 | BioControl maydoni | Hikvision maydoni |
 |--------------------|-------------------|
-| `employees.card` | `employeeNo` |
+| `employees.card` (JSHSHIR, 14 raqam) | `employeeNo` |
 | `employees.name` | `name` |
 | `valid_from_dt` | `Valid.beginTime` |
 | `valid_to_dt` | `Valid.endTime` |

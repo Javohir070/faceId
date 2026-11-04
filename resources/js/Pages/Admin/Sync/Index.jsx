@@ -607,7 +607,7 @@ export default function Index({ devices = [], employees = [], categories = [], d
                                 <div>
                                     <div>{row.name}</div>
                                     <div className="text-xs font-medium text-ink-muted">
-                                        {row.card || 'Karta yo‘q'}
+                                        {row.card || 'JSHSHIR yo‘q'}
                                         {row.department?.name ? ` · ${row.department.name}` : ''}
                                     </div>
                                 </div>

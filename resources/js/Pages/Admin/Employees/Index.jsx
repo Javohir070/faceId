@@ -149,7 +149,7 @@ export default function Index({
         <AdminLayout title="Xodimlar">
             <PageHeader
                 title="Xodimlar"
-                subtitle="Xodimlar, kartalar, yuz rasmlari va bo'limlarni boshqaring."
+                subtitle="Xodimlar, yuz rasmlari va bo'limlarni boshqaring."
                 actions={(
                     <div className="flex flex-wrap items-center gap-2">
                         <a
@@ -185,7 +185,7 @@ export default function Index({
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                     <Input
                         allowClear
-                        placeholder="Qidiruv (ism / karta)"
+                        placeholder="Qidiruv (ism / JSHSHIR)"
                         value={form.search}
                         onChange={(e) => updateField('search', e.target.value)}
                         onPressEnter={submitFilters}
@@ -295,7 +295,7 @@ export default function Index({
                             ) : null}
                             <th className="w-16">N#</th>
                             <th>F.I.Sh.</th>
-                            <th>Karta</th>
+                            <th>JSHSHIR</th>
                             <th>Jins</th>
                             <th>Lavozim</th>
                             <th>Bo&apos;lim</th>

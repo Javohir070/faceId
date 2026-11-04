@@ -30,9 +30,8 @@ class EmployeeExpiryNotifier
             ->each(function (Employee $employee) use (&$warned): void {
                 $this->notifier->notifyAllLinkedUsers(
                     sprintf(
-                        "⏰ Xodim muddati tugashiga kam qoldi\nIsm: %s\nKarta: %s\nTugash: %s",
+                        "⏰ Xodim muddati tugashiga kam qoldi\nIsm: %s\nTugash: %s",
                         $employee->name,
-                        $employee->card,
                         $employee->valid_to_dt?->format('Y-m-d H:i:s') ?? '—',
                     ),
                     TelegramNotifier::CATEGORY_EXPIRY,
@@ -49,9 +48,8 @@ class EmployeeExpiryNotifier
             ->each(function (Employee $employee) use (&$expired): void {
                 $this->notifier->notifyAllLinkedUsers(
                     sprintf(
-                        "❌ Xodim muddati tugadi\nIsm: %s\nKarta: %s\nTugash: %s",
+                        "❌ Xodim muddati tugadi\nIsm: %s\nTugash: %s",
                         $employee->name,
-                        $employee->card,
                         $employee->valid_to_dt?->format('Y-m-d H:i:s') ?? '—',
                     ),
                     TelegramNotifier::CATEGORY_EXPIRY,

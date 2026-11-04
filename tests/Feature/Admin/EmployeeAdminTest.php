@@ -93,7 +93,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Ali Valiyev',
-                'card' => '12345678',
+                'card' => '12345678901234',
                 'gender' => 1,
                 'position' => 'Operator',
                 'department_id' => $department->id,
@@ -105,7 +105,7 @@ class EmployeeAdminTest extends TestCase
             ])
             ->assertRedirect(route('admin.employees.index'));
 
-        $employee = Employee::query()->where('card', '12345678')->first();
+        $employee = Employee::query()->where('card', '12345678901234')->first();
         $this->assertNotNull($employee);
         $this->assertSame('Ali Valiyev', $employee->name);
         $this->assertSame(1, $employee->gender);
@@ -121,7 +121,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
-                'card' => '12345678',
+                'card' => '12345678901234',
                 'gender' => 2,
                 'position' => 'Nazoratchi',
                 'department_id' => $department->id,
@@ -141,7 +141,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => 'Ali Valiyev Updated',
-                'card' => '12345678',
+                'card' => '12345678901234',
                 'gender' => 2,
                 'position' => 'Nazoratchi',
                 'department_id' => $department->id,
@@ -253,7 +253,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => $employee->name,
-                'card' => '22222222',
+                'card' => '22222222222222',
                 'gender' => $employee->gender,
                 'position' => $employee->position,
                 'department_id' => $employee->department_id,
@@ -281,7 +281,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
                 'name' => $employee->name,
-                'card' => '22222222',
+                'card' => '22222222222222',
                 'gender' => $employee->gender,
                 'position' => $employee->position,
                 'department_id' => $employee->department_id,
@@ -291,7 +291,7 @@ class EmployeeAdminTest extends TestCase
             ])
             ->assertRedirect(route('admin.employees.index'));
 
-        $this->assertSame('22222222', $employee->fresh()->card);
+        $this->assertSame('22222222222222', $employee->fresh()->card);
     }
 
     public function test_remove_devices_from_edit_redirects_back_to_edit(): void
@@ -424,7 +424,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Grouped User',
-                'card' => '55556666',
+                'card' => '55556666777788',
                 'gender' => 1,
                 'department_id' => $department->id,
                 'group_id' => $foreignGroup->id,
@@ -438,7 +438,7 @@ class EmployeeAdminTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Grouped User',
-                'card' => '55556666',
+                'card' => '55556666777788',
                 'gender' => 1,
                 'department_id' => $department->id,
                 'group_id' => $group->id,
@@ -450,7 +450,7 @@ class EmployeeAdminTest extends TestCase
             ->assertRedirect(route('admin.employees.index'));
 
         $this->assertDatabaseHas('employees', [
-            'card' => '55556666',
+            'card' => '55556666777788',
             'group_id' => $group->id,
         ]);
     }

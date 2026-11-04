@@ -77,7 +77,7 @@ class DepartmentIsolationTest extends TestCase
     {
         return [
             'name' => 'Yangi Xodim',
-            'card' => '100003',
+            'card' => '10000300000000',
             'gender' => 1,
             'schedule_id' => $this->schedule->id,
             'valid_from_dt' => '2026-11-01 09:00:00',
@@ -185,17 +185,17 @@ class DepartmentIsolationTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect();
 
-        $this->assertDatabaseHas('employees', ['card' => '100003', 'department_id' => $this->own->id]);
+        $this->assertDatabaseHas('employees', ['card' => '10000300000000', 'department_id' => $this->own->id]);
 
         // Boshqa bo‘lim yuborilsa ham o‘z bo‘limiga yoziladi.
         $this->actingAs($this->user)
             ->post(route('admin.employees.store'), $this->employeePayload([
-                'card' => '100004',
+                'card' => '10000400000000',
                 'department_id' => $this->other->id,
             ]))
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('employees', ['card' => '100004', 'department_id' => $this->own->id]);
+        $this->assertDatabaseHas('employees', ['card' => '10000400000000', 'department_id' => $this->own->id]);
     }
 
     public function test_employee_cannot_be_moved_to_another_department(): void
@@ -223,7 +223,7 @@ class DepartmentIsolationTest extends TestCase
             ->post(route('admin.employees.store'), $this->employeePayload(['group_id' => $foreignGroup->id]))
             ->assertSessionHasErrors('group_id');
 
-        $this->assertDatabaseMissing('employees', ['card' => '100003']);
+        $this->assertDatabaseMissing('employees', ['card' => '10000300000000']);
     }
 
     public function test_user_without_department_gets_a_clear_message_when_adding(): void
@@ -234,7 +234,7 @@ class DepartmentIsolationTest extends TestCase
             ->post(route('admin.employees.store'), $this->employeePayload(['department_id' => $this->other->id]))
             ->assertSessionHasErrors(['department_id' => 'Sizga bo‘lim biriktirilmagan. Administratorga murojaat qiling.']);
 
-        $this->assertDatabaseMissing('employees', ['card' => '100003']);
+        $this->assertDatabaseMissing('employees', ['card' => '10000300000000']);
     }
 
     public function test_employee_form_locks_department_for_user_but_not_for_super_admin(): void

@@ -148,14 +148,25 @@ class TelegramBotCommandsTest extends TestCase
         $this->createTelegramSuperAdmin(['telegram_chat_id' => '999']);
         Employee::factory()->create([
             'name' => 'Ali',
+            'card' => '12345678901234',
             'valid_to_dt' => now()->addDay(),
+        ]);
+        Employee::factory()->create([
+            'name' => 'Vali',
+            'card' => '43210987654321',
+            'valid_to_dt' => now()->subDay(),
         ]);
 
         $this->webhook($this->message('999', '/expiry'))->assertOk();
 
         Http::assertSent(function ($request) {
+            $text = (string) $request['text'];
+
             return str_contains($request->url(), 'sendMessage')
-                && str_contains((string) $request['text'], 'Ali');
+                && str_contains($text, 'Ali')
+                && str_contains($text, 'Vali')
+                && ! str_contains($text, '12345678901234')
+                && ! str_contains($text, '43210987654321');
         });
     }
 }

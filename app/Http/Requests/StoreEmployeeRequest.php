@@ -31,7 +31,7 @@ class StoreEmployeeRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'card' => ['required', 'digits_between:1,14', Rule::unique('employees', 'card')],
+            'card' => ['required', 'digits:14', Rule::unique('employees', 'card')],
             'gender' => ['required', 'integer', Rule::in([1, 2])],
             'position' => ['nullable', 'string', 'max:255'],
             'schedule_id' => ['required', 'integer', Rule::exists('schedules', 'id')],
@@ -55,8 +55,9 @@ class StoreEmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'card.digits_between' => 'Karta raqami 1 dan 14 xonagacha son bo‘lishi kerak.',
-            'card.unique' => 'Bu karta raqami allaqachon band.',
+            'card.required' => 'JSHSHIR kiriting.',
+            'card.digits' => 'JSHSHIR aniq 14 xonali son bo‘lishi kerak.',
+            'card.unique' => 'Bu JSHSHIR boshqa xodimda bor.',
             'gender.required' => 'Jinsni tanlang.',
             'gender.in' => 'Jins noto‘g‘ri: 1 — Erkak, 2 — Ayol.',
             'department_id.required' => $this->departmentRequiredMessage(),

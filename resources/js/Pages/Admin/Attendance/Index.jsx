@@ -151,7 +151,7 @@ export default function Index({
                     allowClear
                     className="!w-full sm:!w-auto sm:min-w-[200px] sm:flex-1"
                     prefix={<SearchOutlined className="text-ink-subtle" />}
-                    placeholder="Ism yoki karta bo‘yicha qidirish"
+                    placeholder="Ism yoki JSHSHIR bo‘yicha qidirish"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                 />

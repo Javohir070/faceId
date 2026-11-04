@@ -26,6 +26,35 @@ class NotifyEmployeeExpiryCommandTest extends TestCase
         $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
     }
 
+    public function test_messages_name_the_employee_without_showing_the_jshshir(): void
+    {
+        Employee::factory()->create([
+            'name' => 'Muddati yaqin',
+            'card' => '12345678901234',
+            'valid_to_dt' => now()->addDays(2),
+        ]);
+        Employee::factory()->create([
+            'name' => 'Muddati tugagan',
+            'card' => '43210987654321',
+            'valid_to_dt' => now()->subHour(),
+            'expiry_warned_at' => now()->subDays(3),
+        ]);
+
+        $this->artisan('employees:notify-expiry')->assertSuccessful();
+
+        foreach (['Muddati yaqin', 'Muddati tugagan'] as $name) {
+            Http::assertSent(fn ($request): bool => str_contains((string) $request['text'], $name));
+        }
+
+        Http::assertNotSent(function ($request): bool {
+            $text = (string) $request['text'];
+
+            return str_contains($text, '12345678901234')
+                || str_contains($text, '43210987654321')
+                || str_contains($text, 'Karta');
+        });
+    }
+
     public function test_warns_once_when_expiry_within_warn_days(): void
     {
         $employee = Employee::factory()->create([

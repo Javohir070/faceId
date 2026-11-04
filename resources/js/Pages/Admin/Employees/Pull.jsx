@@ -76,7 +76,7 @@ export default function Pull({ devices = [], categories = [] }) {
         <AdminLayout title="Xodim tortish">
             <PageHeader
                 title="Xodim tortish"
-                subtitle="Tanlangan qurilmalardan xodimlar va yuz rasmlarini tortib oladi. Bir xil karta (employeeNo) dublikat yaratilmaydi."
+                subtitle="Tanlangan qurilmalardan xodimlar va yuz rasmlarini tortib oladi. Bir xil JSHSHIR bilan dublikat yaratilmaydi."
                 actions={(
                     <Link
                         href={route('admin.employees.index')}

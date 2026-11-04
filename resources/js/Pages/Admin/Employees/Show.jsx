@@ -71,7 +71,7 @@ function ProfileCard({ employee, canGroups }) {
             </div>
 
             <dl className="mt-5 border-t border-line pt-1">
-                <DetailRow label="Karta">
+                <DetailRow label="JSHSHIR">
                     <span className="tabular-nums">{employee.card}</span>
                 </DetailRow>
                 <DetailRow label="Bo‘lim">{employee.department?.name || '—'}</DetailRow>

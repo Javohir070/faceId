@@ -194,7 +194,7 @@ class EmployeePullService
         Department $department,
         Schedule $schedule,
     ): array {
-        // Karta butun tizimda unikal: boshqa bo‘lim xodimi ham topilishi kerak (aks holda dublikat
+        // JSHSHIR (card) butun tizimda unikal: boshqa bo‘lim xodimi ham topilishi kerak (aks holda dublikat
         // yaratishga urinib xato beradi), lekin bo‘limga cheklangan foydalanuvchi uni o‘zgartirmaydi.
         $existing = Employee::query()->withoutGlobalScopes()->where('card', $employeeNo)->first();
 

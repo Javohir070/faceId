@@ -114,20 +114,4 @@ class Employee extends Model
     {
         return $this->hasMany(Note::class);
     }
-
-    /**
-     * Generate a unique 8-digit card number.
-     */
-    public static function generateUniqueCard(int $attempts = 20): string
-    {
-        for ($i = 0; $i < $attempts; $i++) {
-            $card = (string) random_int(10000000, 99999999);
-
-            if (! static::query()->withoutGlobalScopes()->where('card', $card)->exists()) {
-                return $card;
-            }
-        }
-
-        throw new \RuntimeException('Unikal karta raqami yaratilmadi.');
-    }
 }

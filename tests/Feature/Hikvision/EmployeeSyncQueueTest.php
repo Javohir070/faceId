@@ -11,6 +11,7 @@ use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Services\Hikvision\EmployeeSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -49,7 +50,7 @@ class EmployeeSyncQueueTest extends TestCase
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
                 'name' => 'Yangi Xodim',
-                'card' => '99887766',
+                'card' => '99887766554433',
                 'gender' => 1,
                 'department_id' => $department->id,
                 'schedule_id' => $schedule->id,
@@ -59,7 +60,7 @@ class EmployeeSyncQueueTest extends TestCase
             ])
             ->assertRedirect(route('admin.employees.index'));
 
-        $employee = Employee::query()->where('card', '99887766')->first();
+        $employee = Employee::query()->where('card', '99887766554433')->first();
         $this->assertNotNull($employee);
         $this->assertSame(0, $employee->devices()->count());
         Queue::assertNotPushed(SyncEmployeeJob::class);
@@ -128,7 +129,7 @@ class EmployeeSyncQueueTest extends TestCase
             'schedule_id' => Schedule::factory(),
         ]);
 
-        $result = app(\App\Services\Hikvision\EmployeeSyncService::class)
+        $result = app(EmployeeSyncService::class)
             ->transfer([$device->id], [$employee->id]);
 
         $this->assertSame(0, $result['success']);
@@ -213,7 +214,7 @@ class EmployeeSyncQueueTest extends TestCase
         $unlinked->face()->create(['face' => base64_encode('unlinked-face')]);
         $linked->devices()->attach($device->id);
 
-        $result = app(\App\Services\Hikvision\EmployeeSyncService::class)->syncAllEmployees($device);
+        $result = app(EmployeeSyncService::class)->syncAllEmployees($device);
 
         $this->assertSame(1, $result['success']);
         $this->assertSame(0, $result['failed']);
@@ -238,7 +239,7 @@ class EmployeeSyncQueueTest extends TestCase
         ]);
         $noFace->devices()->attach($device->id);
 
-        $result = app(\App\Services\Hikvision\EmployeeSyncService::class)->syncAllEmployees($device);
+        $result = app(EmployeeSyncService::class)->syncAllEmployees($device);
 
         $this->assertSame(0, $result['success']);
         $this->assertSame(0, $result['failed']);

@@ -227,7 +227,7 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
                     <span className="text-sm text-ink-muted">Qidiruv:</span>
                     <Input
                         allowClear
-                        placeholder="Ism, karta yoki bo‘lim"
+                        placeholder="Ism, JSHSHIR yoki bo‘lim"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="min-w-[220px]"
@@ -251,7 +251,7 @@ function DeviceEmployeesPanel({ deviceId, employees }) {
                             ) : null}
                             <th className="w-12">№</th>
                             <th>F.I.Sh.</th>
-                            <th>Karta</th>
+                            <th>JSHSHIR</th>
                             <th>Bo&apos;lim</th>
                             <th>Holat</th>
                         </tr>

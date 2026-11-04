@@ -87,13 +87,13 @@ class TelegramReportService
             ->where('valid_to_dt', '<=', now()->addDays($warnDays))
             ->orderBy('valid_to_dt')
             ->limit(20)
-            ->get(['name', 'card', 'valid_to_dt']);
+            ->get(['name', 'valid_to_dt']);
 
         $expired = Employee::query()
             ->where('valid_to_dt', '<', now())
             ->orderByDesc('valid_to_dt')
             ->limit(20)
-            ->get(['name', 'card', 'valid_to_dt']);
+            ->get(['name', 'valid_to_dt']);
 
         if ($expiring->isEmpty() && $expired->isEmpty()) {
             return '✅ Yaqin/tugagan muddatli xodim yo‘q.';
@@ -105,9 +105,8 @@ class TelegramReportService
             $lines[] = "⏰ {$warnDays} kun ichida tugaydi:";
             foreach ($expiring as $employee) {
                 $lines[] = sprintf(
-                    '• %s (%s) — %s',
+                    '• %s — %s',
                     $employee->name,
-                    $employee->card,
                     $employee->valid_to_dt?->format('Y-m-d H:i') ?? '—',
                 );
             }
@@ -120,9 +119,8 @@ class TelegramReportService
             $lines[] = '❌ Muddati tugagan:';
             foreach ($expired as $employee) {
                 $lines[] = sprintf(
-                    '• %s (%s) — %s',
+                    '• %s — %s',
                     $employee->name,
-                    $employee->card,
                     $employee->valid_to_dt?->format('Y-m-d H:i') ?? '—',
                 );
             }
@@ -132,7 +130,7 @@ class TelegramReportService
     }
 
     /**
-     * @return array{late: Collection<int, array{name: string, card: string, entered_at: string}>, absent: Collection<int, array{name: string, card: string}>, offline_devices: Collection<int, Device>}
+     * @return array{late: Collection<int, array{name: string, entered_at: string}>, absent: Collection<int, array{name: string}>, offline_devices: Collection<int, Device>}
      */
     public function digestForDate(CarbonInterface $day): array
     {
@@ -183,7 +181,6 @@ class TelegramReportService
                 if (! $excusedAbsentIds->contains($employee->id)) {
                     $absent->push([
                         'name' => $employee->name,
-                        'card' => $employee->card,
                     ]);
                 }
 
@@ -193,7 +190,6 @@ class TelegramReportService
             if (Carbon::parse($first->occurred_at)->gt($deadline) && ! $excusedLateIds->contains($employee->id)) {
                 $late->push([
                     'name' => $employee->name,
-                    'card' => $employee->card,
                     'entered_at' => Carbon::parse($first->occurred_at)->format('H:i'),
                 ]);
             }
@@ -227,7 +223,7 @@ class TelegramReportService
             $lines[] = '';
             $lines[] = 'Kechikkanlar (max 10):';
             foreach ($data['late']->take(10) as $row) {
-                $lines[] = "• {$row['name']} ({$row['card']}) — {$row['entered_at']}";
+                $lines[] = "• {$row['name']} — {$row['entered_at']}";
             }
         }
 
@@ -235,7 +231,7 @@ class TelegramReportService
             $lines[] = '';
             $lines[] = 'Kelmaganlar (max 10):';
             foreach ($data['absent']->take(10) as $row) {
-                $lines[] = "• {$row['name']} ({$row['card']})";
+                $lines[] = "• {$row['name']}";
             }
         }
 

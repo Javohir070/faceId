@@ -116,7 +116,6 @@ class EmployeeController extends Controller
     public function create(Request $request): Response
     {
         return Inertia::render('Admin/Employees/Form', [
-            'suggestedCard' => Employee::generateUniqueCard(),
             'departmentLocked' => $request->user()->isDepartmentScoped(),
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'schedules' => $this->employeeService->getSchedulesForForm()->map->only(['id', 'name'])->values(),

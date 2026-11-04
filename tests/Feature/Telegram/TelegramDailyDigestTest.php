@@ -20,6 +20,58 @@ class TelegramDailyDigestTest extends TestCase
     use CreatesTelegramAdmin;
     use RefreshDatabase;
 
+    public function test_daily_digest_does_not_show_the_jshshir(): void
+    {
+        config(['telegram.token' => 'test-token']);
+
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
+
+        $schedule = Schedule::factory()->create(['enter_time' => '09:00', 'exit_time' => '18:00']);
+        $validity = ['valid_from_dt' => now()->subMonth(), 'valid_to_dt' => now()->addMonth()];
+
+        $late = Employee::factory()->create([
+            'name' => 'Kechikkan xodim',
+            'card' => '12345678901234',
+            'schedule_id' => $schedule->id,
+            ...$validity,
+        ]);
+        Employee::factory()->create([
+            'name' => 'Kelmagan xodim',
+            'card' => '43210987654321',
+            'schedule_id' => $schedule->id,
+            ...$validity,
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => User::factory(),
+            'category_id' => Category::factory(),
+        ]);
+
+        Report::query()->create([
+            'employee_id' => $late->id,
+            'department_id' => $late->department_id,
+            'device_id' => $device->id,
+            'employee_name' => $late->name,
+            'type' => Report::TYPE_ENTRY,
+            'occurred_at' => now()->subDay()->startOfDay()->setTime(9, 30),
+        ]);
+
+        $this->artisan('telegram:daily-digest')->assertSuccessful();
+
+        Http::assertSent(function ($request): bool {
+            $text = (string) $request['text'];
+
+            return str_contains($text, '• Kechikkan xodim — 09:30')
+                && str_contains($text, '• Kelmagan xodim')
+                && ! str_contains($text, '12345678901234')
+                && ! str_contains($text, '43210987654321');
+        });
+    }
+
     public function test_daily_digest_counts_late_and_absent(): void
     {
         config(['telegram.token' => 'test-token']);
