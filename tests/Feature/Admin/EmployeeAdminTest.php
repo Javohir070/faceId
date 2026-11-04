@@ -26,6 +26,32 @@ class EmployeeAdminTest extends TestCase
     use InteractsWithPermissions;
     use RefreshDatabase;
 
+    public function test_employee_pages_report_the_sync_error_for_each_device(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['employees'],
+        ]);
+        $employee = Employee::factory()->create();
+        $failed = Device::factory()->create(['name' => 'A qurilma']);
+        $notSynced = Device::factory()->create(['name' => 'B qurilma']);
+        $employee->devices()->attach($failed->id, [
+            'synced_at' => null,
+            'sync_error' => 'Yuz rasmi yo‘q — sinxronlanmadi',
+        ]);
+        $employee->devices()->attach($notSynced->id);
+
+        foreach (['admin.employees.show', 'admin.employees.edit'] as $routeName) {
+            $this->actingAs($admin)
+                ->get(route($routeName, $employee))
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('employee.devices.0.is_synced', false)
+                    ->where('employee.devices.0.sync_error', 'Yuz rasmi yo‘q — sinxronlanmadi')
+                    ->where('employee.devices.1.is_synced', false)
+                    ->where('employee.devices.1.sync_error', null));
+        }
+    }
+
     public function test_authorized_user_can_manage_employees(): void
     {
         Storage::fake('local');

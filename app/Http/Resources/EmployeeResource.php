@@ -77,6 +77,7 @@ class EmployeeResource extends JsonResource
                     'synced_at' => filled($device->pivot->synced_at)
                         ? Carbon::parse($device->pivot->synced_at)->format('Y-m-d H:i')
                         : null,
+                    'sync_error' => $device->pivot->sync_error,
                 ]),
         ];
     }
@@ -109,6 +110,7 @@ class EmployeeResource extends JsonResource
                     'synced_at' => filled($device->pivot->synced_at)
                         ? Carbon::parse($device->pivot->synced_at)->format('Y-m-d H:i')
                         : null,
+                    'sync_error' => $device->pivot->sync_error,
                 ]),
         ];
     }

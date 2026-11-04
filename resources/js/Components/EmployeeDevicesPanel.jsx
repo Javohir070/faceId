@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { App as AntApp, Button, Checkbox, Input, Select } from 'antd';
 import { useMemo, useState } from 'react';
 import { route } from '../routes';
+import StatusTag from './StatusTag';
 
 export default function EmployeeDevicesPanel({ employeeId, devices }) {
     const canRemove = Boolean(usePage().props.can?.['employees.delete']);
@@ -152,10 +153,15 @@ export default function EmployeeDevicesPanel({ employeeId, devices }) {
                                     >
                                         {device.name}
                                     </button>
-                                    {!device.is_synced ? (
-                                        <span className="ml-2 text-xs font-semibold text-amber-600">
-                                            sinxronlanmoqda
-                                        </span>
+                                    {device.sync_error ? (
+                                        <>
+                                            <StatusTag tone="danger" className="ml-2">Xato</StatusTag>
+                                            <span className="text-xs font-medium text-ink-muted">
+                                                {device.sync_error}
+                                            </span>
+                                        </>
+                                    ) : !device.is_synced ? (
+                                        <StatusTag tone="warning" className="ml-2">Sinxronlanmagan</StatusTag>
                                     ) : null}
                                 </td>
                             </tr>
