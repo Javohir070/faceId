@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\EmployeesExport;
 use App\Http\Requests\BulkDestroyEmployeesRequest;
+use App\Http\Requests\BulkExtendEmployeesRequest;
 use App\Http\Requests\PullEmployeesRequest;
 use App\Http\Requests\RemoveEmployeeDevicesRequest;
 use App\Http\Requests\StoreEmployeeRequest;
@@ -235,6 +236,20 @@ class EmployeeController extends Controller
         return redirect()
             ->route('admin.employees.index')
             ->with('success', 'Xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
+    }
+
+    public function bulkExtend(BulkExtendEmployeesRequest $request): RedirectResponse
+    {
+        $until = $request->date('valid_to_dt');
+        $updated = $this->employeeService->extendValidity($request->validated('employee_ids'), $until);
+
+        return redirect()
+            ->back(fallback: route('admin.employees.index'))
+            ->with('success', sprintf(
+                '%d ta xodimning muddati %s gacha uzaytirildi. Terminallar yangi muddatni Sinxronizatsiya orqali yuborilgandan keyin oladi.',
+                $updated,
+                $until->format('Y-m-d H:i'),
+            ));
     }
 
     public function bulkDestroy(BulkDestroyEmployeesRequest $request): RedirectResponse

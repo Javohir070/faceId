@@ -1,9 +1,12 @@
-import { router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { CalendarOutlined } from '@ant-design/icons';
 import { App as AntApp, Button, Checkbox, Input, Modal, Pagination, Progress, Select } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
+import ExtendValidityPanel from '../../../Components/Employees/ExtendValidityPanel';
+import { validityOptions, validityTags } from '../../../Components/EmployeeCard';
 import StatusTag from '../../../Components/StatusTag';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
 
@@ -74,7 +77,8 @@ function PanelTable({
         && !allVisibleSelected;
 
     return (
-        <div className="flex flex-col rounded-xl border border-line bg-surface shadow-ambient">
+        // min-w-0: grid ichida jadval kartani ekrandan kengaytirib yubormasin (telefonda jadval o‘zi suriladi).
+        <div className="flex min-w-0 flex-col rounded-xl border border-line bg-surface shadow-ambient">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
                 <div>
                     <h2 className="text-base font-extrabold text-ink">{title}</h2>
@@ -97,7 +101,7 @@ function PanelTable({
                     placeholder="Qidiruv..."
                     value={search}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="max-w-xs"
+                    className="min-w-0 flex-1 sm:max-w-xs"
                 />
             </div>
 
@@ -250,6 +254,9 @@ function SyncProgressModal({
 
 export default function Index({ devices = [], employees = [], categories = [], departments = [] }) {
     const { modal, message } = AntApp.useApp();
+    const can = usePage().props.can || {};
+    const [extendOpen, setExtendOpen] = useState(false);
+    const [validityFilter, setValidityFilter] = useState(null);
     const [selectedDeviceIds, setSelectedDeviceIds] = useState([]);
     const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
     const [deviceSearch, setDeviceSearch] = useState('');
@@ -267,7 +274,8 @@ export default function Index({ devices = [], employees = [], categories = [], d
     const [progressCancelled, setProgressCancelled] = useState(false);
     const abortRef = useRef(false);
 
-    useInertiaPoll(['devices', 'employees'], POLL_MS);
+    // Panel ochiq paytda avtomatik yangilash to‘xtaydi: eski javob saqlangan muddatni qaytarib ko‘rsatmasin.
+    useInertiaPoll(['devices', 'employees'], POLL_MS, !extendOpen);
 
     const filteredDevices = useMemo(() => {
         if (!categoryFilter) {
@@ -277,13 +285,19 @@ export default function Index({ devices = [], employees = [], categories = [], d
         return devices.filter((device) => device.category?.id === categoryFilter);
     }, [devices, categoryFilter]);
 
-    const filteredEmployees = useMemo(() => {
-        if (!departmentFilter) {
-            return employees;
-        }
+    // Tanlangan xodim filtrdan qat’i nazar ko‘rinib turadi: yashirin xodim bilmasdan qurilmaga yuborilmasin,
+    // muddati uzaytirilgan xodim esa "Muddati tugagan" filtridan chiqib ketmasin.
+    const filteredEmployees = useMemo(() => employees.filter((employee) => (
+        selectedEmployeeIds.includes(employee.id) || (
+            (!departmentFilter || employee.department?.id === departmentFilter)
+            && (!validityFilter || employee.validity === validityFilter)
+        )
+    )), [employees, departmentFilter, validityFilter, selectedEmployeeIds]);
 
-        return employees.filter((employee) => employee.department?.id === departmentFilter);
-    }, [employees, departmentFilter]);
+    const selectedEmployees = useMemo(
+        () => employees.filter((employee) => selectedEmployeeIds.includes(employee.id)),
+        [employees, selectedEmployeeIds],
+    );
 
     const selectedDevices = useMemo(
         () => devices.filter((device) => selectedDeviceIds.includes(device.id)),
@@ -435,7 +449,7 @@ export default function Index({ devices = [], employees = [], categories = [], d
                         <Select
                             allowClear
                             placeholder="Kategoriya"
-                            className="min-w-40"
+                            className="w-full sm:w-auto sm:min-w-40"
                             value={categoryFilter}
                             options={categories.map((item) => ({ value: item.id, label: item.name }))}
                             onChange={setCategoryFilter}
@@ -443,10 +457,18 @@ export default function Index({ devices = [], employees = [], categories = [], d
                         <Select
                             allowClear
                             placeholder="Bo'lim"
-                            className="min-w-40"
+                            className="w-full sm:w-auto sm:min-w-40"
                             value={departmentFilter}
                             options={departments.map((item) => ({ value: item.id, label: item.name }))}
                             onChange={setDepartmentFilter}
+                        />
+                        <Select
+                            allowClear
+                            placeholder="Muddat"
+                            className="w-full sm:w-auto sm:min-w-40"
+                            value={validityFilter}
+                            options={validityOptions}
+                            onChange={setValidityFilter}
                         />
                         <Button
                             type="primary"
@@ -502,8 +524,25 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             ulanmagan qurilma
                         </StatusTag>
                     ) : null}
+                    {can['employees.edit'] && selectedEmployeeIds.length > 0 ? (
+                        <Button
+                            className="!ml-auto !rounded-lg !font-bold"
+                            icon={<CalendarOutlined />}
+                            disabled={transferring}
+                            onClick={() => setExtendOpen(true)}
+                        >
+                            Muddatni uzaytirish
+                        </Button>
+                    ) : null}
                 </div>
             )}
+
+            <ExtendValidityPanel
+                open={extendOpen}
+                employees={selectedEmployees}
+                hint="Terminallar yangi muddatni darhol olmaydi. Uzaytirgandan keyin xodimlar tanlangan holda qoladi — qurilmalarni belgilab «Yuborish» tugmasini bosing."
+                onClose={() => setExtendOpen(false)}
+            />
 
             <div className="grid items-start gap-4 xl:grid-cols-2">
                 <PanelTable
@@ -605,7 +644,19 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             className: 'font-medium',
                             render: (row) => (
                                 <div>
-                                    <div>{row.name}</div>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <Link
+                                            href={route('admin.employees.show', row.id)}
+                                            className="font-bold text-brand-600 transition-colors duration-150 ease-productive hover:text-brand-700 hover:underline"
+                                        >
+                                            {row.name}
+                                        </Link>
+                                        {validityTags[row.validity] ? (
+                                            <StatusTag tone={validityTags[row.validity].tone}>
+                                                {validityTags[row.validity].label}
+                                            </StatusTag>
+                                        ) : null}
+                                    </div>
                                     <div className="text-xs font-medium text-ink-muted">
                                         {row.card || 'JSHSHIR yo‘q'}
                                         {row.department?.name ? ` · ${row.department.name}` : ''}

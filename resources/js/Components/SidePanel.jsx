@@ -36,20 +36,24 @@ export function usePartialPanel(prop, param = prop) {
     };
 }
 
-/** Kompyuterda ekranning yarmi, telefonda butun ekran. */
-function panelWidth() {
+/** Kompyuterda ekranning yarmi (shakl uchun torroq), telefonda butun ekran. */
+function panelWidth(narrow) {
     if (typeof window === 'undefined') {
-        return 720;
+        return narrow ? 560 : 720;
     }
 
-    return window.innerWidth < 768 ? window.innerWidth : Math.max(Math.round(window.innerWidth / 2), 480);
+    if (window.innerWidth < 768) {
+        return window.innerWidth;
+    }
+
+    return narrow ? 560 : Math.max(Math.round(window.innerWidth / 2), 480);
 }
 
 /**
  * Umumiy o‘ng panel: sarlavha, pastki qator va kompyuterda chap chetdagi aylana yopish tugmasi.
  * Ma’lumot kelguncha aylanib turuvchi belgi ko‘rinadi.
  */
-export default function SidePanel({ state, title, subtitle = null, footer = null, onClose, children }) {
+export default function SidePanel({ state, title, subtitle = null, footer = null, onClose, narrow = false, children }) {
     const close = () => {
         onClose?.();
         state.close();
@@ -60,7 +64,7 @@ export default function SidePanel({ state, title, subtitle = null, footer = null
             open={state.isOpen}
             onClose={close}
             placement="right"
-            size={panelWidth()}
+            size={panelWidth(narrow)}
             rootClassName="side-panel"
             // Kompyuterda panel chap chetidagi aylana tugma bilan yopiladi (yarmi tashqarida), telefonda X bilan.
             drawerRender={(node) => (

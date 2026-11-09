@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Interfaces\EmployeeRepositoryInterface;
 use App\Models\Employee;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -108,6 +109,19 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     public function findMany(array $ids): Collection
     {
         return Employee::query()->whereIn('id', $ids)->get();
+    }
+
+    /**
+     * Muddat uzaytirilsa Telegram ogohlantirishlari qaytadan yuborilishi uchun belgilar tozalanadi
+     * (modeldagi updating hodisasi ommaviy update'da ishlamaydi).
+     */
+    public function extendValidity(array $ids, CarbonInterface $until): int
+    {
+        return Employee::query()->whereIn('id', $ids)->update([
+            'valid_to_dt' => $until,
+            'expiry_warned_at' => null,
+            'expiry_notified_at' => null,
+        ]);
     }
 
     public function loadRelations(Employee $employee, array $relations): Employee

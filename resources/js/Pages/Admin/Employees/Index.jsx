@@ -1,8 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { CalendarOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { App as AntApp, Button, Checkbox, Input, Select, TreeSelect } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
+import ExtendValidityPanel from '../../../Components/Employees/ExtendValidityPanel';
+import { validityOptions, validityTags } from '../../../Components/EmployeeCard';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import Pagination from '../../../Components/Pagination';
@@ -19,20 +21,6 @@ const faceOptions = [
     { value: '0', label: "Yuz yo'q" },
 ];
 
-const validityOptions = [
-    { value: 'active', label: 'Faol' },
-    { value: 'expiring', label: 'Tugashiga yaqin' },
-    { value: 'expired', label: 'Muddati tugagan' },
-    { value: 'upcoming', label: 'Hali boshlanmagan' },
-];
-
-/** Faol xodimda belgi chiqmaydi: faqat e’tibor talab qiladiganlari ajralib turadi. */
-const validityTags = {
-    expiring: { tone: 'warning', label: 'Tugashiga yaqin' },
-    expired: { tone: 'danger', label: 'Muddati tugagan' },
-    upcoming: { tone: 'info', label: 'Hali boshlanmagan' },
-};
-
 export default function Index({
     employees,
     filters = {},
@@ -44,6 +32,9 @@ export default function Index({
     const can = usePage().props.can || {};
     const { modal } = AntApp.useApp();
     const [selectedIds, setSelectedIds] = useState([]);
+    const [extendOpen, setExtendOpen] = useState(false);
+    // Tanlash o‘chirish yoki muddatni uzaytirish uchun — ikkalasidan biri bo‘lsa katakchalar chiqadi.
+    const canSelect = Boolean(can['employees.delete'] || can['employees.edit']);
     const [form, setForm] = useState({
         search: filters.search ?? '',
         department_ids: filters.department_ids ?? [],
@@ -59,14 +50,18 @@ export default function Index({
         [departments, groups],
     );
 
+    const pageIds = employees.data.map((employee) => employee.id);
+    const pageKey = pageIds.join(',');
+
     // Sahifa yoki filtr almashsa tanlov tozalanadi — ko‘rinmaydigan xodim tasodifan o‘chirilmasin.
+    // Xodimlar o‘sha-o‘sha qolsa (masalan, panelda xato chiqib sahifa qayta kelsa) tanlov saqlanadi.
     useEffect(() => {
         setSelectedIds([]);
-    }, [employees.data]);
+    }, [pageKey]);
 
-    const pageIds = employees.data.map((employee) => employee.id);
     const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
     const someSelected = selectedIds.length > 0 && !allSelected;
+    const selectedEmployees = employees.data.filter((employee) => selectedIds.includes(employee.id));
 
     const toggleOne = (id, checked) => {
         setSelectedIds((current) => (checked ? [...current, id] : current.filter((item) => item !== id)));
@@ -274,22 +269,42 @@ export default function Index({
                         {selectedIds.length}
                         {' ta xodim tanlandi'}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button className="!rounded-lg !font-bold" onClick={() => setSelectedIds([])}>
                             Bekor qilish
                         </Button>
-                        <Button
-                            danger
-                            type="primary"
-                            className="!rounded-lg !font-bold"
-                            icon={<DeleteOutlined />}
-                            onClick={deleteSelected}
-                        >
-                            O‘chirish
-                        </Button>
+                        {can['employees.edit'] ? (
+                            <Button
+                                type="primary"
+                                className="!rounded-lg !font-bold"
+                                icon={<CalendarOutlined />}
+                                onClick={() => setExtendOpen(true)}
+                            >
+                                Muddatni uzaytirish
+                            </Button>
+                        ) : null}
+                        {can['employees.delete'] ? (
+                            <Button
+                                danger
+                                type="primary"
+                                className="!rounded-lg !font-bold"
+                                icon={<DeleteOutlined />}
+                                onClick={deleteSelected}
+                            >
+                                O‘chirish
+                            </Button>
+                        ) : null}
                     </div>
                 </div>
             ) : null}
+
+            <ExtendValidityPanel
+                open={extendOpen}
+                employees={selectedEmployees}
+                hint="Terminallar yangi muddatni darhol olmaydi: uzaytirgandan keyin xodimlarni Sinxronizatsiya sahifasidan qurilmalarga yuboring."
+                onClose={() => setExtendOpen(false)}
+                onDone={() => setSelectedIds([])}
+            />
 
             <TableShell
                 empty={employees.data.length === 0}
@@ -307,7 +322,7 @@ export default function Index({
                 <table className="data-table">
                     <thead>
                         <tr>
-                            {can['employees.delete'] ? (
+                            {canSelect ? (
                                 <th className="w-10">
                                     <Checkbox
                                         checked={allSelected}
@@ -332,7 +347,7 @@ export default function Index({
                     <tbody>
                         {employees.data.map((employee, index) => (
                             <tr key={employee.id} className={selectedIds.includes(employee.id) ? 'bg-brand-50/70' : undefined}>
-                                {can['employees.delete'] ? (
+                                {canSelect ? (
                                     <td>
                                         <Checkbox
                                             checked={selectedIds.includes(employee.id)}

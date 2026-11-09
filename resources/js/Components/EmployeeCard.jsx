@@ -5,11 +5,19 @@ import { initials } from './InitialsAvatar';
 import StatusTag from './StatusTag';
 
 /** Faol xodimda belgi chiqmaydi: faqat e’tibor talab qiladiganlari ajralib turadi. */
-const validityTags = {
+export const validityTags = {
     expiring: { tone: 'warning', label: 'Tugashiga yaqin' },
     expired: { tone: 'danger', label: 'Muddati tugagan' },
     upcoming: { tone: 'info', label: 'Hali boshlanmagan' },
 };
+
+/** "Muddat" filtri: Xodimlar va Sinxronizatsiya sahifalarida bir xil. */
+export const validityOptions = [
+    { value: 'expired', label: 'Muddati tugagan' },
+    { value: 'expiring', label: 'Tugashiga yaqin' },
+    { value: 'upcoming', label: 'Hali boshlanmagan' },
+    { value: 'active', label: 'Faol' },
+];
 
 /** Kartochka kamida 150px: ustunlar soni joyga qarab o‘zi tanlanadi. */
 export const EMPLOYEE_CARD_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3';

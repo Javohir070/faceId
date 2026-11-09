@@ -60,6 +60,9 @@ class SyncController extends Controller
                 'assigned_devices_count' => $employee->assigned_devices_count,
                 'synced_devices_count' => $employee->synced_devices_count,
                 'has_face' => (bool) $employee->face_exists,
+                // Muddati tugagan xodimni terminal baribir kiritmaydi: ro‘yxatda shu qatorda ko‘rinadi.
+                'validity' => $employee->validityStatus(),
+                'valid_to_dt' => $employee->valid_to_dt?->format('Y-m-d H:i'),
             ]);
 
         return Inertia::render('Admin/Sync/Index', [

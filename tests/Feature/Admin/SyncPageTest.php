@@ -69,6 +69,21 @@ class SyncPageTest extends TestCase
         $this->assertSame(1, $employee->devices()->whereNotNull('device_employee.synced_at')->count());
     }
 
+    public function test_sync_page_marks_employees_whose_validity_has_ended(): void
+    {
+        $admin = $this->createUserWithPermissions([config('menu_permissions.resources')['sync']]);
+        Employee::factory()->create(['name' => 'Tugagan', 'valid_to_dt' => now()->subDay()]);
+        Employee::factory()->create(['name' => 'Faol', 'valid_from_dt' => now()->subMonth(), 'valid_to_dt' => now()->addYear()]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.sync.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('employees', fn ($rows): bool => collect($rows)->pluck('validity', 'name')->all() === [
+                    'Faol' => 'active',
+                    'Tugagan' => 'expired',
+                ]));
+    }
+
     public function test_transfer_skips_offline_devices_when_online_exists(): void
     {
         Http::fake(['*' => Http::response('', 200)]);

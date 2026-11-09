@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Face;
 use App\Models\Group;
 use App\Services\Hikvision\EmployeeSyncService;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -117,6 +118,16 @@ class EmployeeService
         }
 
         return $employees->count();
+    }
+
+    /**
+     * Faqat bazada: terminal yangi muddatni Sinxronizatsiya orqali yuborilgandan keyin oladi.
+     *
+     * @param  list<int>  $employeeIds
+     */
+    public function extendValidity(array $employeeIds, CarbonInterface $until): int
+    {
+        return $this->employeeRepository->extendValidity($employeeIds, $until);
     }
 
     public function loadForShow(Employee $employee): Employee

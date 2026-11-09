@@ -3,6 +3,7 @@
 namespace App\Interfaces;
 
 use App\Models\Employee;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -31,6 +32,11 @@ interface EmployeeRepositoryInterface
      * @return Collection<int, Employee>
      */
     public function findMany(array $ids): Collection;
+
+    /**
+     * @param  list<int>  $ids
+     */
+    public function extendValidity(array $ids, CarbonInterface $until): int;
 
     public function loadRelations(Employee $employee, array $relations): Employee;
 }
