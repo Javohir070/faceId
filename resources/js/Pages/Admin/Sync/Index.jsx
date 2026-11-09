@@ -252,6 +252,9 @@ function SyncProgressModal({
     );
 }
 
+/** Terminal kiritmaydigan yoki tez orada kiritmay qo‘yadigan xodimlar. */
+const NEEDS_EXTENSION = ['expired', 'expiring'];
+
 export default function Index({ devices = [], employees = [], categories = [], departments = [] }) {
     const { modal, message } = AntApp.useApp();
     const can = usePage().props.can || {};
@@ -294,10 +297,24 @@ export default function Index({ devices = [], employees = [], categories = [], d
         )
     )), [employees, departmentFilter, validityFilter, selectedEmployeeIds]);
 
-    const selectedEmployees = useMemo(
-        () => employees.filter((employee) => selectedEmployeeIds.includes(employee.id)),
+    // Tanlanganlar orasida muddati tugagan yoki tugashiga yaqinlari bo‘lsa, uzaytirish tugmasi o‘zi chiqadi.
+    const needExtension = useMemo(
+        () => employees.filter((employee) => selectedEmployeeIds.includes(employee.id)
+            && NEEDS_EXTENSION.includes(employee.validity)),
         [employees, selectedEmployeeIds],
     );
+
+    // Panel ochilgan paytdagi ro‘yxat: saqlangandan keyin xodimlar "faol" bo‘lsa ham panel bo‘shab qolmaydi.
+    const [extendIds, setExtendIds] = useState([]);
+    const extendEmployees = useMemo(
+        () => employees.filter((employee) => extendIds.includes(employee.id)),
+        [employees, extendIds],
+    );
+
+    const openExtend = () => {
+        setExtendIds(needExtension.map((employee) => employee.id));
+        setExtendOpen(true);
+    };
 
     const selectedDevices = useMemo(
         () => devices.filter((device) => selectedDeviceIds.includes(device.id)),
@@ -524,14 +541,15 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             ulanmagan qurilma
                         </StatusTag>
                     ) : null}
-                    {can['employees.edit'] && selectedEmployeeIds.length > 0 ? (
+                    {can['employees.edit'] && needExtension.length > 0 ? (
                         <Button
+                            type="primary"
                             className="!ml-auto !rounded-lg !font-bold"
                             icon={<CalendarOutlined />}
                             disabled={transferring}
-                            onClick={() => setExtendOpen(true)}
+                            onClick={openExtend}
                         >
-                            Muddatni uzaytirish
+                            {`Muddatni uzaytirish (${needExtension.length})`}
                         </Button>
                     ) : null}
                 </div>
@@ -539,7 +557,7 @@ export default function Index({ devices = [], employees = [], categories = [], d
 
             <ExtendValidityPanel
                 open={extendOpen}
-                employees={selectedEmployees}
+                employees={extendEmployees}
                 hint="Terminallar yangi muddatni darhol olmaydi. Uzaytirgandan keyin xodimlar tanlangan holda qoladi — qurilmalarni belgilab «Yuborish» tugmasini bosing."
                 onClose={() => setExtendOpen(false)}
             />
