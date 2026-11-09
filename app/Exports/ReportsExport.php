@@ -2,31 +2,46 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Generator;
+use Maatwebsite\Excel\Concerns\FromGenerator;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class ReportsExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
+/**
+ * Qatorlar birma-bir o‘qiladi (xom hisobotda bazadan bo‘lak-bo‘lak), ustun kengligi esa oldindan beriladi:
+ * avtomatik kenglik har bir katakni o‘lchaydi va katta eksportda vaqtning yarmidan ko‘pini olardi.
+ */
+class ReportsExport implements FromGenerator, WithColumnWidths, WithHeadings, WithMapping
 {
+    private const WIDTHS = [
+        'employee_name' => 32,
+        'group_name' => 22,
+        'position' => 22,
+        'device_name' => 24,
+        'type_label' => 12,
+        'occurred_at' => 20,
+    ];
+
+    private const DEFAULT_WIDTH = 16;
+
     private int $rowNumber = 0;
 
     /**
-     * @param  Collection<int, array<string, mixed>>  $rows
+     * @param  iterable<int, array<string, mixed>>  $rows
      * @param  list<array{key: string, label: string}>  $columns
      */
     public function __construct(
-        private readonly Collection $rows,
+        private readonly iterable $rows,
         private readonly array $columns,
     ) {}
 
-    /**
-     * @return Collection<int, array<string, mixed>>
-     */
-    public function collection(): Collection
+    public function generator(): Generator
     {
-        return $this->rows;
+        foreach ($this->rows as $row) {
+            yield $row;
+        }
     }
 
     /**
@@ -35,6 +50,20 @@ class ReportsExport implements FromCollection, ShouldAutoSize, WithHeadings, Wit
     public function headings(): array
     {
         return array_merge(['№'], array_column($this->columns, 'label'));
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function columnWidths(): array
+    {
+        $widths = ['A' => 7];
+
+        foreach ($this->columns as $index => $column) {
+            $widths[Coordinate::stringFromColumnIndex($index + 2)] = self::WIDTHS[$column['key']] ?? self::DEFAULT_WIDTH;
+        }
+
+        return $widths;
     }
 
     /**

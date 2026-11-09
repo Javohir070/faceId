@@ -13,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 class ReportQueryService
 {
@@ -102,18 +103,19 @@ class ReportQueryService
     }
 
     /**
+     * Xom kirish/chiqish yozuvlari bazadan 1000 tadan o‘qiladi: butun jadval xotiraga yuklanmaydi.
+     *
      * @param  array<string, mixed>  $filters
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>|LazyCollection<int, array<string, mixed>>
      */
-    public function forExport(array $filters): Collection
+    public function forExport(array $filters): Collection|LazyCollection
     {
         $type = $this->resolveType($filters);
 
         if ($type === null || $type === AttendanceReportType::Entry || $type === AttendanceReportType::Exit) {
             return $this->rawQuery($filters)
-                ->get()
-                ->map(fn (Report $report): array => $this->mapRawReport($report))
-                ->values();
+                ->lazy(1000)
+                ->map(fn (Report $report): array => $this->mapRawReport($report));
         }
 
         return $this->buildComputedRows($filters, $type);
@@ -500,7 +502,7 @@ class ReportQueryService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return Collection<int, \App\Models\Employee>
+     * @return Collection<int, Employee>
      */
     private function filteredEmployees(array $filters): Collection
     {

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Database\Factories\GroupFactory;
 use App\Models\Scopes\BelongsToDepartmentScope;
+use Database\Factories\GroupFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

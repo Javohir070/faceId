@@ -44,7 +44,7 @@ class StoreNoteRequest extends FormRequest
                         ->exists();
 
                     if ($exists) {
-                        $fail('Bu xodim uchun tanlangan kunda shu turdagi izoh allaqachon mavjud.');
+                        $fail('Bu xodim uchun tanlangan kunda shu turdagi ruxsat allaqachon mavjud.');
                     }
                 },
             ],
@@ -58,7 +58,7 @@ class StoreNoteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'dt.unique' => 'Bu xodim uchun tanlangan kunda shu turdagi izoh allaqachon mavjud.',
+            'dt.unique' => 'Bu xodim uchun tanlangan kunda shu turdagi ruxsat allaqachon mavjud.',
         ];
     }
 }

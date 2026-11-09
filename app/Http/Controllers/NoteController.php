@@ -57,7 +57,7 @@ class NoteController extends Controller
 
         return redirect()
             ->route('admin.notes.index')
-            ->with('success', 'Izoh muvaffaqiyatli yaratildi.');
+            ->with('success', 'Ruxsat muvaffaqiyatli yaratildi.');
     }
 
     public function edit(Note $note): Response
@@ -74,7 +74,7 @@ class NoteController extends Controller
 
         return redirect()
             ->route('admin.notes.index')
-            ->with('success', 'Izoh muvaffaqiyatli yangilandi.');
+            ->with('success', 'Ruxsat muvaffaqiyatli yangilandi.');
     }
 
     public function destroy(Note $note): RedirectResponse
@@ -83,7 +83,7 @@ class NoteController extends Controller
 
         return redirect()
             ->route('admin.notes.index')
-            ->with('success', 'Izoh o‘chirildi.');
+            ->with('success', 'Ruxsat o‘chirildi.');
     }
 
     /**

@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\NoteType;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Note;
 use App\Models\Report;
 use App\Models\Schedule;
-use App\Enums\NoteType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\InteractsWithPermissions;

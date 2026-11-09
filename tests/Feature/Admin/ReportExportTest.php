@@ -8,8 +8,11 @@ use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Report;
 use App\Models\Schedule;
+use App\Services\ReportQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
 
@@ -40,9 +43,31 @@ class ReportExportTest extends TestCase
             ->assertOk();
 
         Excel::assertDownloaded('hisobotlar.xlsx', function (ReportsExport $export) {
-            return $export->collection()->count() === 1
+            return count(iterator_to_array($export->generator(), false)) === 1
                 && $export->headings()[0] === '№';
         });
+    }
+
+    public function test_raw_export_writes_every_row_with_fixed_column_widths(): void
+    {
+        $employee = Employee::factory()->create(['name' => 'Excel Ali']);
+        $device = Device::factory()->create(['name' => 'Kirish 1']);
+
+        foreach (['2026-08-04 09:00:00', '2026-08-04 18:00:00', '2026-08-05 09:05:00'] as $moment) {
+            Report::factory()->forEmployee($employee)->forDevice($device)->entry()->create(['occurred_at' => $moment]);
+        }
+
+        $service = app(ReportQueryService::class);
+        $path = tempnam(sys_get_temp_dir(), 'hisobot').'.xlsx';
+        file_put_contents($path, Excel::raw(new ReportsExport($service->forExport([]), $service->columns([])), ExcelWriter::XLSX));
+        $sheet = IOFactory::load($path)->getActiveSheet();
+        @unlink($path);
+
+        $this->assertSame(4, $sheet->getHighestDataRow());
+        $this->assertSame('Excel Ali', $sheet->getCell('B2')->getValue());
+        $this->assertSame('2026-08-05 09:05:00', collect($sheet->rangeToArray('A2:H2')[0])->first(fn ($value): bool => str_starts_with((string) $value, '2026-')));
+        $this->assertGreaterThan(20, $sheet->getColumnDimension('B')->getWidth());
+        $this->assertFalse($sheet->getColumnDimension('B')->getAutoSize());
     }
 
     public function test_unauthorized_user_cannot_download_reports_excel(): void
@@ -86,7 +111,7 @@ class ReportExportTest extends TestCase
 
         Excel::assertDownloaded('hisobotlar.xlsx', function (ReportsExport $export) {
             return $export->headings() === ['№', 'Ism', 'Guruh', 'Lavozim', 'Sana', 'Vaqt', 'Kechikish', 'Sabab']
-                && $export->collection()->count() === 1;
+                && count(iterator_to_array($export->generator(), false)) === 1;
         });
     }
 }

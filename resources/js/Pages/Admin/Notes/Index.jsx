@@ -55,13 +55,13 @@ export default function Index({
     const typeLabels = new Map(types.map((type) => [type.value, type.label]));
 
     return (
-        <AdminLayout title="Izohlar">
+        <AdminLayout title="Ish vaqtida ruxsatlar">
             <PageHeader
-                title="Izohlar"
-                subtitle="Xodimlarning kechikish, erta ketish va yo‘qlama izohlarini boshqaring."
+                title="Ish vaqtida ruxsatlar"
+                subtitle="Xodimlarning kechikish, erta ketish va kelmaslik uchun olgan ruxsatlarini boshqaring."
                 resource="notes"
                 createHref={route('admin.notes.create')}
-                createLabel="Izoh qo‘shish"
+                createLabel="Ruxsat qo‘shish"
             />
 
             <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
@@ -121,7 +121,7 @@ export default function Index({
                 empty={notes.data.length === 0}
                 resource="notes"
                 createHref={route('admin.notes.create')}
-                createLabel="Izoh qo‘shish"
+                createLabel="Ruxsat qo‘shish"
                 footer={notes.data.length > 0 ? (
                     <Pagination
                         links={notes.links}

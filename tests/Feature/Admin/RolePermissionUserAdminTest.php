@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Category;
+use App\Models\Department;
+use App\Models\Device;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -63,7 +66,7 @@ class RolePermissionUserAdminTest extends TestCase
                 'email' => 'new-user@example.com',
                 'password' => 'password',
                 'password_confirmation' => 'password',
-                'department_id' => \App\Models\Department::factory()->create()->id,
+                'department_id' => Department::factory()->create()->id,
                 'roles' => ['editor'],
             ])
             ->assertRedirect(route('admin.users.index'));
@@ -94,8 +97,8 @@ class RolePermissionUserAdminTest extends TestCase
         ]);
 
         $target = User::factory()->create();
-        $category = \App\Models\Category::factory()->create();
-        \App\Models\Device::factory()->create([
+        $category = Category::factory()->create();
+        Device::factory()->create([
             'user_id' => $target->id,
             'category_id' => $category->id,
         ]);

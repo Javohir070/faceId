@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -114,7 +115,7 @@ class DepartmentScheduleAdminTest extends TestCase
 
         $department = Department::factory()->create();
         $schedule = Schedule::factory()->create();
-        \App\Models\Employee::factory()->create([
+        Employee::factory()->create([
             'department_id' => $department->id,
             'schedule_id' => $schedule->id,
         ]);

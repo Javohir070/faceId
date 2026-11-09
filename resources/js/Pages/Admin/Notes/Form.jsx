@@ -29,10 +29,10 @@ export default function Form({
     };
 
     return (
-        <AdminLayout title={isEdit ? 'Izohni tahrirlash' : 'Izoh qo‘shish'}>
+        <AdminLayout title={isEdit ? 'Ruxsatni tahrirlash' : 'Ruxsat qo‘shish'}>
             <FormCard
-                title={isEdit ? 'Izohni tahrirlash' : 'Yangi izoh'}
-                subtitle="Xodim, izoh tipi va sanani kiriting."
+                title={isEdit ? 'Ruxsatni tahrirlash' : 'Yangi ruxsat'}
+                subtitle="Xodim, ruxsat turi va sanani kiriting."
                 backHref={route('admin.notes.index')}
                 onSubmit={submit}
                 processing={processing}

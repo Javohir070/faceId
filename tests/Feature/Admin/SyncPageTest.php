@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Schedule;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -149,7 +150,7 @@ class SyncPageTest extends TestCase
         ]);
         $employee->face()->create(['face' => base64_encode('one-face')]);
 
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $this->withoutMiddleware(ValidateCsrfToken::class);
 
         $this->actingAs($admin)
             ->postJson(route('admin.sync.transfer-one'), [
@@ -187,7 +188,7 @@ class SyncPageTest extends TestCase
         ]);
         $employee->face()->create(['face' => base64_encode('offline-face')]);
 
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $this->withoutMiddleware(ValidateCsrfToken::class);
 
         $this->actingAs($admin)
             ->postJson(route('admin.sync.transfer-one'), [

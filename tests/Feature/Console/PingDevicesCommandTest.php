@@ -5,7 +5,9 @@ namespace Tests\Feature\Console;
 use App\Models\Category;
 use App\Models\Device;
 use App\Models\User;
+use App\Services\Hikvision\HikvisionDeviceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -80,7 +82,7 @@ class PingDevicesCommandTest extends TestCase
             'is_online' => true,
         ]);
 
-        $service = app(\App\Services\Hikvision\HikvisionDeviceService::class);
+        $service = app(HikvisionDeviceService::class);
 
         $this->assertFalse($service->refreshOnlineStatus($device));
         $device->refresh();
@@ -118,13 +120,13 @@ class PingDevicesCommandTest extends TestCase
             'is_online' => true,
         ]);
 
-        \Illuminate\Support\Facades\Cache::put(
+        Cache::put(
             'hikvision.device.'.$device->id.'.ping_failures',
             1,
             now()->addHours(6),
         );
 
-        $service = app(\App\Services\Hikvision\HikvisionDeviceService::class);
+        $service = app(HikvisionDeviceService::class);
         $service->connect($device);
 
         Http::fake(['*' => Http::response('down', 500)]);
