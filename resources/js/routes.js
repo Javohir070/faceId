@@ -42,6 +42,7 @@ const routeBuilders = {
     'admin.employees.bulk-destroy': () => '/admin/employees/bulk-destroy',
     'admin.users.devices.update': (id) => `/admin/users/${id}/devices`,
     'admin.employees.remove-devices': (id) => `/admin/employees/${id}/remove-devices`,
+    'admin.employees.face': (id) => `/admin/employees/${id}/face`,
 
 
     'admin.reports.index': () => '/admin/reports',

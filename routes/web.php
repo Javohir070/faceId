@@ -118,6 +118,9 @@ Route::middleware('auth')->group(function () {
         Route::get('employees/export', [EmployeeController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['employees'])
             ->name('employees.export');
+        Route::get('employees/{employee}/face', [EmployeeController::class, 'face'])
+            ->middleware('permission:'.$menuPermissions['employees'])
+            ->name('employees.face');
         Route::resource('employees', EmployeeController::class)
             ->middleware('permission:'.$menuPermissions['employees'])
             ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['employees']['create'])

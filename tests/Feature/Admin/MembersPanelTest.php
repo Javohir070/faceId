@@ -38,9 +38,12 @@ class MembersPanelTest extends TestCase
         $this->parent = Group::factory()->create(['name' => 'IT', 'department_id' => $this->nukus->id]);
         $this->child = Group::factory()->create(['name' => 'Dasturchilar', 'department_id' => $this->nukus->id, 'parent_id' => $this->parent->id]);
 
-        $this->employee('Ali', $this->nukus, $this->parent);
+        $accounting = Group::factory()->create(['name' => 'Buxgalteriya', 'department_id' => $this->nukus->id]);
+
+        $this->employee('Ali', $this->nukus, $this->parent, withFace: true);
         $this->employee('Vali', $this->nukus, $this->child);
         $this->employee('Guruhsiz', $this->nukus);
+        $this->employee('Zafar', $this->nukus, $accounting);
         $this->employee('Xivalik', $this->xiva);
     }
 
@@ -49,7 +52,7 @@ class MembersPanelTest extends TestCase
         $this->actingAs($this->createUserWithPermissions())
             ->get(route('admin.departments.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('departments.data', fn ($rows): bool => collect($rows)->pluck('employees_count', 'name')->all() === ['Nukus' => 3, 'Xiva' => 1]));
+                ->where('departments.data', fn ($rows): bool => collect($rows)->pluck('employees_count', 'name')->all() === ['Nukus' => 4, 'Xiva' => 1]));
     }
 
     public function test_department_panel_lists_its_employees(): void
@@ -60,9 +63,14 @@ class MembersPanelTest extends TestCase
                 ->missing('members')
                 ->reload(fn (Assert $reload) => $reload
                     ->where('members.title', 'Nukus')
-                    ->where('members.total', 3)
-                    ->where('members.employees', fn ($rows): bool => collect($rows)->pluck('name')->all() === ['Ali', 'Guruhsiz', 'Vali'])
-                    ->where('members.employees.0.group', 'IT')
+                    ->where('members.total', 4)
+                    // Guruhlar daraxt tartibida (nomi bo‘yicha, pastki guruh otasidan keyin), guruhsizlar oxirida.
+                    ->where('members.employees', fn ($rows): bool => collect($rows)->map(fn ($row): string => $row['name'].' — '.($row['group'] ?? 'guruhsiz'))->all() === [
+                        'Zafar — Buxgalteriya',
+                        'Ali — IT',
+                        'Vali — IT › Dasturchilar',
+                        'Guruhsiz — guruhsiz',
+                    ])
                     ->where('members.filter', ['department_ids' => [$this->nukus->id]]), only: 'members'));
     }
 
@@ -72,7 +80,15 @@ class MembersPanelTest extends TestCase
             ->where('members.title', 'IT')
             ->where('members.subtitle', 'Nukus')
             ->where('members.total', 2)
-            ->where('members.employees', fn ($rows): bool => collect($rows)->pluck('group', 'name')->all() === ['Ali' => 'IT', 'Vali' => 'Dasturchilar']));
+            ->where('members.employees', fn ($rows): bool => collect($rows)->pluck('group', 'name')->all() === ['Ali' => 'IT', 'Vali' => 'IT › Dasturchilar']));
+    }
+
+    public function test_panel_gives_a_small_photo_link_instead_of_the_photo_itself(): void
+    {
+        $this->panel('group:'.$this->parent->id, $this->createUserWithPermissions(), fn (Assert $reload) => $reload
+            ->where('members.employees.0.name', 'Ali')
+            ->where('members.employees.0.face_url', fn (string $url): bool => str_contains($url, '/admin/employees/') && str_contains($url, '/face?v='))
+            ->where('members.employees.1.face_url', null));
     }
 
     public function test_user_cannot_open_another_departments_group_or_department(): void
@@ -111,12 +127,16 @@ class MembersPanelTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->reload($assert, only: 'members'));
     }
 
-    private function employee(string $name, Department $department, ?Group $group = null): void
+    private function employee(string $name, Department $department, ?Group $group = null, bool $withFace = false): void
     {
-        Employee::factory()->create([
+        $employee = Employee::factory()->create([
             'name' => $name,
             'department_id' => $department->id,
             'group_id' => $group?->id,
         ]);
+
+        if ($withFace) {
+            $employee->face()->create(['face' => base64_encode('rasm')]);
+        }
     }
 }

@@ -14,12 +14,14 @@ use App\Models\Device;
 use App\Models\Employee;
 use App\Models\Note;
 use App\Services\Employees\EmployeeProfileService;
+use App\Services\Employees\FaceThumbnailService;
 use App\Services\EmployeeService;
 use App\Services\Hikvision\EmployeePullService;
 use App\Services\Hikvision\EmployeeSyncService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -242,6 +244,23 @@ class EmployeeController extends Controller
         return redirect()
             ->back(fallback: route('admin.employees.index'))
             ->with('success', $deleted.' ta xodim o‘chirildi. Qurilmalardan olib tashlash navbatga qo‘yildi.');
+    }
+
+    /**
+     * Yuzning kichik nusxasi (panel va ro‘yxatlar uchun). Brauzer uni bir hafta saqlaydi;
+     * rasm almashsa havoladagi ?v= o‘zgaradi.
+     */
+    public function face(Employee $employee, FaceThumbnailService $thumbnails): HttpResponse
+    {
+        $face = $employee->face()->value('face');
+        $thumbnail = is_string($face) && $face !== '' ? $thumbnails->make($face) : null;
+
+        abort_if($thumbnail === null, 404);
+
+        return response($thumbnail, 200, [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'private, max-age=604800',
+        ]);
     }
 
     public function export(Request $request): BinaryFileResponse
