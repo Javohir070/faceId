@@ -7,8 +7,28 @@ import { route } from '../../../routes';
 import PageHeader from '../../../Components/PageHeader';
 import StatusTag from '../../../Components/StatusTag';
 
-export default function Pull({ devices = [], categories = [] }) {
+const reconciliationStatus = {
+    ok: { tone: 'success', label: 'Mos' },
+    mismatch: { tone: 'danger', label: 'Farq bor' },
+    unreachable: { tone: 'neutral', label: 'Javob bermadi' },
+};
+
+const countOrDash = (value) => (value === null || value === undefined ? '—' : value);
+
+export default function Pull({ devices = [], categories = [], reconciliations = [] }) {
     const { can = {} } = usePage().props;
+    const [recheckingId, setRecheckingId] = useState(null);
+
+    const recheck = (row) => {
+        setRecheckingId(row.id);
+        router.post(route('admin.reports.reconcile'), {
+            device_id: row.device_id,
+            date: row.date,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setRecheckingId(null),
+        });
+    };
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null);
@@ -203,6 +223,73 @@ export default function Pull({ devices = [], categories = [] }) {
                                     <td className="font-medium">{device.type_label || '—'}</td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-line bg-surface shadow-ambient">
+                <div className="border-b border-line px-4 py-3">
+                    <h2 className="text-base font-extrabold text-ink">Solishtirish</h2>
+                    <p className="mt-0.5 text-sm text-ink-muted">
+                        Har kecha 01:00 da qurilmadagi va tizimdagi kirish-chiqishlar solishtiriladi, yetishmagani
+                        o‘zi tortib olinadi. Sonlar tizimdagi xodimlar bo‘yicha; begona — terminalda bor, lekin
+                        tizimda yo‘q odamlar.
+                    </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="data-table min-w-full">
+                        <thead>
+                            <tr>
+                                <th>Sana</th>
+                                <th>Qurilma</th>
+                                <th className="text-right">Qurilmada</th>
+                                <th className="text-right">Tizimda</th>
+                                <th className="text-right">Tiklandi</th>
+                                <th className="text-right">Begona</th>
+                                <th>Holat</th>
+                                <th>Tekshirildi</th>
+                                <th className="text-right">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {reconciliations.length === 0 ? (
+                                <tr>
+                                    <td colSpan={9} className="py-10 text-center text-sm text-ink-muted">
+                                        Hali solishtirish o‘tkazilmagan. Birinchi tekshiruv kechasi 01:00 da bo‘ladi.
+                                    </td>
+                                </tr>
+                            ) : reconciliations.map((row) => {
+                                const status = reconciliationStatus[row.status] ?? reconciliationStatus.unreachable;
+
+                                return (
+                                    <tr key={row.id}>
+                                        <td className="whitespace-nowrap font-medium tabular-nums">{row.date}</td>
+                                        <td className="font-medium">{row.device_name || '—'}</td>
+                                        <td className="text-right tabular-nums">{countOrDash(row.device_count)}</td>
+                                        <td className="text-right tabular-nums">{countOrDash(row.system_count)}</td>
+                                        <td className="text-right tabular-nums">{row.recovered || '—'}</td>
+                                        <td className="text-right tabular-nums text-ink-muted">{countOrDash(row.strangers)}</td>
+                                        <td>
+                                            <StatusTag tone={status.tone} title={row.error || undefined}>
+                                                {status.label}
+                                            </StatusTag>
+                                        </td>
+                                        <td className="whitespace-nowrap text-sm tabular-nums text-ink-muted">{row.checked_at || '—'}</td>
+                                        <td className="whitespace-nowrap text-right">
+                                            <Button
+                                                size="small"
+                                                loading={recheckingId === row.id}
+                                                disabled={recheckingId !== null && recheckingId !== row.id}
+                                                onClick={() => recheck(row)}
+                                            >
+                                                Qayta tekshirish
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

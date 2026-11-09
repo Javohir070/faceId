@@ -75,6 +75,7 @@ class Device extends Model
             'webhook_configured' => 'boolean',
             'last_connected_at' => 'datetime',
             'last_ping_at' => 'datetime',
+            'events_pulled_until' => 'datetime',
             'password' => 'encrypted',
         ];
     }

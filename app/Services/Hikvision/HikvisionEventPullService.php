@@ -19,6 +19,12 @@ class HikvisionEventPullService
     /** Bir qurilma / bir so‘rov uchun xavfsizlik limiti (sahifa emas — event soni). */
     private const MAX_EVENTS_PER_DEVICE = 100000;
 
+    /** Belgi hali yo‘q qurilmada shuncha kun orqaga qaraladi. */
+    private const FIRST_PULL_LOOKBACK_DAYS = 3;
+
+    /** Qurilma soatidagi kichik farq uchun oldingi oraliq bilan ustma-ust olinadi. */
+    private const PULL_OVERLAP_MINUTES = 5;
+
     public function __construct(
         private readonly IsapiClient $client,
         private readonly ReportService $reportService,
@@ -141,14 +147,23 @@ class HikvisionEventPullService
             ];
         }
 
-        $startTime = $this->lastPullStart($device);
+        $startTime = $this->pullStart($device);
         $endTime = $this->resolveDeviceNow($device);
 
         if ($endTime->lessThanOrEqualTo($startTime)) {
             $startTime = $endTime->copy()->subDay();
         }
 
-        return $this->pullDeviceRange($device, $startTime, $endTime);
+        $result = $this->pullDeviceRange($device, $startTime, $endTime);
+
+        // Belgi faqat oraliq oxirigacha o‘qilganda suriladi; xato bo‘lsa pullDeviceRange exception tashlaydi.
+        if (! $result['truncated']) {
+            $device->forceFill([
+                'events_pulled_until' => $endTime->copy()->setTimezone($this->eventTimezone())->format('Y-m-d H:i:s'),
+            ])->save();
+        }
+
+        return $result;
     }
 
     /**
@@ -178,7 +193,10 @@ class HikvisionEventPullService
     /**
      * @return array{imported:int, skipped:int, skipped_duplicate:int, skipped_invalid:int, truncated:bool}
      */
-    public function pullDeviceRange(Device $device, Carbon $startTime, Carbon $endTime): array
+    /**
+     * @param  (\Closure(string, string, string): void)|null  $inspect  har bir odamli event uchun: raqam, Toshkent vaqti (Y-m-d H:i:s), natija
+     */
+    public function pullDeviceRange(Device $device, Carbon $startTime, Carbon $endTime, ?\Closure $inspect = null): array
     {
         if ($endTime->lessThan($startTime)) {
             return [
@@ -209,6 +227,16 @@ class HikvisionEventPullService
 
             foreach ($items as $item) {
                 $outcome = $this->importEventItem($device, $item);
+
+                if ($inspect !== null) {
+                    $employeeNo = $this->itemEmployeeNo($item);
+                    $eventTime = data_get($item, 'time') ?? data_get($item, 'dateTime');
+
+                    if ($employeeNo !== '' && $eventTime) {
+                        $inspect($employeeNo, ReportService::localEventTime($eventTime), $outcome);
+                    }
+                }
+
                 if ($outcome === 'imported') {
                     $imported++;
                 } elseif ($outcome === 'duplicate') {
@@ -316,13 +344,9 @@ class HikvisionEventPullService
      */
     private function importEventItem(Device $device, array $item): string
     {
-        $employeeNo = (string) (data_get($item, 'employeeNoString') ?? data_get($item, 'employeeNo') ?? '');
+        $employeeNo = $this->itemEmployeeNo($item);
         $cardNo = (string) (data_get($item, 'cardNo') ?? '');
         $name = (string) (data_get($item, 'name') ?? '');
-
-        if ($employeeNo === '' && $cardNo !== '') {
-            $employeeNo = $cardNo;
-        }
 
         if ($employeeNo === '' && $name === '') {
             return 'invalid';
@@ -368,19 +392,38 @@ class HikvisionEventPullService
             ->exists();
     }
 
-    private function lastPullStart(Device $device): Carbon
+    /**
+     * Zaxira tortish qurilmadan oxirgi marta to‘liq o‘qilgan joydan davom etadi. Eng yangi eventga qaralmaydi:
+     * internet tiklangach alertStream yoki webhook yangi eventni birinchi yozsa, uzilish paytidagilar
+     * o‘tkazib yuborilardi. IP bo‘yicha ham emas: NAT ortidagi bir nechta terminal bitta IP’da bo‘lishi mumkin.
+     */
+    private function pullStart(Device $device): Carbon
     {
-        $lastEvent = AccessControllerEvent::query()
-            ->where('device_ip', $device->ip_address)
-            ->whereNotNull('event_time')
-            ->latest('event_time')
-            ->value('event_time');
+        $pulledUntil = $device->getRawOriginal('events_pulled_until');
 
-        if ($lastEvent) {
-            return Carbon::parse($lastEvent)->subMinute();
+        if ($pulledUntil === null) {
+            // Birinchi marta: oxirgi kunlar qayta ko‘riladi, takrorlar yozilmaydi.
+            return now()->subDays(self::FIRST_PULL_LOOKBACK_DAYS);
         }
 
-        return now()->subDays(7);
+        return Carbon::parse((string) $pulledUntil, $this->eventTimezone())->subMinutes(self::PULL_OVERLAP_MINUTES);
+    }
+
+    /**
+     * Terminal odamni employeeNo (JSHSHIR) bilan, ba’zan faqat karta raqami bilan yuboradi.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function itemEmployeeNo(array $item): string
+    {
+        $employeeNo = (string) (data_get($item, 'employeeNoString') ?? data_get($item, 'employeeNo') ?? '');
+
+        return $employeeNo !== '' ? $employeeNo : (string) (data_get($item, 'cardNo') ?? '');
+    }
+
+    private function eventTimezone(): string
+    {
+        return (string) config('hikvision.event_timezone', config('app.timezone'));
     }
 
     private function resolveDeviceNow(Device $device): Carbon

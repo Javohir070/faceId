@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Enums\AttendanceReportType;
 use App\Exports\ReportsExport;
 use App\Http\Requests\PullReportEventsRequest;
+use App\Http\Requests\ReconcileDeviceEventsRequest;
 use App\Models\Category;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
+use App\Models\EventReconciliation;
 use App\Models\Group;
 use App\Models\Schedule;
+use App\Services\Hikvision\EventReconciliationService;
 use App\Services\Hikvision\HikvisionEventPullService;
 use App\Services\ReportQueryService;
 use Carbon\Carbon;
@@ -27,6 +30,7 @@ class ReportController extends Controller
     public function __construct(
         private readonly HikvisionEventPullService $eventPullService,
         private readonly ReportQueryService $reportQueryService,
+        private readonly EventReconciliationService $reconciliationService,
     ) {}
 
     public function index(Request $request): Response
@@ -69,7 +73,57 @@ class ReportController extends Controller
                 ->whereIn('id', $devices->pluck('category.id')->filter())
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            'reconciliations' => $this->recentReconciliations(),
         ]);
+    }
+
+    /**
+     * Bitta qurilmaning bitta kunini qayta solishtiradi: terminal o‘qiladi, yetishmagan event qo‘shiladi.
+     */
+    public function reconcile(ReconcileDeviceEventsRequest $request): RedirectResponse
+    {
+        $device = Device::query()->findOrFail($request->integer('device_id'));
+        $result = $this->reconciliationService->reconcile($device, Carbon::parse($request->validated('date')));
+        $date = $result->date->format('Y-m-d');
+
+        $message = match ($result->status) {
+            EventReconciliation::STATUS_OK => sprintf('%s, %s: mos — %d ta o‘tish, %d tasi qayta tiklandi.', $device->name, $date, $result->system_count, $result->recovered),
+            EventReconciliation::STATUS_MISMATCH => sprintf('%s, %s: qurilmada %d, tizimda %d.', $device->name, $date, $result->device_count, $result->system_count),
+            default => sprintf('%s javob bermadi: %s', $device->name, $result->error),
+        };
+
+        return back()->with($result->status === EventReconciliation::STATUS_OK ? 'success' : 'error', $message);
+    }
+
+    /**
+     * Oxirgi 7 kun; foydalanuvchi faqat o‘ziga ko‘rinadigan qurilmalarni ko‘radi (AssignedDevicesScope).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function recentReconciliations(): array
+    {
+        return EventReconciliation::query()
+            ->whereHas('device')
+            ->with('device:id,name')
+            ->whereDate('date', '>=', now()->subDays(7)->toDateString())
+            ->orderByDesc('date')
+            ->orderBy('device_id')
+            ->get()
+            ->map(fn (EventReconciliation $row): array => [
+                'id' => $row->id,
+                'device_id' => $row->device_id,
+                'device_name' => $row->device?->name,
+                'date' => $row->date->format('Y-m-d'),
+                'device_count' => $row->device_count,
+                'system_count' => $row->system_count,
+                'recovered' => $row->recovered,
+                'strangers' => $row->strangers,
+                'status' => $row->status,
+                'error' => $row->error,
+                'checked_at' => $row->checked_at?->format('Y-m-d H:i'),
+            ])
+            ->values()
+            ->all();
     }
 
     public function pullStore(PullReportEventsRequest $request): RedirectResponse

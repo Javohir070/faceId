@@ -138,6 +138,9 @@ Route::middleware('auth')->group(function () {
         Route::post('reports/pull', [ReportController::class, 'pullStore'])
             ->middleware('permission:'.$menuPermissions['reports-pull'])
             ->name('reports.pull.store');
+        Route::post('reports/reconcile', [ReportController::class, 'reconcile'])
+            ->middleware('permission:'.$menuPermissions['reports-pull'])
+            ->name('reports.reconcile');
         Route::get('reports', [ReportController::class, 'index'])
             ->middleware('permission:'.$menuPermissions['reports'])
             ->name('reports.index');

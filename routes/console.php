@@ -20,6 +20,12 @@ Schedule::command('devices:pull-events')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Kechagi kun to‘liq tugagach (tungi smena ham): qurilma va tizimdagi kirish-chiqishlar solishtiriladi.
+Schedule::command('devices:reconcile-events')
+    ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+
 Schedule::command('employees:notify-expiry')
     ->dailyAt('08:00')
     ->withoutOverlapping();

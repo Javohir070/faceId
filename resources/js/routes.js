@@ -51,6 +51,7 @@ const routeBuilders = {
     'admin.attendance.notes.store': () => '/admin/attendance/notes',
     'admin.reports.pull': () => '/admin/reports/pull',
     'admin.reports.pull.store': () => '/admin/reports/pull',
+    'admin.reports.reconcile': () => '/admin/reports/reconcile',
 
     ...resource('admin.users', '/admin/users'),
     ...resource('admin.roles', '/admin/roles'),

@@ -108,7 +108,9 @@ Events arrive through **three independent channels**, all converging on `ReportS
 
 1. Webhook `POST /api/webhooks/hikvision/events/{secret?}` → `WebhookController` (secret via header, query, or path; device IP can be trusted instead)
 2. `devices:stream-events` — persistent alertStream connection
-3. `devices:pull-events` — scheduled polling fallback
+3. `devices:pull-events` — scheduled polling fallback. It resumes each device from `devices.events_pulled_until`, which only moves after a complete pull, not from the newest stored event: when a terminal comes back after an outage, a live channel may store a fresh event first, and starting from that event would skip everything recorded during the outage
+
+Every night at 01:00 `devices:reconcile-events` (`EventReconciliationService`) re-reads yesterday from each terminal, plus any of the 3 days before it that was not `ok`. It imports whatever is missing and stores per device × day, in `event_reconciliations`, the passes of our employees on the terminal vs the reports in the system. Numbers that are not in `employees.card` are counted as strangers, shown as a count only, because terminals are shared with other systems. The results appear under Event tortish → Solishtirish, where any row can be rechecked, and a new problem is sent once to Telegram via `notifyDevice()`. It only reads from terminals.
 
 Duplicates are expected and de-duplicated inside `ReportService::createFromAccessEvent()` by `(occurred_at, device_id, employee)`. `createFromWebhookPayload()` takes a per-event cache lock so channels arriving at the same moment cannot both insert; this needs a cache store shared between processes (`database` in production, not `array`). The stream and pull channels always record the device's panel IP and pass the `Device` explicitly, because a terminal behind NAT reports its internal IP and several terminals can share one public IP; the webhook still resolves the device by IP alone.
 
