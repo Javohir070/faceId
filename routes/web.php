@@ -115,8 +115,9 @@ Route::middleware('auth')->group(function () {
         Route::post('employees/bulk-destroy', [EmployeeController::class, 'bulkDestroy'])
             ->middleware(['permission:'.$menuPermissions['employees'], 'permission:'.$actionPermissions['employees']['delete']])
             ->name('employees.bulk-destroy');
+        // Tahrirlash YOKI Sinxronizatsiya huquqi (User::canExtendEmployeeValidity() so‘rovda aniq tekshiradi).
         Route::post('employees/bulk-extend', [EmployeeController::class, 'bulkExtend'])
-            ->middleware(['permission:'.$menuPermissions['employees'], 'permission:'.$actionPermissions['employees']['edit']])
+            ->middleware('permission:'.$actionPermissions['employees']['edit'].'|'.$menuPermissions['sync'])
             ->name('employees.bulk-extend');
         Route::get('employees/export', [EmployeeController::class, 'export'])
             ->middleware('permission:'.$menuPermissions['employees'])

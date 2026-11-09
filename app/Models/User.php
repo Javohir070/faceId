@@ -89,4 +89,17 @@ class User extends Authenticatable
     {
         return ! $this->hasRole('super-admin');
     }
+
+    /**
+     * Xodimlar muddatini uzaytirish: xodimlarni tahrirlay oladigan yoki Sinxronizatsiya huquqi bor har kim
+     * (terminalga yuborishdan oldin muddati tugaganlarni shu yerning o‘zida uzaytirish uchun).
+     * Route, so‘rov va tugmalar shu bitta qoidaga qaraydi.
+     */
+    public function canExtendEmployeeValidity(): bool
+    {
+        $canEditEmployees = $this->can(config('menu_permissions.resources.employees'))
+            && $this->can(config('menu_permissions.actions.employees.edit'));
+
+        return $canEditEmployees || $this->can(config('menu_permissions.resources.sync'));
+    }
 }

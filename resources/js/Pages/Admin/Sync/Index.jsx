@@ -541,7 +541,7 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             ulanmagan qurilma
                         </StatusTag>
                     ) : null}
-                    {can['employees.edit'] && needExtension.length > 0 ? (
+                    {can['employees.extend'] && needExtension.length > 0 ? (
                         <Button
                             type="primary"
                             className="!ml-auto !rounded-lg !font-bold"
@@ -663,12 +663,17 @@ export default function Index({ devices = [], employees = [], categories = [], d
                             render: (row) => (
                                 <div>
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                        <Link
-                                            href={route('admin.employees.show', row.id)}
-                                            className="font-bold text-brand-600 transition-colors duration-150 ease-productive hover:text-brand-700 hover:underline"
-                                        >
-                                            {row.name}
-                                        </Link>
+                                        {/* Xodimlar sahifasiga huquqi yo‘q foydalanuvchiga havola 403 ga olib borardi. */}
+                                        {can.employees ? (
+                                            <Link
+                                                href={route('admin.employees.show', row.id)}
+                                                className="font-bold text-brand-600 transition-colors duration-150 ease-productive hover:text-brand-700 hover:underline"
+                                            >
+                                                {row.name}
+                                            </Link>
+                                        ) : (
+                                            <span className="font-bold text-ink">{row.name}</span>
+                                        )}
                                         {validityTags[row.validity] ? (
                                             <StatusTag tone={validityTags[row.validity].tone}>
                                                 {validityTags[row.validity].label}

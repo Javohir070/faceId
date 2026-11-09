@@ -72,7 +72,24 @@ class EmployeeBulkExtendTest extends TestCase
         $this->assertSame('2028-06-01', $employee->fresh()->valid_to_dt->toDateString());
     }
 
-    public function test_extending_needs_the_edit_permission(): void
+    public function test_sync_permission_alone_is_enough(): void
+    {
+        $user = $this->createUserWithPermissions([config('menu_permissions.resources.sync')]);
+        $employee = $this->expired('Ali');
+
+        $this->actingAs($user)
+            ->get(route('admin.sync.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('can', fn ($can): bool => $can['employees.extend'] === true
+                && $can['employees.edit'] === false));
+
+        $this->actingAs($user)
+            ->post(route('admin.employees.bulk-extend'), ['employee_ids' => [$employee->id], 'valid_to_dt' => '2027-12-31 18:00'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('2027-12-31', $employee->fresh()->valid_to_dt->toDateString());
+    }
+
+    public function test_extending_needs_the_edit_or_sync_permission(): void
     {
         $user = $this->createUserWithPermissions([config('menu_permissions.resources')['employees']]);
         $user->revokePermissionTo(config('menu_permissions.actions.employees.edit'));

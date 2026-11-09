@@ -69,6 +69,7 @@ class HandleInertiaRequests extends Middleware
                 'roles' => $user->can($menuPermissions['roles']),
                 'permissions' => $user->can($menuPermissions['permissions']),
                 ...$this->actionAbilities($user),
+                'employees.extend' => $user->canExtendEmployeeValidity(),
             ] : null,
             'appName' => config('app.name'),
         ];

@@ -13,7 +13,7 @@ class BulkExtendEmployeesRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can(config('menu_permissions.actions.employees.edit')) ?? false;
+        return $this->user()?->canExtendEmployeeValidity() ?? false;
     }
 
     /**

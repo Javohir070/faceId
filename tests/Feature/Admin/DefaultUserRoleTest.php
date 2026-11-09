@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Department;
 use App\Models\Device;
+use App\Models\Employee;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -208,5 +209,32 @@ class DefaultUserRoleTest extends TestCase
         // Boshqa rolda oldin bor edimi, bilib bo‘lmaydi: faqat `user` dan olinadi.
         $this->assertEqualsCanonicalizing(['Hisobotlar'], $userRole->fresh()->permissions->pluck('name')->all());
         $this->assertEqualsCanonicalizing(['Hisobotlar', 'Event tortish'], $manager->fresh()->permissions->pluck('name')->all());
+    }
+
+    public function test_user_role_can_extend_its_departments_expired_employees_from_sync_page(): void
+    {
+        $user = $this->regularUser();
+        $employee = Employee::factory()->create([
+            'department_id' => $user->department_id,
+            'valid_from_dt' => now()->subYear(),
+            'valid_to_dt' => now()->subDay(),
+        ]);
+
+        // Sinxronizatsiyadagi «Muddatni uzaytirish» tugmasi shu ikki narsaga qaraydi.
+        $this->actingAs($user)
+            ->get(route('admin.sync.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('can', fn ($can): bool => ($can['employees.extend'] ?? false) === true)
+                ->where('employees.0.id', $employee->id)
+                ->where('employees.0.validity', Employee::VALIDITY_EXPIRED));
+
+        $this->actingAs($user)
+            ->post(route('admin.employees.bulk-extend'), [
+                'employee_ids' => [$employee->id],
+                'valid_to_dt' => now()->addYear()->format('Y-m-d H:i'),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($employee->fresh()->valid_to_dt->isFuture());
     }
 }

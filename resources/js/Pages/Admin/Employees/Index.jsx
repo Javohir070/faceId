@@ -34,7 +34,7 @@ export default function Index({
     const [selectedIds, setSelectedIds] = useState([]);
     const [extendOpen, setExtendOpen] = useState(false);
     // Tanlash o‘chirish yoki muddatni uzaytirish uchun — ikkalasidan biri bo‘lsa katakchalar chiqadi.
-    const canSelect = Boolean(can['employees.delete'] || can['employees.edit']);
+    const canSelect = Boolean(can['employees.delete'] || can['employees.extend']);
     const [form, setForm] = useState({
         search: filters.search ?? '',
         department_ids: filters.department_ids ?? [],
@@ -273,7 +273,7 @@ export default function Index({
                         <Button className="!rounded-lg !font-bold" onClick={() => setSelectedIds([])}>
                             Bekor qilish
                         </Button>
-                        {can['employees.edit'] ? (
+                        {can['employees.extend'] ? (
                             <Button
                                 type="primary"
                                 className="!rounded-lg !font-bold"
