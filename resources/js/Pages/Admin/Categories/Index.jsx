@@ -1,7 +1,9 @@
-import { Input } from 'antd';
+import { ClusterOutlined } from '@ant-design/icons';
+import { Input, Tooltip } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
+import DevicesPanel, { useDevicesPanel } from '../../../Components/DevicesPanel';
 import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
 import FormField from '../../../Components/FormField';
 import Pagination from '../../../Components/Pagination';
@@ -9,6 +11,7 @@ import TableShell from '../../../Components/TableShell';
 
 export default function Index({ categories, drawer: initialDrawer = null }) {
     const drawer = useFormDrawer(initialDrawer, 'admin.categories.index');
+    const devices = useDevicesPanel();
 
     return (
         <AdminLayout title="Kategoriyalar">
@@ -45,20 +48,51 @@ export default function Index({ categories, drawer: initialDrawer = null }) {
                         {categories.data.map((category, index) => (
                             <tr key={category.id}>
                                 <td className="font-medium text-ink-subtle">{(categories.from ?? 1) + index}</td>
-                                <td className="font-bold text-ink">{category.name}</td>
-                                <td className="font-medium">{category.devices_count ?? 0}</td>
                                 <td>
-                                    <ResourceActions
-                                        resource="categories"
-                                        onEdit={() => drawer.openEdit({ id: category.id, name: category.name })}
-                                        deleteHref={route('admin.categories.destroy', category.id)}
-                                    />
+                                    <button
+                                        type="button"
+                                        className="font-bold text-ink transition-colors duration-150 ease-productive hover:text-brand-700"
+                                        onClick={() => devices.open(`category:${category.id}`)}
+                                    >
+                                        {category.name}
+                                    </button>
+                                </td>
+                                <td className="font-medium tabular-nums">
+                                    <button
+                                        type="button"
+                                        className="hover:text-brand-700"
+                                        aria-label={`«${category.name}» qurilmalari soni`}
+                                        onClick={() => devices.open(`category:${category.id}`)}
+                                    >
+                                        {category.devices_count ?? 0}
+                                    </button>
+                                </td>
+                                <td>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Tooltip title="Qurilmalarni ko‘rish">
+                                            <button
+                                                type="button"
+                                                className="table-action-view"
+                                                aria-label={`«${category.name}» qurilmalarini ko‘rish`}
+                                                onClick={() => devices.open(`category:${category.id}`)}
+                                            >
+                                                <ClusterOutlined aria-hidden="true" />
+                                            </button>
+                                        </Tooltip>
+                                        <ResourceActions
+                                            resource="categories"
+                                            onEdit={() => drawer.openEdit({ id: category.id, name: category.name })}
+                                            deleteHref={route('admin.categories.destroy', category.id)}
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </TableShell>
+
+            <DevicesPanel state={devices} />
 
             <FormDrawer
                 drawer={drawer}

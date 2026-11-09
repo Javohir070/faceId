@@ -25,6 +25,8 @@ class CategoryController extends Controller
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $this->categoryService->paginate(20),
             'drawer' => $this->drawerState($request, 'categories', fn (int $id): ?array => Category::query()->find($id, ['id', 'name'])?->only(['id', 'name'])),
+            // Belgi bosilganda o‘ngdan ochiladigan qurilmalar paneli: faqat qisman qayta yuklashda olinadi.
+            'devicesPanel' => Inertia::optional(fn (): ?array => $this->categoryService->devicesPanel($request->query('devices'))),
         ]);
     }
 
