@@ -12,6 +12,7 @@ class DepartmentRepository implements DepartmentRepositoryInterface
     public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return Department::query()
+            ->withCount('employees')
             ->orderBy('name')
             ->paginate($perPage);
     }

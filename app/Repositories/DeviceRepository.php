@@ -14,7 +14,11 @@ class DeviceRepository implements DeviceRepositoryInterface
     public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
         $query = Device::query()
-            ->with(['category:id,name', 'owner:id,name']);
+            ->with(['category:id,name', 'owner:id,name'])
+            ->withCount([
+                'employees',
+                'employees as synced_employees_count' => fn ($employees) => $employees->whereNotNull('device_employee.synced_at'),
+            ]);
 
         $search = trim((string) ($filters['search'] ?? ''));
 

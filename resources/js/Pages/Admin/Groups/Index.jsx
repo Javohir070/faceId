@@ -22,6 +22,7 @@ import PageHeader, { EmptyState } from '../../../Components/PageHeader';
 import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
 import FormField from '../../../Components/FormField';
 import InitialsAvatar from '../../../Components/InitialsAvatar';
+import MembersPanel, { useMembersPanel } from '../../../Components/MembersPanel';
 import SummaryStat from '../../../Components/SummaryStat';
 
 // Chuqurlik bo‘yicha chekinish: kompyuterda pastki guruh ota guruh avatari ostidan boshlanadi
@@ -159,12 +160,13 @@ function GroupRow({ node, depth, ctx }) {
                     )}
                     <InitialsAvatar name={node.title} tone={depth === 0 ? 'brand' : 'neutral'} size={depth === 0 ? 'md' : 'sm'} />
                     <div className="min-w-0">
-                        <Link
-                            href={route('admin.groups.show', node.id)}
-                            className="block truncate text-sm font-bold text-ink transition-colors duration-150 ease-productive hover:text-brand-700 dark:hover:text-brand-400"
+                        <button
+                            type="button"
+                            className="block max-w-full truncate text-left text-sm font-bold text-ink transition-colors duration-150 ease-productive hover:text-brand-700 dark:hover:text-brand-400"
+                            onClick={() => ctx.showMembers(`group:${node.id}`)}
                         >
                             <Highlight text={node.title} needle={ctx.needle} />
-                        </Link>
+                        </button>
                         {hasChildren ? (
                             <p className="truncate text-xs font-semibold text-ink-muted">
                                 {children.length}
@@ -176,7 +178,7 @@ function GroupRow({ node, depth, ctx }) {
                     </div>
                 </div>
                 <EmployeeCount count={node.employees_count} />
-                {/* Telefonda yashirin: nom bosilsa guruh sahifasi ochiladi, tahrirlash o‘sha yerda. */}
+                {/* Telefonda yashirin: nom bosilsa xodimlar paneli ochiladi, guruh sahifasi esa "Ko‘rish" orqali. */}
                 <div className="hidden shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 ease-productive group-hover/row:opacity-100 group-focus-within/row:opacity-100 sm:flex">
                     <Tooltip title="Ko‘rish">
                         <Link
@@ -278,6 +280,16 @@ function DepartmentSection({ node, ctx }) {
                         <ToggleIcon open={open} />
                     </span>
                 </button>
+                <Tooltip title="Bo‘lim xodimlari">
+                    <button
+                        type="button"
+                        className="table-action-view"
+                        aria-label={`«${node.title}» bo‘limi xodimlarini ko‘rish`}
+                        onClick={() => ctx.showMembers(`department:${node.id}`)}
+                    >
+                        <TeamOutlined aria-hidden="true" />
+                    </button>
+                </Tooltip>
                 {ctx.canCreate ? (
                     <Tooltip title="Shu bo‘limga guruh qo‘shish">
                         <button
@@ -331,6 +343,7 @@ export default function Index({
 }) {
     const { modal } = AntApp.useApp();
     const drawer = useFormDrawer(initialDrawer, 'admin.groups.index');
+    const members = useMembersPanel();
     // Bo‘limga bog‘langan foydalanuvchi bo‘lim tanlamaydi: guruh doim uning bo‘limiga yoziladi (server ham shuni qiladi).
     const lockedDepartment = departmentLocked ? (departments[0] ?? null) : null;
     const [search, setSearch] = useState('');
@@ -359,6 +372,7 @@ export default function Index({
         canDelete: Boolean(can['groups.delete']),
         openCreate: drawer.openCreate,
         openEdit: drawer.openEdit,
+        showMembers: members.open,
         needle,
         selected,
         // Qidiruv paytida hamma narsa ochiq — topilgan guruh yashirinib qolmasin.
@@ -532,6 +546,8 @@ export default function Index({
                     )}
                 </div>
             )}
+
+            <MembersPanel state={members} />
 
             <FormDrawer
                 drawer={drawer}

@@ -7,6 +7,7 @@ use App\Http\Requests\BulkDestroyGroupsRequest;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Group;
+use App\Services\Employees\MembersPanelService;
 use App\Services\GroupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class GroupController extends Controller
 
     public function __construct(
         private readonly GroupService $groupService,
+        private readonly MembersPanelService $membersPanel,
     ) {}
 
     public function index(Request $request): Response
@@ -50,6 +52,8 @@ class GroupController extends Controller
             'departmentLocked' => $request->user()->isDepartmentScoped(),
             'groups' => $groups->map->only(['id', 'name', 'department_id'])->values(),
             'drawer' => $drawer,
+            // Guruh yoki bo‘lim nomi bosilganda o‘ngdan ochiladigan xodimlar paneli.
+            'members' => Inertia::optional(fn (): ?array => $this->membersPanel->resolve($request->query('members'))),
         ]);
     }
 

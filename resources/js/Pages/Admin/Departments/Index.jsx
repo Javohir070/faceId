@@ -4,11 +4,13 @@ import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
 import FormDrawer, { useFormDrawer } from '../../../Components/FormDrawer';
 import FormField from '../../../Components/FormField';
+import MembersPanel, { useMembersPanel } from '../../../Components/MembersPanel';
 import Pagination from '../../../Components/Pagination';
 import TableShell from '../../../Components/TableShell';
 
 export default function Index({ departments, drawer: initialDrawer = null }) {
     const drawer = useFormDrawer(initialDrawer, 'admin.departments.index');
+    const members = useMembersPanel();
 
     return (
         <AdminLayout title="Bo'limlar">
@@ -37,6 +39,7 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
                         <tr>
                             <th className="w-16">N#</th>
                             <th>Nomi</th>
+                            <th className="text-right">Xodimlar</th>
                             <th className="text-right">Amallar</th>
                         </tr>
                     </thead>
@@ -44,7 +47,25 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
                         {departments.data.map((department, index) => (
                             <tr key={department.id}>
                                 <td className="font-medium text-ink-subtle">{(departments.from ?? 1) + index}</td>
-                                <td className="font-bold text-ink">{department.name}</td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        className="font-bold text-ink transition-colors duration-150 ease-productive hover:text-brand-700"
+                                        onClick={() => members.open(`department:${department.id}`)}
+                                    >
+                                        {department.name}
+                                    </button>
+                                </td>
+                                <td className="text-right font-medium tabular-nums">
+                                    <button
+                                        type="button"
+                                        className="hover:text-brand-700"
+                                        aria-label={`«${department.name}» xodimlarini ko‘rish`}
+                                        onClick={() => members.open(`department:${department.id}`)}
+                                    >
+                                        {department.employees_count ?? 0}
+                                    </button>
+                                </td>
                                 <td>
                                     <ResourceActions
                                         resource="departments"
@@ -57,6 +78,8 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
                     </tbody>
                 </table>
             </TableShell>
+
+            <MembersPanel state={members} />
 
             <FormDrawer
                 drawer={drawer}

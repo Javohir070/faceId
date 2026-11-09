@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Models\Department;
 use App\Services\DepartmentService;
+use App\Services\Employees\MembersPanelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ class DepartmentController extends Controller
 
     public function __construct(
         private readonly DepartmentService $departmentService,
+        private readonly MembersPanelService $membersPanel,
     ) {}
 
     public function index(Request $request): Response
@@ -25,6 +27,8 @@ class DepartmentController extends Controller
         return Inertia::render('Admin/Departments/Index', [
             'departments' => $this->departmentService->paginate(20),
             'drawer' => $this->drawerState($request, 'departments', fn (int $id): ?array => Department::query()->visibleTo($request->user())->find($id, ['id', 'name'])?->only(['id', 'name'])),
+            // Nom bosilganda o‘ngdan ochiladigan xodimlar paneli: faqat qisman qayta yuklashda olinadi.
+            'members' => Inertia::optional(fn (): ?array => $this->membersPanel->resolve($request->query('members'))),
         ]);
     }
 

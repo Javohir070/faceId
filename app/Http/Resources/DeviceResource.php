@@ -50,6 +50,8 @@ class DeviceResource extends JsonResource
             'last_ping_at' => $this->last_ping_at?->format('Y-m-d H:i:s'),
             'category' => $this->category?->only(['id', 'name']),
             'owner' => $this->owner?->only(['id', 'name']),
+            'employees_count' => $this->employees_count,
+            'synced_employees_count' => $this->synced_employees_count,
         ];
     }
 

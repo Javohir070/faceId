@@ -207,6 +207,7 @@ export default function Index({
                             <th><SortableHeader>Foydalanuvchi</SortableHeader></th>
                             <th><SortableHeader>Parol</SortableHeader></th>
                             <th><SortableHeader>Turi</SortableHeader></th>
+                            <th className="text-right">Xodimlar</th>
                             <th><SortableHeader>Holat</SortableHeader></th>
                             <th className="w-12" aria-label="Amallar" />
                         </tr>
@@ -240,6 +241,15 @@ export default function Index({
                                     </StatusTag>
                                 </td>
                                 <td className="font-medium">{device.type_label}</td>
+                                <td className="text-right tabular-nums">
+                                    <span className="font-bold text-ink">{device.employees_count ?? 0}</span>
+                                    {(device.employees_count ?? 0) > (device.synced_employees_count ?? 0) ? (
+                                        <p className="mt-0.5 whitespace-nowrap text-xs text-ink-subtle">
+                                            {(device.employees_count ?? 0) - (device.synced_employees_count ?? 0)}
+                                            {' tasi sinxron emas'}
+                                        </p>
+                                    ) : null}
+                                </td>
                                 <td>
                                     <div>
                                         <StatusTag tone={device.is_connected ? 'success' : 'neutral'}>
