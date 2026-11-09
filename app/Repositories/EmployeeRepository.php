@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
     /**
-     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string, validity?:?string}  $filters
      * @return Builder<Employee>
      */
     public function filteredQuery(array $filters = []): Builder
@@ -71,11 +71,15 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             $query->whereDoesntHave('face');
         }
 
+        if (! empty($filters['validity'])) {
+            $query->validity($filters['validity']);
+        }
+
         return $query->latest();
     }
 
     /**
-     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string, validity?:?string}  $filters
      */
     public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {

@@ -14,8 +14,12 @@ class TelegramDailyDigestCommand extends Command
 
     public function handle(TelegramReportService $reports, TelegramNotifier $notifier): int
     {
-        $text = $reports->digestText(now()->subDay());
-        $sent = $notifier->notifyAllLinkedUsers($text, TelegramNotifier::CATEGORY_DIGEST);
+        $day = now()->subDay();
+        // Har kim o‘z bo‘limi va o‘z qurilmalari bo‘yicha hisobot oladi.
+        $sent = $notifier->notifyEachLinkedUser(
+            TelegramNotifier::CATEGORY_DIGEST,
+            fn (): string => $reports->digestText($day),
+        );
 
         $this->info("Kunlik hisobot yuborildi: {$sent} ta chat.");
 

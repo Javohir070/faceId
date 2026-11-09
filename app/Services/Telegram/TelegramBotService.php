@@ -61,6 +61,42 @@ class TelegramBotService
         }
     }
 
+    /**
+     * Bot shaxsiy chatdagi foydalanuvchi xabarini ham o‘chira oladi (48 soat ichida).
+     */
+    public function deleteMessage(string $chatId, int $messageId): bool
+    {
+        $token = (string) config('telegram.token');
+
+        if ($token === '' || $messageId <= 0) {
+            return false;
+        }
+
+        try {
+            $response = $this->http()->post("https://api.telegram.org/bot{$token}/deleteMessage", [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ]);
+
+            if ($response->successful() && ($response->json('ok') ?? false)) {
+                return true;
+            }
+
+            Log::warning('Telegram: xabar o‘chirilmadi', [
+                'chat_id' => $chatId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Telegram: deleteMessage xato', [
+                'chat_id' => $chatId,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        return false;
+    }
+
     public function answerCallbackQuery(string $callbackQueryId, ?string $text = null): bool
     {
         $token = (string) config('telegram.token');

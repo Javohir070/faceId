@@ -28,7 +28,8 @@ class EmployeeExpiryNotifier
             ->where('valid_to_dt', '<=', $warnUntil)
             ->orderBy('id')
             ->each(function (Employee $employee) use (&$warned): void {
-                $this->notifier->notifyAllLinkedUsers(
+                $this->notifier->notifyEmployee(
+                    $employee,
                     sprintf(
                         "⏰ Xodim muddati tugashiga kam qoldi\nIsm: %s\nTugash: %s",
                         $employee->name,
@@ -46,7 +47,8 @@ class EmployeeExpiryNotifier
             ->where('valid_to_dt', '<', $now)
             ->orderBy('id')
             ->each(function (Employee $employee) use (&$expired): void {
-                $this->notifier->notifyAllLinkedUsers(
+                $this->notifier->notifyEmployee(
+                    $employee,
                     sprintf(
                         "❌ Xodim muddati tugadi\nIsm: %s\nTugash: %s",
                         $employee->name,

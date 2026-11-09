@@ -129,7 +129,7 @@ class TelegramBotCommandsTest extends TestCase
         });
     }
 
-    public function test_non_admin_cannot_use_status(): void
+    public function test_user_role_gets_its_own_status_instead_of_a_refusal(): void
     {
         Role::findOrCreate('user', 'web');
         $user = User::factory()->create(['telegram_chat_id' => '999']);
@@ -137,10 +137,9 @@ class TelegramBotCommandsTest extends TestCase
 
         $this->webhook($this->message('999', '/status'))->assertOk();
 
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'sendMessage')
-                && str_contains((string) $request['text'], 'super-admin');
-        });
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'sendMessage')
+            && str_contains((string) $request['text'], 'Holat'));
+        Http::assertNotSent(fn ($request): bool => str_contains((string) $request['text'], 'faqat super-admin'));
     }
 
     public function test_expiry_command_lists_employees(): void

@@ -19,6 +19,20 @@ const faceOptions = [
     { value: '0', label: "Yuz yo'q" },
 ];
 
+const validityOptions = [
+    { value: 'active', label: 'Faol' },
+    { value: 'expiring', label: 'Tugashiga yaqin' },
+    { value: 'expired', label: 'Muddati tugagan' },
+    { value: 'upcoming', label: 'Hali boshlanmagan' },
+];
+
+/** Faol xodimda belgi chiqmaydi: faqat e’tibor talab qiladiganlari ajralib turadi. */
+const validityTags = {
+    expiring: { tone: 'warning', label: 'Tugashiga yaqin' },
+    expired: { tone: 'danger', label: 'Muddati tugagan' },
+    upcoming: { tone: 'info', label: 'Hali boshlanmagan' },
+};
+
 export default function Index({
     employees,
     filters = {},
@@ -37,6 +51,7 @@ export default function Index({
         schedule_id: filters.schedule_id ?? null,
         device_id: filters.device_id ?? null,
         has_face: filters.has_face ?? null,
+        validity: filters.validity ?? null,
     });
 
     const orgTreeData = useMemo(
@@ -114,6 +129,7 @@ export default function Index({
             schedule_id: null,
             device_id: null,
             has_face: null,
+            validity: null,
         });
 
         router.get(route('admin.employees.index'), {}, {
@@ -182,7 +198,7 @@ export default function Index({
             />
 
             <div className="mb-5 rounded-xl border border-line bg-surface p-4 shadow-ambient">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
                     <Input
                         allowClear
                         placeholder="Qidiruv (ism / JSHSHIR)"
@@ -231,6 +247,14 @@ export default function Index({
                         value={form.has_face}
                         options={faceOptions}
                         onChange={(value) => updateField('has_face', value ?? null)}
+                        className="w-full"
+                    />
+                    <Select
+                        allowClear
+                        placeholder="Muddat"
+                        value={form.validity}
+                        options={validityOptions}
+                        onChange={(value) => updateField('validity', value ?? null)}
                         className="w-full"
                     />
                     <div className="flex gap-2">
@@ -340,6 +364,13 @@ export default function Index({
                                     {employee.valid_from_dt}
                                     {' — '}
                                     {employee.valid_to_dt}
+                                    {validityTags[employee.validity] ? (
+                                        <div className="mt-1">
+                                            <StatusTag tone={validityTags[employee.validity].tone}>
+                                                {validityTags[employee.validity].label}
+                                            </StatusTag>
+                                        </div>
+                                    ) : null}
                                 </td>
                                 <td>
                                     <ResourceActions

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Models\Scopes\BelongsToDepartmentScope;
+use Carbon\CarbonInterface;
 use Database\Factories\EmployeeFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +21,22 @@ class Employee extends Model
     public const GENDER_MALE = 1;
 
     public const GENDER_FEMALE = 2;
+
+    /** Amal qilish muddati holatlari. Tugashiga yaqin xodim ham faol hisoblanadi. */
+    public const VALIDITY_ACTIVE = 'active';
+
+    public const VALIDITY_EXPIRING = 'expiring';
+
+    public const VALIDITY_EXPIRED = 'expired';
+
+    public const VALIDITY_UPCOMING = 'upcoming';
+
+    public const VALIDITIES = [
+        self::VALIDITY_ACTIVE,
+        self::VALIDITY_EXPIRING,
+        self::VALIDITY_EXPIRED,
+        self::VALIDITY_UPCOMING,
+    ];
 
     /**
      * @var list<string>
@@ -67,6 +85,51 @@ class Employee extends Model
                 $employee->expiry_notified_at = null;
             }
         });
+    }
+
+    /** "Tugashiga yaqin" chegarasi Telegram ogohlantirishi bilan bir xil. */
+    public static function expiryWarnDays(): int
+    {
+        return max((int) config('telegram.employee_expiry_warn_days', 3), 1);
+    }
+
+    public function validityStatus(?CarbonInterface $now = null): string
+    {
+        $now ??= now();
+
+        if ($this->valid_to_dt !== null && $this->valid_to_dt->lt($now)) {
+            return self::VALIDITY_EXPIRED;
+        }
+
+        if ($this->valid_from_dt !== null && $this->valid_from_dt->gt($now)) {
+            return self::VALIDITY_UPCOMING;
+        }
+
+        if ($this->valid_to_dt !== null && $this->valid_to_dt->lte($now->copy()->addDays(self::expiryWarnDays()))) {
+            return self::VALIDITY_EXPIRING;
+        }
+
+        return self::VALIDITY_ACTIVE;
+    }
+
+    /**
+     * @param  Builder<Employee>  $query
+     */
+    public function scopeValidity(Builder $query, string $status, ?CarbonInterface $now = null): void
+    {
+        $now ??= now();
+
+        match ($status) {
+            self::VALIDITY_EXPIRED => $query->where('valid_to_dt', '<', $now),
+            self::VALIDITY_UPCOMING => $query->where('valid_from_dt', '>', $now),
+            self::VALIDITY_EXPIRING => $query
+                ->where('valid_from_dt', '<=', $now)
+                ->whereBetween('valid_to_dt', [$now, $now->copy()->addDays(self::expiryWarnDays())]),
+            self::VALIDITY_ACTIVE => $query
+                ->where('valid_from_dt', '<=', $now)
+                ->where('valid_to_dt', '>=', $now),
+            default => null,
+        };
     }
 
     public function genderLabel(): string

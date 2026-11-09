@@ -2,13 +2,20 @@
 
 namespace App\Services\Telegram;
 
+use App\Models\TelegramGroup;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class TelegramAuthHandler
 {
     private const CACHE_TTL_MINUTES = 15;
+
+    /** Shuncha noto‘g‘ri paroldan keyin chat ham, email ham bloklanadi. */
+    private const MAX_PASSWORD_ATTEMPTS = 5;
+
+    private const LOCK_SECONDS = 15 * 60;
 
     public function __construct(
         private readonly TelegramBotService $bot,
@@ -20,6 +27,17 @@ class TelegramAuthHandler
      */
     public function handleUpdate(array $update): void
     {
+        // Bot guruhdan chiqarilsa, guruh unutiladi.
+        if (isset($update['my_chat_member']) && is_array($update['my_chat_member'])) {
+            $status = data_get($update, 'my_chat_member.new_chat_member.status');
+
+            if (in_array($status, ['left', 'kicked'], true)) {
+                TelegramGroup::query()->where('chat_id', (string) data_get($update, 'my_chat_member.chat.id'))->delete();
+            }
+
+            return;
+        }
+
         if (isset($update['callback_query']) && is_array($update['callback_query'])) {
             $this->handleCallbackQuery($update['callback_query']);
 
@@ -99,6 +117,21 @@ class TelegramAuthHandler
         $command = strtolower(explode(' ', $text, 2)[0]);
         $command = explode('@', $command)[0];
 
+        // Guruhda email va parol so‘ralmaydi, oddiy suhbatga esa bot javob bermaydi.
+        if (data_get($message, 'chat.type', 'private') !== 'private') {
+            match ($command) {
+                '/start' => $this->bot->sendMessage(
+                    $chatId,
+                    'Ulanish faqat bot bilan shaxsiy chatda: botga alohida yozing. Keyin shu guruhda /ulash yozsangiz, qurilma xabarlari shu yerga keladi.',
+                ),
+                '/ulash' => $this->bindGroup($chatId, $message),
+                '/uzish' => $this->unbindGroup($chatId, $message),
+                default => null,
+            };
+
+            return;
+        }
+
         if ($command === '/start') {
             $this->handleStart($chatId);
 
@@ -144,7 +177,7 @@ class TelegramAuthHandler
         }
 
         if (($state['step'] ?? null) === 'awaiting_password') {
-            $this->handlePassword($chatId, $text, (string) ($state['email'] ?? ''));
+            $this->handlePassword($chatId, $text, (string) ($state['email'] ?? ''), (int) ($message['message_id'] ?? 0));
         }
     }
 
@@ -156,16 +189,13 @@ class TelegramAuthHandler
             return;
         }
 
-        if (! $user->hasRole('super-admin')) {
-            $this->bot->sendMessage($chatId, 'Bu buyruqlar faqat super-admin uchun.');
-
-            return;
-        }
+        // Super-admin hammasini, boshqa foydalanuvchi faqat o‘z bo‘limi va o‘z qurilmalarini ko‘radi.
+        $scoped = fn (\Closure $text): string => TelegramNotifier::asUser($user, $text);
 
         match ($command) {
-            '/status' => $this->bot->sendMessage($chatId, $this->reports->statusText(), TelegramKeyboard::mainMenu()),
-            '/devices' => $this->bot->sendMessage($chatId, $this->reports->offlineDevicesText(), TelegramKeyboard::mainMenu()),
-            '/expiry' => $this->bot->sendMessage($chatId, $this->reports->expiryText(), TelegramKeyboard::mainMenu()),
+            '/status' => $this->bot->sendMessage($chatId, $scoped(fn () => $this->reports->statusText()), TelegramKeyboard::mainMenu()),
+            '/devices' => $this->bot->sendMessage($chatId, $scoped(fn () => $this->reports->offlineDevicesText()), TelegramKeyboard::mainMenu()),
+            '/expiry' => $this->bot->sendMessage($chatId, $scoped(fn () => $this->reports->expiryText()), TelegramKeyboard::mainMenu()),
             '/settings' => $this->handleSettingsPrompt($chatId),
             '/help' => $this->sendMainMenu($chatId, $user),
             default => $this->sendMainMenu($chatId, $user),
@@ -174,12 +204,6 @@ class TelegramAuthHandler
 
     private function sendMainMenu(string $chatId, User $user): void
     {
-        if (! $user->hasRole('super-admin')) {
-            $this->bot->sendMessage($chatId, "Ulangan: {$user->email}\nChiqish: /unlink");
-
-            return;
-        }
-
         $this->bot->sendMessage(
             $chatId,
             "Ulangan: {$user->email}\nKerakli bo‘limni tanlang:",
@@ -195,6 +219,10 @@ class TelegramAuthHandler
             $this->forgetState($chatId);
             $this->sendMainMenu($chatId, $user);
 
+            return;
+        }
+
+        if ($this->rejectIfLocked($chatId, $this->chatThrottleKey($chatId))) {
             return;
         }
 
@@ -226,12 +254,6 @@ class TelegramAuthHandler
     {
         if (! in_array($choice, ['all', 'device', 'expiry', 'none'], true)) {
             $this->bot->sendMessage($chatId, 'Noto‘g‘ri tanlov.', TelegramKeyboard::settingsMenu());
-
-            return;
-        }
-
-        if (! $user->hasRole('super-admin')) {
-            $this->bot->sendMessage($chatId, 'Bu buyruqlar faqat super-admin uchun.');
 
             return;
         }
@@ -280,19 +302,34 @@ class TelegramAuthHandler
             'step' => 'awaiting_password',
             'email' => mb_strtolower($email),
         ]);
-        $this->bot->sendMessage($chatId, 'Parol kiriting.');
+        $this->bot->sendMessage($chatId, 'Parol kiriting. Xavfsizlik uchun xabaringiz darhol o‘chiriladi.');
     }
 
-    private function handlePassword(string $chatId, string $password, string $email): void
+    private function handlePassword(string $chatId, string $password, string $email, int $messageId): void
     {
+        // Parol chat tarixida qolmasligi uchun natijadan qat’i nazar o‘chiriladi.
+        $this->bot->deleteMessage($chatId, $messageId);
+
+        $chatKey = $this->chatThrottleKey($chatId);
+        $emailKey = 'telegram-login:email:'.$email;
+
+        if ($this->rejectIfLocked($chatId, $chatKey) || $this->rejectIfLocked($chatId, $emailKey)) {
+            return;
+        }
+
         $user = User::query()->where('email', $email)->first();
 
         if ($user === null || ! Hash::check($password, $user->password)) {
+            RateLimiter::hit($chatKey, self::LOCK_SECONDS);
+            RateLimiter::hit($emailKey, self::LOCK_SECONDS);
             $this->forgetState($chatId);
             $this->bot->sendMessage($chatId, 'Email yoki parol noto\'g\'ri.');
 
             return;
         }
+
+        RateLimiter::clear($chatKey);
+        RateLimiter::clear($emailKey);
 
         User::query()
             ->where('telegram_chat_id', $chatId)
@@ -302,6 +339,88 @@ class TelegramAuthHandler
         $user->forceFill(['telegram_chat_id' => $chatId])->save();
         $this->forgetState($chatId);
         $this->sendMainMenu($chatId, $user->fresh() ?? $user);
+    }
+
+    /**
+     * Guruhni shaxsiy chatda ulangan foydalanuvchi bog‘laydi, parol guruhda so‘ralmaydi.
+     * Shaxsiy chat id Telegram foydalanuvchi id'si bilan bir xil, shuning uchun from.id bo‘yicha topiladi.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    private function bindGroup(string $chatId, array $message): void
+    {
+        $user = $this->linkedSender($message);
+
+        if ($user === null) {
+            $this->bot->sendMessage($chatId, 'Avval bot bilan shaxsiy chatda ulaning (/start), keyin shu guruhda /ulash yozing.');
+
+            return;
+        }
+
+        TelegramGroup::query()->updateOrCreate(
+            ['chat_id' => $chatId],
+            ['user_id' => $user->id, 'title' => data_get($message, 'chat.title')],
+        );
+
+        $this->bot->sendMessage($chatId, sprintf(
+            "Guruh ulandi. Endi %s uzilsa yoki qayta ulansa, shu yerga xabar keladi.\nUzish: /uzish",
+            $user->isDepartmentScoped() ? 'sizga biriktirilgan qurilmalar' : 'barcha qurilmalar',
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    private function unbindGroup(string $chatId, array $message): void
+    {
+        $group = TelegramGroup::query()->where('chat_id', $chatId)->first();
+
+        if ($group === null) {
+            $this->bot->sendMessage($chatId, 'Bu guruh ulanmagan.');
+
+            return;
+        }
+
+        $user = $this->linkedSender($message);
+
+        if ($user === null || ($user->id !== $group->user_id && $user->isDepartmentScoped())) {
+            $this->bot->sendMessage($chatId, 'Guruhni faqat uni ulagan foydalanuvchi yoki super-admin uza oladi.');
+
+            return;
+        }
+
+        $group->delete();
+        $this->bot->sendMessage($chatId, 'Guruh uzildi: endi bu yerga xabar kelmaydi.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    private function linkedSender(array $message): ?User
+    {
+        $fromId = (string) data_get($message, 'from.id', '');
+
+        return $fromId === '' ? null : User::query()->where('telegram_chat_id', $fromId)->first();
+    }
+
+    private function chatThrottleKey(string $chatId): string
+    {
+        return 'telegram-login:chat:'.$chatId;
+    }
+
+    private function rejectIfLocked(string $chatId, string $key): bool
+    {
+        if (! RateLimiter::tooManyAttempts($key, self::MAX_PASSWORD_ATTEMPTS)) {
+            return false;
+        }
+
+        $this->forgetState($chatId);
+        $this->bot->sendMessage($chatId, sprintf(
+            'Juda ko‘p noto‘g‘ri urinish. %d daqiqadan keyin qayta urinib ko‘ring.',
+            max((int) ceil(RateLimiter::availableIn($key) / 60), 1),
+        ));
+
+        return true;
     }
 
     /**

@@ -38,6 +38,7 @@ class EmployeeResource extends JsonResource
             'has_face' => $this->face !== null,
             'valid_from_dt' => $this->valid_from_dt?->format('Y-m-d H:i'),
             'valid_to_dt' => $this->valid_to_dt?->format('Y-m-d H:i'),
+            'validity' => $this->validityStatus(),
             'department' => $this->department?->only(['id', 'name']),
             'schedule' => $this->schedule?->only(['id', 'name']),
         ];

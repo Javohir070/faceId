@@ -10,13 +10,13 @@ use Illuminate\Database\Eloquent\Collection;
 interface EmployeeRepositoryInterface
 {
     /**
-     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string, validity?:?string}  $filters
      * @return Builder<Employee>
      */
     public function filteredQuery(array $filters = []): Builder;
 
     /**
-     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string}  $filters
+     * @param  array{search?:?string, department_ids?:list<int>, group_ids?:list<int>, schedule_id?:?int, device_id?:?int, has_face?:?string, validity?:?string}  $filters
      */
     public function paginate(int $perPage = 20, array $filters = []): LengthAwarePaginator;
 

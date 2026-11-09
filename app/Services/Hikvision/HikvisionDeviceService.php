@@ -107,14 +107,14 @@ class HikvisionDeviceService
             ])->save();
 
             if ($wasOffline) {
-                app(TelegramNotifier::class)->notifyAllLinkedUsers(
+                app(TelegramNotifier::class)->notifyDevice(
+                    $device,
                     sprintf(
                         "✅ Qurilma qayta online\nNomi: %s\nIP: %s\nTur: %s",
                         $device->name,
                         $device->ip_address,
                         $device->typeLabel(),
                     ),
-                    TelegramNotifier::CATEGORY_DEVICE,
                 );
             }
 
@@ -135,14 +135,14 @@ class HikvisionDeviceService
             $device->forceFill($updates)->save();
 
             if ($wasOnline && ($updates['is_online'] ?? true) === false) {
-                app(TelegramNotifier::class)->notifyAllLinkedUsers(
+                app(TelegramNotifier::class)->notifyDevice(
+                    $device,
                     sprintf(
                         "⚠️ Qurilma ishlamayapti (oflayn)\nNomi: %s\nIP: %s\nTur: %s",
                         $device->name,
                         $device->ip_address,
                         $device->typeLabel(),
                     ),
-                    TelegramNotifier::CATEGORY_DEVICE,
                 );
             }
 

@@ -20,6 +20,7 @@ use App\Services\Hikvision\EmployeeSyncService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -51,6 +52,7 @@ class EmployeeController extends Controller
                 'schedule_id' => isset($filters['schedule_id']) ? (int) $filters['schedule_id'] : null,
                 'device_id' => isset($filters['device_id']) ? (int) $filters['device_id'] : null,
                 'has_face' => $filters['has_face'] ?? null,
+                'validity' => $filters['validity'] ?? null,
             ],
             'departments' => $this->employeeService->getDepartmentsForForm()->map->only(['id', 'name'])->values(),
             'groups' => $this->employeeService->getGroupsForForm()->map->only(['id', 'name', 'department_id', 'parent_id'])->values(),
@@ -280,6 +282,7 @@ class EmployeeController extends Controller
             'schedule_id' => ['nullable', 'integer', 'exists:schedules,id'],
             'device_id' => ['nullable', 'integer', 'exists:devices,id'],
             'has_face' => ['nullable', 'in:0,1'],
+            'validity' => ['nullable', Rule::in(Employee::VALIDITIES)],
         ];
     }
 }

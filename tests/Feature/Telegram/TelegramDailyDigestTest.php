@@ -11,6 +11,7 @@ use App\Models\Report;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\CreatesTelegramAdmin;
 use Tests\TestCase;
@@ -19,6 +20,44 @@ class TelegramDailyDigestTest extends TestCase
 {
     use CreatesTelegramAdmin;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Hisobot kechagi kun uchun: chorshanba ertalab — kecha ish kuni (seshanba).
+        $this->travelTo(Carbon::parse('2026-11-11 08:30'));
+    }
+
+    public function test_weekend_day_counts_no_late_or_absent(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-08 08:30'));
+        config(['telegram.token' => 'test-token']);
+
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
+
+        Employee::factory()->create([
+            'name' => 'Shanba kuni ishlamagan',
+            'schedule_id' => Schedule::factory()->create(['enter_time' => '09:00', 'exit_time' => '18:00'])->id,
+            'valid_from_dt' => now()->subMonth(),
+            'valid_to_dt' => now()->addMonth(),
+        ]);
+
+        $this->artisan('telegram:daily-digest')->assertSuccessful();
+
+        Http::assertSent(function ($request): bool {
+            $text = (string) $request['text'];
+
+            return str_contains($text, 'Kunlik hisobot: 2026-11-07')
+                && str_contains($text, 'Dam olish kuni')
+                && ! str_contains($text, 'Kelmagan')
+                && ! str_contains($text, 'Shanba kuni ishlamagan');
+        });
+    }
 
     public function test_daily_digest_does_not_show_the_jshshir(): void
     {

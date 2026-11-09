@@ -122,6 +122,12 @@ Event times go through `ReportService::localEventTime()`, which converts the dev
 
 The **Davomat** page (`/admin/attendance`, permission `'Davomat'`) is a separate employee × work-day grid built by `App\Services\Attendance\AttendanceGridService` over `AttendancePeriod` (week / 2 weeks / month). Its rules differ from the Reports page on purpose: work days are Monday–Friday only, 1 hour of lunch is subtracted from worked and planned time, any `Note` on a day makes it "Sababli", and days outside an employee's `valid_from_dt`..`valid_to_dt` are not counted. Notes added from this page ("Ariza berish") go through `POST /admin/attendance/notes` and need the `'Izohlar'` permission too. Spec: `docs/superpowers/specs/2026-10-23-attendance-grid-design.md`.
 
+## Telegram bot
+
+Webhook `POST /api/telegram/webhook` → `TelegramAuthHandler`. Users link a private chat with their panel email and password; the password message is deleted, and 5 wrong passwords lock the chat and the email for 15 minutes. Groups never ask for credentials: a linked user writes `/ulash` in the group (`telegram_groups`, matched by `from.id`), and the group then gets device offline/online alerts for that user's devices.
+
+Every recipient sees only what they could see in the panel. `TelegramNotifier::notifyDevice()` reaches super-admins and users who own or are linked to the device, `notifyEmployee()` reaches super-admins and users of the employee's department, and the daily digest and bot buttons run inside `TelegramNotifier::asUser()` so the global scopes apply as for a logged-in user. The digest skips late/absent on Saturday and Sunday, like the Davomat page.
+
 ## Frontend
 
 - **There is no Ziggy.** `resources/js/routes.js` is a hand-maintained map of route names → URL builders and throws on unknown names. Every new named route used from JSX must be added there.

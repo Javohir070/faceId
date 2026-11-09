@@ -75,6 +75,11 @@ class User extends Authenticatable
     }
 
     /** Foydalanuvchiga bog‘langan qurilmalar — o‘zi qo‘shganlari bilan birga unga ko‘rinadi. */
+    public function telegramGroups(): HasMany
+    {
+        return $this->hasMany(TelegramGroup::class);
+    }
+
     public function assignedDevices(): BelongsToMany
     {
         return $this->belongsToMany(Device::class)->withTimestamps();

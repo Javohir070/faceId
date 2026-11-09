@@ -130,12 +130,22 @@ class TelegramReportService
     }
 
     /**
-     * @return array{late: Collection<int, array{name: string, entered_at: string}>, absent: Collection<int, array{name: string}>, offline_devices: Collection<int, Device>}
+     * @return array{late: Collection<int, array{name: string, entered_at: string}>, absent: Collection<int, array{name: string}>, offline_devices: Collection<int, Device>, weekend: bool}
      */
     public function digestForDate(CarbonInterface $day): array
     {
         $start = Carbon::parse($day)->startOfDay();
         $end = $start->copy()->addDay();
+
+        $offline = Device::query()
+            ->where('is_online', false)
+            ->orderBy('name')
+            ->get();
+
+        // Davomat sahifasidagi kabi ish kunlari dushanba–juma: dam olish kunida hech kim kechikmaydi va kelmagan emas.
+        if ($start->isWeekend()) {
+            return ['late' => collect(), 'absent' => collect(), 'offline_devices' => $offline, 'weekend' => true];
+        }
 
         $employees = Employee::query()
             ->with('schedule')
@@ -195,15 +205,11 @@ class TelegramReportService
             }
         }
 
-        $offline = Device::query()
-            ->where('is_online', false)
-            ->orderBy('name')
-            ->get();
-
         return [
             'late' => $late,
             'absent' => $absent,
             'offline_devices' => $offline,
+            'weekend' => false,
         ];
     }
 
@@ -212,12 +218,18 @@ class TelegramReportService
         $day ??= now()->subDay();
         $data = $this->digestForDate($day);
 
-        $lines = [
-            '📅 Kunlik hisobot: '.$day->format('Y-m-d'),
-            sprintf('Kechikkan: %d', $data['late']->count()),
-            sprintf('Kelmagan: %d', $data['absent']->count()),
-            sprintf('Oflayn qurilma: %d', $data['offline_devices']->count()),
-        ];
+        $lines = $data['weekend']
+            ? [
+                '📅 Kunlik hisobot: '.$day->format('Y-m-d'),
+                'Dam olish kuni: kechikish va kelmaslik hisoblanmaydi.',
+                sprintf('Oflayn qurilma: %d', $data['offline_devices']->count()),
+            ]
+            : [
+                '📅 Kunlik hisobot: '.$day->format('Y-m-d'),
+                sprintf('Kechikkan: %d', $data['late']->count()),
+                sprintf('Kelmagan: %d', $data['absent']->count()),
+                sprintf('Oflayn qurilma: %d', $data['offline_devices']->count()),
+            ];
 
         if ($data['late']->isNotEmpty()) {
             $lines[] = '';
