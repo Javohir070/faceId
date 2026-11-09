@@ -26,7 +26,7 @@ export default function Login() {
             subtitle={`${brandName} boshqaruv paneliga kirish uchun elektron pochta va parolingizni kiriting.`}
         >
             {flash?.status && (
-                <Alert className="mb-5" type="success" showIcon message={flash.status} />
+                <Alert className="mb-5" type="success" showIcon title={flash.status} />
             )}
 
             <form onSubmit={submit} className="space-y-6">

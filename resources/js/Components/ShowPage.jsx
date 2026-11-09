@@ -15,7 +15,8 @@ export function ShowHeader({
     return (
         <div className="mb-5">
             <div className="page-header">
-                <div className="min-w-0 flex-1">
+                {/* PageHeader bilan bir xil: telefonda tugmalar keyingi qatorga tushadi. */}
+                <div className="min-w-0 flex-[1_1_16rem]">
                     <h1 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
                         {title}
                     </h1>

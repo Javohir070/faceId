@@ -28,7 +28,7 @@ export default function FlashMessages() {
         messages.forEach(({ type, text }) => {
             notification[type]({
                 key: `flash-${type}-${text}`,
-                message: type === 'success' ? 'Muvaffaqiyatli' : 'Xatolik',
+                title: type === 'success' ? 'Muvaffaqiyatli' : 'Xatolik',
                 description: text,
                 placement: 'topRight',
                 duration: 3.5,

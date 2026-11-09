@@ -49,7 +49,8 @@ export default function PageHeader({
         <div className="mb-5">
             {backHref && <BackLink href={backHref} label={backLabel} />}
             <div className="page-header">
-                <div className="min-w-0 flex-1">
+                {/* Kamida 16rem: telefonda tugmalar sarlavhani siqib qo‘ymaydi, keyingi qatorga tushadi. */}
+                <div className="min-w-0 flex-[1_1_16rem]">
                     {title ? (
                         <h1 className="text-xl font-extrabold tracking-tight text-ink text-balance sm:text-2xl">
                             {title}

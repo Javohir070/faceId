@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Pagination as AntPagination } from 'antd';
+import { Grid, Pagination as AntPagination } from 'antd';
 
 export default function Pagination({
     links = [],
@@ -7,6 +7,8 @@ export default function Pagination({
     perPage,
     className = '',
 }) {
+    const screens = Grid.useBreakpoint();
+
     if (!links.length || links.length <= 3 || !total) {
         return null;
     }
@@ -34,6 +36,8 @@ export default function Pagination({
             aria-label="Sahifalash"
         >
             <AntPagination
+                // Telefonda raqamlar qatori ekrandan chiqib ketadi — "‹ 3 / 15 ›" ko‘rinishi ishlatiladi.
+                simple={!screens.sm}
                 current={current}
                 pageSize={pageSize}
                 total={total}

@@ -13,7 +13,7 @@ export default function VerifyEmail({ status }) {
                 <MailOutlined />
             </span>
             {(status || flash?.status) && (
-                <Alert className="mb-4" type="success" showIcon message={status || flash.status} />
+                <Alert className="mb-4" type="success" showIcon title={status || flash.status} />
             )}
             <p className="mb-5 text-sm leading-6 text-ink-muted">
                 Pochtangizga yuborilgan tasdiqlash havolasini bosing. Xat kelmagan bo‘lsa, uni qayta yuborishingiz mumkin.

@@ -238,6 +238,12 @@ export default function Pull({ devices = [], categories = [], reconciliations = 
                     </p>
                 </div>
 
+                {/* Bo‘sh holat jadvaldan tashqarida: telefonda keng jadval ichida matn qirqilib qolardi. */}
+                {reconciliations.length === 0 ? (
+                    <p className="px-4 py-10 text-center text-sm text-ink-muted">
+                        Hali solishtirish o‘tkazilmagan. Birinchi tekshiruv kechasi 01:00 da bo‘ladi.
+                    </p>
+                ) : (
                 <div className="overflow-x-auto">
                     <table className="data-table min-w-full">
                         <thead>
@@ -254,13 +260,7 @@ export default function Pull({ devices = [], categories = [], reconciliations = 
                             </tr>
                         </thead>
                         <tbody>
-                            {reconciliations.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="py-10 text-center text-sm text-ink-muted">
-                                        Hali solishtirish o‘tkazilmagan. Birinchi tekshiruv kechasi 01:00 da bo‘ladi.
-                                    </td>
-                                </tr>
-                            ) : reconciliations.map((row) => {
+                            {reconciliations.map((row) => {
                                 const status = reconciliationStatus[row.status] ?? reconciliationStatus.unreachable;
 
                                 return (
@@ -293,6 +293,7 @@ export default function Pull({ devices = [], categories = [], reconciliations = 
                         </tbody>
                     </table>
                 </div>
+                )}
             </div>
         </AdminLayout>
     );

@@ -1,4 +1,7 @@
 import { App as AntApp, ConfigProvider, theme as antdTheme } from 'antd';
+import uzUZ from 'antd/locale/uz_UZ';
+import dayjs from 'dayjs';
+import 'dayjs/locale/uz-latn';
 import {
     createContext,
     useCallback,
@@ -7,6 +10,9 @@ import {
     useMemo,
     useState,
 } from 'react';
+
+// Ant Design ichki matnlari (kalendar, "Bugun", "Ma’lumot yo‘q") va oy/kun nomlari o‘zbekcha (lotin).
+dayjs.locale('uz-latn');
 
 const STORAGE_KEY = 'biocontrol.admin.theme';
 const AdminThemeContext = createContext(null);
@@ -152,7 +158,7 @@ export default function AdminThemeProvider({ children }) {
 
     return (
         <AdminThemeContext.Provider value={value}>
-            <ConfigProvider theme={theme} componentSize="middle">
+            <ConfigProvider theme={theme} locale={uzUZ} componentSize="middle">
                 <AntApp>{children}</AntApp>
             </ConfigProvider>
         </AdminThemeContext.Provider>
