@@ -1,41 +1,9 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { ArrowRightOutlined } from '@ant-design/icons';
 import { Drawer, Input, Spin } from 'antd';
 import { useMemo, useState } from 'react';
 import { route } from '../routes';
-import { initials } from './InitialsAvatar';
-import StatusTag from './StatusTag';
-
-const validityTags = {
-    expiring: { tone: 'warning', label: 'Tugashiga yaqin' },
-    expired: { tone: 'danger', label: 'Muddati tugagan' },
-    upcoming: { tone: 'info', label: 'Hali boshlanmagan' },
-};
-
-/** Kartochka rasmi: yuz bo‘lsa — kichik nusxasi (ko‘ringanda yuklanadi), bo‘lmasa yoki ochilmasa — bosh harflar. */
-function EmployeePhoto({ name, src }) {
-    const [failed, setFailed] = useState(false);
-
-    if (!src || failed) {
-        return (
-            <span
-                aria-hidden="true"
-                className="flex aspect-square w-full items-center justify-center rounded-lg bg-surface-muted text-3xl font-extrabold tracking-wide text-ink-subtle"
-            >
-                {initials(name)}
-            </span>
-        );
-    }
-
-    return (
-        <img
-            src={src}
-            alt=""
-            loading="lazy"
-            onError={() => setFailed(true)}
-            className="aspect-square w-full rounded-lg bg-surface-muted object-cover"
-        />
-    );
-}
+import EmployeeCard, { EMPLOYEE_CARD_GRID } from './EmployeeCard';
 
 /** Kompyuterda ekranning yarmi, telefonda butun ekran. */
 function panelWidth() {
@@ -118,15 +86,33 @@ export default function MembersPanel({ state }) {
         return list;
     }, []), [rows]);
 
+    const close = () => {
+        setSearch('');
+        state.close();
+    };
+
     return (
         <Drawer
             open={state.isOpen}
-            onClose={() => {
-                setSearch('');
-                state.close();
-            }}
+            onClose={close}
             placement="right"
             size={panelWidth()}
+            rootClassName="members-panel"
+            // Kompyuterda panel chap chetidagi aylana tugma bilan yopiladi (yarmi tashqarida), telefonda X bilan.
+            drawerRender={(node) => (
+                <div className="relative h-full">
+                    {node}
+                    <button
+                        type="button"
+                        aria-label="Panelni yopish"
+                        onClick={close}
+                        // Drawer qatlamlari pointer-events: none — tugma bosiladigan bo‘lishi uchun qaytariladi.
+                        className="pointer-events-auto absolute -left-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-brand-600 text-lg text-white shadow-lg ring-4 ring-surface transition-colors duration-150 ease-productive hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-brand-200 sm:flex"
+                    >
+                        <ArrowRightOutlined aria-hidden="true" />
+                    </button>
+                </div>
+            )}
             title={panel ? (
                 <div className="min-w-0">
                     <p className="truncate text-base font-extrabold text-ink">{panel.title}</p>
@@ -182,29 +168,10 @@ export default function MembersPanel({ state }) {
                                             {section.employees.length}
                                         </span>
                                     </header>
-                                    {/* Kartochka kamida 150px: ustunlar soni panel kengligiga qarab o‘zi tanlanadi. */}
-                                    <ul className="mt-1 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 px-1">
+                                    <ul className={`mt-1 px-1 ${EMPLOYEE_CARD_GRID}`}>
                                         {section.employees.map((employee) => (
                                             <li key={employee.id}>
-                                                <Link
-                                                    href={route('admin.employees.show', employee.id)}
-                                                    className="flex h-full flex-col rounded-xl border border-line bg-surface p-2 transition-colors duration-150 ease-productive hover:border-brand-600/40 hover:bg-surface-muted"
-                                                >
-                                                    <EmployeePhoto name={employee.name} src={employee.face_url} />
-                                                    <span className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink">
-                                                        {employee.name}
-                                                    </span>
-                                                    <span className="mt-0.5 truncate text-xs font-medium text-ink-muted">
-                                                        {employee.position || 'Lavozim kiritilmagan'}
-                                                    </span>
-                                                    {validityTags[employee.validity] ? (
-                                                        <span className="mt-1.5">
-                                                            <StatusTag tone={validityTags[employee.validity].tone}>
-                                                                {validityTags[employee.validity].label}
-                                                            </StatusTag>
-                                                        </span>
-                                                    ) : null}
-                                                </Link>
+                                                <EmployeeCard employee={employee} />
                                             </li>
                                         ))}
                                     </ul>

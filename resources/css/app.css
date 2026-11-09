@@ -109,6 +109,13 @@
         @apply min-w-full border-separate border-spacing-0 text-left text-sm;
     }
 
+    /* Xodimlar paneli: kompyuterda chap chetdagi aylana tugma yopadi, X faqat telefonda. */
+    @media (min-width: 640px) {
+        .members-panel .ant-drawer-close {
+            display: none;
+        }
+    }
+
     .data-table thead {
         @apply bg-surface-muted;
     }
