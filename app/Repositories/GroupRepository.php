@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Http\Resources\EmployeeResource;
 use App\Interfaces\GroupRepositoryInterface;
 use App\Models\Department;
 use App\Models\Employee;
@@ -148,11 +149,19 @@ class GroupRepository implements GroupRepositoryInterface
             ->values()
             ->all();
 
+        // Kartochkalar uchun: rasmning o‘zi emas, kichik nusxasi havolasi va muddat holati.
         $employees = $group->employees()
+            ->withMax('face', 'updated_at')
             ->orderBy('name')
             ->limit($employeesLimit)
-            ->get(['id', 'name', 'position', 'card'])
-            ->map->only(['id', 'name', 'position', 'card'])
+            ->get(['id', 'name', 'position', 'group_id', 'valid_from_dt', 'valid_to_dt'])
+            ->map(fn (Employee $employee): array => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'position' => $employee->position,
+                'validity' => $employee->validityStatus(),
+                'face_url' => EmployeeResource::faceThumbnailUrl($employee->id, $employee->face_max_updated_at),
+            ])
             ->values()
             ->all();
 

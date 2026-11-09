@@ -116,6 +116,22 @@ class EmployeeResource extends JsonResource
         ];
     }
 
+    /**
+     * Ro‘yxat va kartochkalar uchun yuzning kichik nusxasi havolasi (asl rasm sahifaga yuborilmaydi).
+     * $updatedAt — faces.updated_at: rasm almashsa ?v= o‘zgaradi va brauzer yangisini oladi.
+     */
+    public static function faceThumbnailUrl(int $employeeId, mixed $updatedAt): ?string
+    {
+        if ($updatedAt === null) {
+            return null;
+        }
+
+        return route('admin.employees.face', [
+            'employee' => $employeeId,
+            'v' => Carbon::parse($updatedAt)->timestamp,
+        ], false);
+    }
+
     public static function facePreviewUrl(?string $face): ?string
     {
         if ($face === null || $face === '') {

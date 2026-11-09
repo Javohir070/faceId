@@ -139,6 +139,32 @@ class GroupAdminTest extends TestCase
                 ->where('group.employees.0.name', 'Aziz'));
     }
 
+    public function test_show_page_gives_photo_links_and_validity_for_employee_cards(): void
+    {
+        $admin = $this->createUserWithPermissions([
+            config('menu_permissions.resources')['groups'],
+        ]);
+
+        $department = Department::factory()->create();
+        $group = Group::factory()->create(['department_id' => $department->id]);
+        $withFace = Employee::factory()->create([
+            'name' => 'Aziz',
+            'department_id' => $department->id,
+            'group_id' => $group->id,
+            'valid_to_dt' => now()->subDay(),
+        ]);
+        $withFace->face()->create(['face' => base64_encode('rasm')]);
+        Employee::factory()->create(['name' => 'Bobur', 'department_id' => $department->id, 'group_id' => $group->id]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.groups.show', $group))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('group.employees.0.face_url', fn (string $url): bool => str_contains($url, "/admin/employees/{$withFace->id}/face?v="))
+                ->where('group.employees.0.validity', 'expired')
+                ->where('group.employees.1.face_url', null)
+                ->missing('group.employees.0.face'));
+    }
+
     public function test_create_drawer_is_prefilled_from_query(): void
     {
         $admin = $this->createUserWithPermissions([

@@ -180,6 +180,16 @@ function GroupRow({ node, depth, ctx }) {
                 <EmployeeCount count={node.employees_count} />
                 {/* Telefonda yashirin: nom bosilsa xodimlar paneli ochiladi, guruh sahifasi esa "Ko‘rish" orqali. */}
                 <div className="hidden shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 ease-productive group-hover/row:opacity-100 group-focus-within/row:opacity-100 sm:flex">
+                    <Tooltip title="Xodimlarni ko‘rish">
+                        <button
+                            type="button"
+                            className="table-action-view"
+                            aria-label={`«${node.title}» xodimlarini ko‘rish`}
+                            onClick={() => ctx.showMembers(`group:${node.id}`)}
+                        >
+                            <TeamOutlined aria-hidden="true" />
+                        </button>
+                    </Tooltip>
                     <Tooltip title="Ko‘rish">
                         <Link
                             href={route('admin.groups.show', node.id)}

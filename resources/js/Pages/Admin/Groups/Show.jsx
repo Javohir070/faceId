@@ -13,6 +13,7 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import { BackLink } from '../../../Components/PageHeader';
 import { ShowHeader } from '../../../Components/ShowPage';
+import EmployeeCard, { EMPLOYEE_CARD_GRID } from '../../../Components/EmployeeCard';
 import InitialsAvatar from '../../../Components/InitialsAvatar';
 import SummaryStat from '../../../Components/SummaryStat';
 
@@ -76,24 +77,10 @@ function EmployeesPanel({ group }) {
                 ) : null}
             />
             {employees.length ? (
-                <ul>
+                <ul className={`border-t border-line p-4 ${EMPLOYEE_CARD_GRID}`}>
                     {employees.map((employee) => (
-                        <li key={employee.id} className="border-t border-line first:border-t-0">
-                            <Link
-                                href={route('admin.employees.show', employee.id)}
-                                className="flex items-center gap-3 px-5 py-3 transition-colors duration-150 ease-productive hover:bg-surface-muted"
-                            >
-                                <InitialsAvatar name={employee.name} tone="neutral" round />
-                                <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm font-bold text-ink">{employee.name}</span>
-                                    <span className="block truncate text-xs text-ink-muted">
-                                        {employee.position || 'Lavozim ko‘rsatilmagan'}
-                                    </span>
-                                </span>
-                                <span className="shrink-0 text-xs font-semibold tabular-nums text-ink-muted">
-                                    {employee.card}
-                                </span>
-                            </Link>
+                        <li key={employee.id}>
+                            <EmployeeCard employee={employee} />
                         </li>
                     ))}
                 </ul>

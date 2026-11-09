@@ -2,11 +2,11 @@
 
 namespace App\Services\Employees;
 
+use App\Http\Resources\EmployeeResource;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Group;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 /**
  * Bo‘lim yoki guruh nomi bosilganda o‘ngdan ochiladigan xodimlar paneli.
@@ -150,10 +150,7 @@ class MembersPanelService
                 'position' => $employee->position,
                 'group' => $order[$employee->group_id]['path'] ?? null,
                 'validity' => $employee->validityStatus(),
-                'face_url' => $employee->face_max_updated_at === null ? null : route('admin.employees.face', [
-                    'employee' => $employee->id,
-                    'v' => Carbon::parse($employee->face_max_updated_at)->timestamp,
-                ], false),
+                'face_url' => EmployeeResource::faceThumbnailUrl($employee->id, $employee->face_max_updated_at),
             ])
             ->values()
             ->all();

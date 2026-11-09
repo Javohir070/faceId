@@ -1,4 +1,5 @@
-import { Input } from 'antd';
+import { TeamOutlined } from '@ant-design/icons';
+import { Input, Tooltip } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
@@ -67,11 +68,23 @@ export default function Index({ departments, drawer: initialDrawer = null }) {
                                     </button>
                                 </td>
                                 <td>
-                                    <ResourceActions
-                                        resource="departments"
-                                        onEdit={() => drawer.openEdit({ id: department.id, name: department.name })}
-                                        deleteHref={route('admin.departments.destroy', department.id)}
-                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Tooltip title="Xodimlarni ko‘rish">
+                                            <button
+                                                type="button"
+                                                className="table-action-view"
+                                                aria-label={`«${department.name}» xodimlarini ko‘rish`}
+                                                onClick={() => members.open(`department:${department.id}`)}
+                                            >
+                                                <TeamOutlined aria-hidden="true" />
+                                            </button>
+                                        </Tooltip>
+                                        <ResourceActions
+                                            resource="departments"
+                                            onEdit={() => drawer.openEdit({ id: department.id, name: department.name })}
+                                            deleteHref={route('admin.departments.destroy', department.id)}
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         ))}
