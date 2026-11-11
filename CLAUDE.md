@@ -102,6 +102,12 @@ Hikvision device (ISAPI)
 
 **Employees never auto-sync to devices.** Creating or editing an employee only writes the database; pushing to hardware happens exclusively through Admin → Sinxronizatsiya or a device's Sync action. Preserve this — flash messages tell operators so explicitly.
 
+The one deliberate exception is the legacy API, `POST /api/legacy` (`LegacyApiService`, [docs/legacy-api.md](docs/legacy-api.md)). It reproduces the old system's `api.php` request/response format for external systems.
+- `add_employee` writes to every terminal synchronously, and `delete_employee` removes from them before deleting.
+- Only IPs in `LEGACY_API_ALLOWED_IPS` may call it, and it checks `REMOTE_ADDR`, not `$request->ip()`, because `trustProxies('*')` makes `X-Forwarded-For` spoofable.
+- It bypasses global scopes.
+- Its English alert strings and string-typed numbers are intentional: don't translate or "fix" them.
+
 Sync, transfer, device Clear and "remove from device" run **synchronously in the request** (`set_time_limit(0)`) and report counts back in the flash. The Sinxronizatsiya page calls `POST /admin/sync/transfer-one` once per employee × device pair from a progress modal — the one place JSX uses raw `fetch`. Only `EmployeeService::delete()` and face removal in `update()` go through the queue (`RemoveHikvisionUsersJob`, `RemoveHikvisionFacesJob`); the other jobs in `app/Jobs/Hikvision/` and the `queue*` helpers on `EmployeeSyncService` are currently unused.
 
 Events arrive through **three independent channels**, all converging on `ReportService`:

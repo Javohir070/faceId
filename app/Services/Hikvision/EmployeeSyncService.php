@@ -317,13 +317,14 @@ class EmployeeSyncService
 
     /**
      * @param  list<int>  $deviceIds
-     * @return array{success:int, failed:int}
+     * @return array{success:int, failed:int, errors:list<array{ip:string, message:string}>}
      */
     public function removeFromDevices(Employee $employee, array $deviceIds): array
     {
         $devices = Device::query()->whereIn('id', $deviceIds)->get();
         $success = 0;
         $failed = 0;
+        $errors = [];
 
         foreach ($devices as $device) {
             try {
@@ -332,9 +333,11 @@ class EmployeeSyncService
                     $success++;
                 } else {
                     $failed++;
+                    $errors[] = ['ip' => (string) $device->ip_address, 'message' => 'Terminal xodimni o‘chirmadi'];
                 }
             } catch (\Throwable $exception) {
                 $failed++;
+                $errors[] = ['ip' => (string) $device->ip_address, 'message' => $this->failureMessage($exception)];
                 Log::error('Hikvision: xodim qurilmadan o‘chirish xatoligi', [
                     'device_id' => $device->id,
                     'employee_id' => $employee->id,
@@ -343,7 +346,7 @@ class EmployeeSyncService
             }
         }
 
-        return ['success' => $success, 'failed' => $failed];
+        return ['success' => $success, 'failed' => $failed, 'errors' => $errors];
     }
 
     /**
