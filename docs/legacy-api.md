@@ -22,9 +22,20 @@ LEGACY_API_SCHEDULE_ID=1
 `.env` o‘zgargach `php artisan config:clear` (config keshlangan bo‘lsa `php artisan config:cache`).
 
 - `LEGACY_API_ALLOWED_IPS` bo‘sh bo‘lsa API yopiq: hamma so‘rovga `403 {"status": false, "alerts": ["Access denied"]}`.
-- IP so‘rovning haqiqiy ulanish manzilidan olinadi. `X-Forwarded-For` sarlavhasiga faqat so‘rov shu serverning o‘zidagi proksidan (127.0.0.1) kelganda ishoniladi, chunki uni istalgan mijoz o‘zi yozib yuborishi mumkin.
+- IP so‘rovning haqiqiy ulanish manzilidan olinadi (`App\Http\ClientIp`). `X-Forwarded-For` sarlavhasiga faqat so‘rov shu serverning o‘zidagi proksidan (127.0.0.1) kelganda ishoniladi, chunki uni istalgan mijoz o‘zi yozib yuborishi mumkin.
+- Rad etilgan har bir so‘rov `storage/logs/laravel.log` ga `Legacy API: ruxsat etilmagan manzildan so‘rov {"ip": "…"}` bo‘lib yoziladi. 403 olsangiz, shu qatordagi IP ni `LEGACY_API_ALLOWED_IPS` ga qo‘shing: server aynan shu manzilni ko‘ryapti.
   Server oldida Cloudflare kabi tashqi proksi tursa, so‘rovlar proksi IP’sidan keladi va rad etiladi. Bunday holat uchun alohida sozlash kerak bo‘ladi.
 - Bo‘lim va jadval faqat **yangi** xodimga beriladi. Karta bazada bor bo‘lsa, xodimning bo‘limi, jadvali va guruhi o‘zgarmaydi.
+
+## Hujjat sahifasi (`/docs/api`)
+
+`/docs/api` → «Eski API» bo‘limida har bir `action` uchun so‘rov va javob namunasi bor: o‘ngdagi **Body** oynasida **Examples** ro‘yxatidan tanlanadi.
+Scramble tanani koddan topa olmaydi (controller `getContent()` dan o‘qiydi), shuning uchun namunalar qo‘lda yozilgan: `App\OpenApi\LegacyApiDocumentation`. Amallar o‘zgarsa, uni ham yangilang.
+
+- «Send API Request» so‘rovni **brauzeringizdan** yuboradi. Kompyuteringiz IP si `LEGACY_API_ALLOWED_IPS` da bo‘lmasa, javob `403 Access denied` bo‘ladi: bu xato emas, IP filtri ishlayapti.
+- U yerdan `add_employee` yoki `delete_employee` yuborilsa, xodim haqiqatan terminallarga yoziladi yoki o‘chiriladi. Sinash uchun `attendance`, `get_reports`, `get_work_time` xavfsiz: ular faqat o‘qiydi.
+- Sahifa `APP_ENV=local` da hammaga ochiq, boshqa muhitda faqat `viewApiDocs` gate ruxsat bersa ochiladi.
+- `php artisan scramble:cache` ishlatilgan bo‘lsa, yangilangandan keyin `php artisan scramble:clear`.
 
 ## Amallar
 

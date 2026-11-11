@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\ClientIp;
 use App\Models\Device;
 use App\Services\Hikvision\HikvisionEventParser;
 use App\Services\ReportService;
@@ -28,7 +29,7 @@ class WebhookController extends Controller
                 Log::warning('Hikvision webhook: event ma’lumoti topilmadi', [
                     'content_type' => $request->header('Content-Type'),
                     'keys' => array_keys($request->all()),
-                    'ip' => $request->ip(),
+                    'ip' => ClientIp::from($request),
                 ]);
 
                 return response()->json([
@@ -56,7 +57,7 @@ class WebhookController extends Controller
         } catch (\Throwable $exception) {
             Log::error('Hikvision webhook xatosi: '.$exception->getMessage(), [
                 'exception' => $exception::class,
-                'ip' => $request->ip(),
+                'ip' => ClientIp::from($request),
             ]);
 
             return response()->json([
@@ -70,18 +71,21 @@ class WebhookController extends Controller
      */
     private function resolveEvent(Request $request): ?array
     {
+        // Payloadda ipAddress bo‘lmasa qurilma so‘rov manzilidan aniqlanadi; soxta X-Forwarded-For hisobga olinmaydi.
+        $deviceIp = ClientIp::from($request);
+
         foreach (['event_log', 'AccessControllerEvent'] as $field) {
             $raw = $request->input($field);
 
             if (is_array($raw)) {
-                return $this->eventParser->normalizePayload($raw, $request->ip());
+                return $this->eventParser->normalizePayload($raw, $deviceIp);
             }
 
             if (! is_string($raw) || trim($raw) === '') {
                 continue;
             }
 
-            $parsed = $this->eventParser->parseRaw(trim($raw), $request->ip());
+            $parsed = $this->eventParser->parseRaw(trim($raw), $deviceIp);
 
             if ($parsed !== null) {
                 return $parsed;
@@ -102,11 +106,11 @@ class WebhookController extends Controller
                     return null;
                 }
 
-                return $this->eventParser->normalizePayload($decoded, $request->ip());
+                return $this->eventParser->normalizePayload($decoded, $deviceIp);
             }
         }
 
-        return $this->eventParser->parseRaw($rawBody, $request->ip());
+        return $this->eventParser->parseRaw($rawBody, $deviceIp);
     }
 
     private function assertWebhookSecret(Request $request): void
@@ -119,7 +123,7 @@ class WebhookController extends Controller
 
         if ($secret === '') {
             Log::warning('Hikvision webhook: secret sozlanmagan va so‘rov ishonchli qurilma IP dan emas.', [
-                'ip' => $request->ip(),
+                'ip' => ClientIp::from($request),
                 'trusted_device_ips' => Device::trustedIpAddresses(),
             ]);
 
@@ -141,7 +145,7 @@ class WebhookController extends Controller
             'has_header' => $request->hasHeader('X-Webhook-Secret'),
             'has_query_secret' => $request->has('secret'),
             'has_path_secret' => $request->route('secret') !== null,
-            'ip' => $request->ip(),
+            'ip' => ClientIp::from($request),
             'trusted_device_ips' => Device::trustedIpAddresses(),
         ], $this->webhookRequestDiagnostics($request)));
 
@@ -200,7 +204,8 @@ class WebhookController extends Controller
             return false;
         }
 
-        $requestIp = $request->ip();
+        // $request->ip() emas: trustProxies(at: '*') tufayli uni X-Forwarded-For orqali soxtalashtirish mumkin.
+        $requestIp = ClientIp::from($request);
 
         if ($requestIp === null) {
             return false;

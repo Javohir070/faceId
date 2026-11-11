@@ -60,6 +60,8 @@ APP_URL=http://your-server.example
 HIKVISION_TIMEOUT=10
 ```
 
+`HIKVISION_WEBHOOK_TRUST_DEVICE_IP=true` bo‘lsa, ro‘yxatdagi qurilma IP sidan kelgan webhook secret’siz qabul qilinadi. IP ulanish manzilidan (`REMOTE_ADDR`) olinadi; `X-Forwarded-For` faqat so‘rov shu serverdagi proksidan (127.0.0.1 / ::1) kelganda hisobga olinadi (`App\Http\ClientIp`). Terminal boshqa xostdagi proksi yoki Cloudflare orqali kelsa, URL ga secret qo‘shing.
+
 ### Admin → Qurilmalar (`devices` jadvali)
 
 Har bir Face ID qurilma uchun alohida saqlanadi — `.env` da emas:
