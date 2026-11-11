@@ -28,17 +28,33 @@ Buyruq: `php artisan legacy:import-employees` (`app/Services/Legacy/LegacyEmploy
 1. **Zaxira nusxa** (majburiy):
 
    ```bash
-   cd /var/www/biocontrol && mysqldump -u root -p "$(grep ^DB_DATABASE= .env | cut -d= -f2)" > ~/backup-before-legacy-$(date +%F).sql
+   cd /var/www/faceId && mysqldump -u root -p "$(grep ^DB_DATABASE= .env | cut -d= -f2)" > ~/backup-before-legacy-$(date +%F).sql
    ```
 
-2. Dump'ni serverga yuklang (masalan WinSCP bilan) `/tmp/biocontrol_legacy.sql` nomi bilan.
+2. Dump'ni serverga yuklang (masalan WinSCP yoki `scp` bilan) `/tmp/biocontrol_legacy.sql` nomi bilan.
 
-3. Vaqtinchalik bazaga yuklang va ilova foydalanuvchisiga o‘qish huquqini bering
-   (`<db_user>` — `.env` dagi `DB_USERNAME`):
+   Butun dump o‘rniga faqat kerakli qismini yuborish yaxshiroq — kichik va ortiqcha shaxsiy ma’lumotsiz.
+   Dump lokal MySQL'da `legacy_tmp` bazasiga yuklangan bo‘lsa (barcha bo‘lim/guruh/jadval —
+   daraxtni tiklash uchun, xodim va rasmlar esa faqat tanlangan bo‘limlardan):
 
    ```bash
-   mysql -u root -p -e "CREATE DATABASE biocontrol_legacy CHARACTER SET utf8mb4; GRANT SELECT ON biocontrol_legacy.* TO '<db_user>'@'localhost';"
+   O="-u root --default-character-set=utf8mb4 --skip-lock-tables --single-transaction"
+   mysqldump $O legacy_tmp departments groups schedules > biocontrol_legacy.sql
+   mysqldump $O legacy_tmp employees --where="department IN (5,7,8,14)" >> biocontrol_legacy.sql
+   mysqldump $O legacy_tmp faces --where="employee IN (SELECT id FROM employees WHERE department IN (5,7,8,14))" >> biocontrol_legacy.sql
+   ```
+
+   2026-11-11 da shu usul bilan 157 MB o‘rniga 30 MB fayl chiqdi (289 xodim).
+
+3. Vaqtinchalik bazaga yuklang va ilova foydalanuvchisiga o‘qish huquqini bering.
+   `<db_user>` — `.env` dagi `DB_USERNAME`, host esa MySQL'dagi foydalanuvchining hosti
+   (`SELECT user, host FROM mysql.user;` — masalan `'eidora'@'%'`; xato xabarida ham `Access denied for user 'eidora'@'%'` ko‘rinishida chiqadi):
+
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS biocontrol_legacy CHARACTER SET utf8mb4; GRANT SELECT ON biocontrol_legacy.* TO '<db_user>'@'%'; FLUSH PRIVILEGES;"
    mysql -u root -p biocontrol_legacy < /tmp/biocontrol_legacy.sql
+   # ilova foydalanuvchisi ko‘ra olishini tekshirish (parol — .env dagi DB_PASSWORD):
+   mysql -u <db_user> -p -h 127.0.0.1 -e "SELECT COUNT(*) FROM biocontrol_legacy.employees;"   # butun dump: 1138, kichik fayl: 289
    ```
 
 4. Kodni yangilang: `git pull` (migratsiya yo‘q).
