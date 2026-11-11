@@ -209,6 +209,19 @@ class LegacyEmployeeImportTest extends TestCase
         $this->assertSame(1, Face::query()->count());
     }
 
+    public function test_empty_legacy_database_explains_the_next_step_instead_of_a_stack_trace(): void
+    {
+        config(['database.connections.legacy_empty' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]]);
+
+        $this->artisan('legacy:import-employees', ['--connection' => 'legacy_empty', '--departments' => '5', '--dry-run' => true])
+            ->expectsOutputToContain('dump yuklanmagan')
+            ->assertFailed();
+    }
+
     public function test_unknown_department_is_rejected(): void
     {
         $this->artisan('legacy:import-employees', ['--connection' => 'legacy', '--departments' => '5,99', '--force' => true])

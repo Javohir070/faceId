@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Legacy\LegacyEmployeeImportService;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -39,6 +40,15 @@ class ImportLegacyEmployeesCommand extends Command
 
         $connection = $this->option('connection') ?: $this->legacyConnection((string) $this->option('database'));
         $dryRun = (bool) $this->option('dry-run');
+
+        // Tasdiqlash so‘rashdan oldin: baza yo‘q / huquq yo‘q / dump yuklanmagan bo‘lsa — keyingi qadam aytiladi.
+        $problem = $this->legacyDatabaseProblem($connection);
+
+        if ($problem !== null) {
+            $this->error($problem);
+
+            return self::FAILURE;
+        }
 
         if (! $dryRun && ! $this->option('force')
             && ! $this->confirm('Ma’lumotlar haqiqatda yoziladi. Avval --dry-run bilan tekshirdingizmi? Davom etilsinmi?')) {
@@ -79,6 +89,43 @@ class ImportLegacyEmployeesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Serverdagi odatiy xatolar uchun xom xato izi o‘rniga nima qilish kerakligi (docs/legacy-import.md, 3-qadam).
+     */
+    private function legacyDatabaseProblem(string $connection): ?string
+    {
+        $database = (string) config("database.connections.{$connection}.database");
+        $user = (string) config("database.connections.{$connection}.username");
+
+        try {
+            DB::connection($connection)->table('employees')->limit(1)->count();
+
+            return null;
+        } catch (QueryException $exception) {
+            $code = (int) ($exception->errorInfo[1] ?? 0);
+
+            if ($code === 0 && preg_match('/\[(\d{4})]/', $exception->getMessage(), $matches) === 1) {
+                $code = (int) $matches[1];
+            }
+
+            if (str_contains($exception->getMessage(), 'no such table')) {
+                $code = 1146;
+            }
+
+            return match ($code) {
+                1049 => "«{$database}» bazasi yo‘q. Yarating va eski dump'ni yuklang:\n"
+                    ."  mysql -e \"CREATE DATABASE {$database} CHARACTER SET utf8mb4\"\n"
+                    ."  mysql {$database} < /tmp/biocontrol_legacy.sql",
+                1044, 1142 => "«{$user}» foydalanuvchisida «{$database}» ni o‘qish huquqi yo‘q:\n"
+                    ."  mysql -e \"GRANT SELECT ON {$database}.* TO '{$user}'@'%'; FLUSH PRIVILEGES;\"\n"
+                    .'  (host boshqa bo‘lsa: SELECT user, host FROM mysql.user;)',
+                1146 => "«{$database}» bazasida eski tizim jadvallari yo‘q — dump yuklanmagan:\n"
+                    ."  mysql {$database} < /tmp/biocontrol_legacy.sql",
+                default => 'Eski bazaga ulanib bo‘lmadi: '.$exception->getMessage(),
+            };
+        }
     }
 
     /**
