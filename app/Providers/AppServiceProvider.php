@@ -12,6 +12,7 @@ use App\Interfaces\PermissionRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
+use App\OpenApi\LegacyApiDocumentation;
 use App\Repositories\CategoryRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\DeviceRepository;
@@ -22,6 +23,7 @@ use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\UserRepository;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -62,5 +64,8 @@ class AppServiceProvider extends ServiceProvider
         if (! $this->app->runningInConsole() && ! in_array(request()->getHost(), ['localhost', '127.0.0.1', '::1', '[::1]'], true)) {
             Vite::useHotFile(storage_path('framework/vite.hot.disabled'));
         }
+
+        // /docs/api: eski API’ning so‘rov va javob namunalari (Scramble ularni koddan topa olmaydi).
+        Scramble::configure()->withOperationTransformers(LegacyApiDocumentation::class);
     }
 }

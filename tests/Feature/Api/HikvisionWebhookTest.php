@@ -177,6 +177,67 @@ class HikvisionWebhookTest extends TestCase
         ]);
     }
 
+    public function test_webhook_does_not_trust_spoofed_forwarded_for_from_remote_client(): void
+    {
+        config(['hikvision.webhook_trust_device_ip' => true]);
+        $this->registerTrustedDevice('192.168.100.115');
+
+        // Tashqi mijoz X-Forwarded-For ga qurilma IP sini yozib, secret’siz kira olmasligi kerak.
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.50'])
+            ->postJson('/api/webhooks/hikvision/events', [
+                'event_log' => json_encode($this->sampleEvent()),
+            ], [
+                'X-Forwarded-For' => '192.168.100.115',
+            ])
+            ->assertUnauthorized();
+
+        $this->assertDatabaseCount('access_controller_events', 0);
+    }
+
+    public function test_webhook_resolves_device_from_connection_address_not_spoofed_forwarded_for(): void
+    {
+        $this->registerTrustedDevice('192.168.100.115');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.50'])
+            ->post('/api/webhooks/hikvision/events', [
+                'AccessControllerEvent' => json_encode($this->innerAccessControllerEvent()),
+            ], [
+                'Accept' => 'application/json',
+                'X-Webhook-Secret' => 'test-webhook-secret',
+                'X-Forwarded-For' => '192.168.100.115',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('access_controller_events', [
+            'employee_no' => '2002',
+            'device_ip' => '203.0.113.50',
+        ]);
+        $this->assertDatabaseMissing('access_controller_events', [
+            'device_ip' => '192.168.100.115',
+        ]);
+    }
+
+    public function test_webhook_trusts_forwarded_for_from_local_reverse_proxy(): void
+    {
+        config(['hikvision.webhook_trust_device_ip' => true]);
+        $this->registerTrustedDevice('192.168.100.115');
+
+        // Shu serverdagi proksi (loopback) orqali kelgan so‘rovda X-Forwarded-For haqiqiy manzil.
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+            ->post('/api/webhooks/hikvision/events', [
+                'AccessControllerEvent' => json_encode($this->innerAccessControllerEvent()),
+            ], [
+                'Accept' => 'application/json',
+                'X-Forwarded-For' => '192.168.100.115',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('access_controller_events', [
+            'employee_no' => '2002',
+            'device_ip' => '192.168.100.115',
+        ]);
+    }
+
     public function test_webhook_stores_valid_image_and_rejects_non_image(): void
     {
         Storage::fake('public');
@@ -228,6 +289,22 @@ class HikvisionWebhookTest extends TestCase
                 'attendanceStatus' => 'checkIn',
             ],
         ], $overrides);
+    }
+
+    /**
+     * Qurilma o‘zi yuboradigan ichki obyekt: ipAddress yo‘q, qurilma IP si so‘rov manzilidan olinadi.
+     *
+     * @return array<string, mixed>
+     */
+    private function innerAccessControllerEvent(): array
+    {
+        return [
+            'employeeNoString' => '2002',
+            'cardNo' => '445566',
+            'name' => 'Device Payload',
+            'majorEventType' => 5,
+            'subEventType' => 75,
+        ];
     }
 
     private function registerTrustedDevice(string $ipAddress): Device

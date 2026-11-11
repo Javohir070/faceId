@@ -104,7 +104,8 @@ Hikvision device (ISAPI)
 
 The one deliberate exception is the legacy API, `POST /api/legacy` (`LegacyApiService`, [docs/legacy-api.md](docs/legacy-api.md)). It reproduces the old system's `api.php` request/response format for external systems.
 - `add_employee` writes to every terminal synchronously, and `delete_employee` removes from them before deleting.
-- Only IPs in `LEGACY_API_ALLOWED_IPS` may call it, and it checks `REMOTE_ADDR`, not `$request->ip()`, because `trustProxies('*')` makes `X-Forwarded-For` spoofable.
+- Only IPs in `LEGACY_API_ALLOWED_IPS` may call it. The IP comes from `App\Http\ClientIp` (`REMOTE_ADDR`; `X-Forwarded-For` only behind a loopback proxy), not `$request->ip()`, because `trustProxies('*')` makes `X-Forwarded-For` spoofable. Use the same helper anywhere an IP grants access.
+- Scramble can't infer its raw-JSON body, so its `/docs/api` entry (request and response examples per `action`, the 403) is written by hand in `App\OpenApi\LegacyApiDocumentation`. Keep it in sync with the service.
 - It bypasses global scopes.
 - Its English alert strings and string-typed numbers are intentional: don't translate or "fix" them.
 
@@ -112,7 +113,7 @@ Sync, transfer, device Clear and "remove from device" run **synchronously in the
 
 Events arrive through **three independent channels**, all converging on `ReportService`:
 
-1. Webhook `POST /api/webhooks/hikvision/events/{secret?}` → `WebhookController` (secret via header, query, or path; device IP can be trusted instead)
+1. Webhook `POST /api/webhooks/hikvision/events/{secret?}` → `WebhookController` (secret via header, query, or path; device IP can be trusted instead, read through `App\Http\ClientIp`)
 2. `devices:stream-events` — persistent alertStream connection
 3. `devices:pull-events` — scheduled polling fallback. It resumes each device from `devices.events_pulled_until`, which only moves after a complete pull, not from the newest stored event: when a terminal comes back after an outage, a live channel may store a fresh event first, and starting from that event would skip everything recorded during the outage
 
