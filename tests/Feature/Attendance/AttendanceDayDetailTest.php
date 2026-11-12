@@ -49,7 +49,7 @@ class AttendanceDayDetailTest extends TestCase
             ['excused', '08:51', '18:13', false, '8 s 22 d', '09:00–18:00'],
             [$day['status'], $day['in'], $day['out'], $day['inside'], $day['worked'], $day['schedule']],
         );
-        $this->assertSame(['id' => $employee->id, 'name' => 'S. Turdiyev', 'position' => 'Katta ilmiy xodim'], $day['employee']);
+        $this->assertSame(['id' => $employee->id, 'name' => 'S. Turdiyev', 'position' => 'Katta ilmiy xodim', 'face_url' => null], $day['employee']);
         $this->assertSame('2026-10-13', $day['date']);
         $this->assertCount(4, $day['punches']);
         $this->assertSame(

@@ -1,5 +1,6 @@
 import { Button, Drawer, Tag } from 'antd';
 import { formatDayTitle } from '../../utils/uzDate';
+import { Photo } from '../Units/EmployeeBubble';
 import { STATUS_LABELS } from './AttendanceGrid';
 
 const STATUS_TAG_COLORS = {
@@ -20,8 +21,11 @@ function InfoCard({ label, value, note }) {
     );
 }
 
-/** Kun tafsiloti: kirish-chiqishlar va shu kunga izohlar (arizalar). */
-export default function DayDrawer({ day, open, canAddNote, onClose, onAddNote }) {
+/**
+ * Kun tafsiloti: kirish-chiqishlar va shu kunga izohlar (arizalar).
+ * `showPhoto` — xodim rasmi (Davomatda); xodim profilida rasm sahifaning o‘zida bor.
+ */
+export default function DayDrawer({ day, open, canAddNote, showPhoto = false, onClose, onAddNote }) {
     return (
         <Drawer
             open={open}
@@ -51,9 +55,12 @@ export default function DayDrawer({ day, open, canAddNote, onClose, onAddNote })
         >
             {day && (
                 <div className="space-y-6">
-                    <div>
-                        <p className="font-bold text-ink">{day.employee.name}</p>
-                        {day.employee.position && <p className="text-sm text-ink-muted">{day.employee.position}</p>}
+                    <div className="flex items-center gap-4">
+                        {showPhoto && <Photo name={day.employee.name} src={day.employee.face_url} size="lg" />}
+                        <div className="min-w-0">
+                            <p className="font-bold text-ink">{day.employee.name}</p>
+                            {day.employee.position && <p className="text-sm text-ink-muted">{day.employee.position}</p>}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

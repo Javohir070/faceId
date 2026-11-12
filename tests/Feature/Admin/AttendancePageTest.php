@@ -134,6 +134,40 @@ class AttendancePageTest extends TestCase
                 ->where('day.employee.id', $employee->id));
     }
 
+    public function test_day_detail_has_face_url_only_with_employees_permission(): void
+    {
+        // Yuz rasmi `admin.employees.face` orqali keladi va u faqat Xodimlar ruxsatini qabul qiladi.
+        $employee = $this->employee();
+        $employee->face()->create(['face' => base64_encode('rasm')]);
+        $query = ['day_employee_id' => $employee->id, 'day_date' => '2026-10-22'];
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.attendance.index', $query))
+            ->assertInertia(fn (Assert $page) => $page->where('day.employee.face_url', null));
+
+        $this->actingAs($this->createUserWithPermissions([
+            config('menu_permissions.resources')['attendance'],
+            config('menu_permissions.resources')['employees'],
+        ]))
+            ->get(route('admin.attendance.index', $query))
+            ->assertInertia(fn (Assert $page) => $page->where(
+                'day.employee.face_url',
+                fn (?string $url): bool => $url !== null && str_contains($url, '/employees/'.$employee->id.'/face?v='),
+            ));
+    }
+
+    public function test_day_detail_face_url_is_null_without_face(): void
+    {
+        $employee = $this->employee();
+
+        $this->actingAs($this->createUserWithPermissions([
+            config('menu_permissions.resources')['attendance'],
+            config('menu_permissions.resources')['employees'],
+        ]))
+            ->get(route('admin.attendance.index', ['day_employee_id' => $employee->id, 'day_date' => '2026-10-22']))
+            ->assertInertia(fn (Assert $page) => $page->where('day.employee.face_url', null));
+    }
+
     public function test_day_detail_respects_department_scope(): void
     {
         $own = Department::factory()->create();

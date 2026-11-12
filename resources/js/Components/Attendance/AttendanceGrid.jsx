@@ -1,6 +1,8 @@
 import { DownOutlined, RightOutlined } from '@ant-design/icons';
+import { Link } from '@inertiajs/react';
 import { Empty } from 'antd';
 import { Fragment, useState } from 'react';
+import { route } from '../../routes';
 
 /** Katak holati → ko‘rinish (ranglar admin temasi tokenlaridan, yorug‘/qorong‘i rejimda moslashadi). */
 export const STATUS_STYLES = {
@@ -62,8 +64,9 @@ function DayCell({ cell, isToday, onClick }) {
 
 /**
  * Xodim × ish kuni jadvali. Qatorlar bo‘lim bo‘yicha guruhlanadi (sahifa ichida), bo‘lim yig‘ib-yoyiladi.
+ * `canOpenProfile` — xodim ismi uning profiliga havola (Xodimlar ruxsati bo‘lsa).
  */
-export default function AttendanceGrid({ days, rows, departmentCounts = {}, onCellClick }) {
+export default function AttendanceGrid({ days, rows, departmentCounts = {}, canOpenProfile = false, onCellClick }) {
     const [collapsed, setCollapsed] = useState({});
     const todayIndex = days.findIndex((day) => day.is_today);
 
@@ -134,7 +137,17 @@ export default function AttendanceGrid({ days, rows, departmentCounts = {}, onCe
                                 {!isCollapsed && groupRows.map((row) => (
                                     <tr key={row.id}>
                                         <td className="sticky left-0 z-10 bg-surface py-1 pl-2 pr-3">
-                                            <div className="max-w-[220px] truncate font-bold text-ink">{row.name}</div>
+                                            {canOpenProfile ? (
+                                                <Link
+                                                    href={route('admin.employees.show', row.id)}
+                                                    title={`${row.name} — profilni ochish`}
+                                                    className="block max-w-[220px] truncate font-bold text-ink transition-colors duration-200 hover:text-brand-600 hover:underline"
+                                                >
+                                                    {row.name}
+                                                </Link>
+                                            ) : (
+                                                <div className="max-w-[220px] truncate font-bold text-ink">{row.name}</div>
+                                            )}
                                             <div className="max-w-[220px] truncate text-xs text-ink-muted">{row.position || '—'}</div>
                                         </td>
                                         {row.cells.map((cell, index) => (

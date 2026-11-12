@@ -195,6 +195,7 @@ export default function Index({
                             days={days}
                             rows={rows?.data ?? []}
                             departmentCounts={departmentCounts}
+                            canOpenProfile={Boolean(can.employees)}
                             onCellClick={openDay}
                         />
                         <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-line pt-4">
@@ -220,6 +221,7 @@ export default function Index({
                 day={day}
                 open={Boolean(day)}
                 canAddNote={Boolean(can['notes.create'])}
+                showPhoto
                 onClose={closeDay}
                 onAddNote={(employeeId, dt) => openNoteModal(employeeId, dt)}
             />

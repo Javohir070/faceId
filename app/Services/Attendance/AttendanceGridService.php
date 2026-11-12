@@ -2,6 +2,7 @@
 
 namespace App\Services\Attendance;
 
+use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
 use App\Models\Note;
 use App\Models\Report;
@@ -116,12 +117,16 @@ class AttendanceGridService
 
     /**
      * Bitta xodim-kun tafsiloti (kun oynasi uchun). Holat va vaqtlar build() dagi katak bilan bir xil.
+     * $withFaces — yuz rasmi havolasi; u `admin.employees.face` orqali ochiladi, shuning uchun faqat Xodimlar ruxsati bilan.
      *
      * @return array<string, mixed>
      */
-    public function day(Employee $employee, string $date, CarbonInterface $now): array
+    public function day(Employee $employee, string $date, CarbonInterface $now, bool $withFaces = false): array
     {
         $employee->loadMissing(['schedule', 'department:id,name']);
+        if ($withFaces) {
+            $employee->loadMax('face', 'updated_at');
+        }
         $period = AttendancePeriod::make('week', Carbon::parse($date));
         $row = $this->build(EloquentCollection::make([$employee]), $period, $now)['rows'][0] ?? null;
         $cell = collect($row['cells'] ?? [])->firstWhere('date', $date) ?? $this->emptyCell($date, 'inactive');
@@ -165,6 +170,9 @@ class AttendanceGridService
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'position' => $employee->position,
+                'face_url' => $withFaces
+                    ? EmployeeResource::faceThumbnailUrl($employee->id, $employee->face_max_updated_at)
+                    : null,
             ],
             'date' => $date,
             'status' => $cell['status'],

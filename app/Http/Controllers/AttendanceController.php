@@ -67,7 +67,7 @@ class AttendanceController extends Controller
             'department_counts' => fn () => $isNotesTab
                 ? null
                 : collect($build()['rows'])->countBy(fn (array $row): int => $row['department']['id'])->all(),
-            'day' => fn () => $this->dayDetail($filters, $now),
+            'day' => fn () => $this->dayDetail($filters, $now, $request),
             'notes' => fn () => $isNotesTab ? $this->notes($filters, $period, $request) : null,
             'departments' => fn () => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
             'groups' => fn () => Group::query()->orderBy('name')->get(['id', 'name', 'department_id']),
@@ -163,15 +163,17 @@ class AttendanceController extends Controller
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>|null
      */
-    private function dayDetail(array $filters, Carbon $now): ?array
+    private function dayDetail(array $filters, Carbon $now, Request $request): ?array
     {
         if (empty($filters['day_employee_id']) || empty($filters['day_date'])) {
             return null;
         }
 
         $employee = Employee::query()->find($filters['day_employee_id']);
+        // Yuz rasmi `admin.employees.face` orqali keladi va u faqat Xodimlar ruxsatini qabul qiladi.
+        $withFaces = $request->user()->can(config('menu_permissions.resources')['employees']);
 
-        return $employee === null ? null : $this->grid->day($employee, $filters['day_date'], $now);
+        return $employee === null ? null : $this->grid->day($employee, $filters['day_date'], $now, $withFaces);
     }
 
     /**
