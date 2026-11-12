@@ -16,6 +16,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SyncController;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -163,6 +164,9 @@ Route::middleware('auth')->group(function () {
         Route::post('attendance/notes', [AttendanceController::class, 'storeNote'])
             ->middleware(['permission:'.$menuPermissions['attendance'], 'permission:'.$actionPermissions['notes']['create']])
             ->name('attendance.notes.store');
+        Route::get('units', [UnitController::class, 'index'])
+            ->middleware('permission:'.$menuPermissions['units'])
+            ->name('units.index');
         Route::put('users/{user}/devices', [UserController::class, 'updateDevices'])
             ->middleware(['permission:'.$menuPermissions['users'], 'permission:'.$actionPermissions['users']['edit']])
             ->name('users.devices.update');

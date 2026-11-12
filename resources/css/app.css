@@ -109,6 +109,12 @@
         @apply min-w-full border-separate border-spacing-0 text-left text-sm;
     }
 
+    /* O‘ng panellar: sarlavha flex ichida qisqarishi kerak — aks holda uzun nom panelni yonga surib yuboradi. */
+    .side-panel .ant-drawer-header-title,
+    .side-panel .ant-drawer-title {
+        min-width: 0;
+    }
+
     /* O‘ng panellar: kompyuterda chap chetdagi aylana tugma yopadi, X faqat telefonda. */
     @media (min-width: 640px) {
         .side-panel .ant-drawer-close {

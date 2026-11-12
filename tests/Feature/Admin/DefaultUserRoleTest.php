@@ -47,6 +47,7 @@ class DefaultUserRoleTest extends TestCase
             'event tortish' => ['admin.reports.pull'],
             'sinxronizatsiya' => ['admin.sync.index'],
             'davomat' => ['admin.attendance.index'],
+            'tarkibiy bo‘linmalar' => ['admin.units.index'],
             'guruhlar' => ['admin.groups.index'],
             'jadvallar' => ['admin.schedules.index'],
             'qurilmalar' => ['admin.devices.index'],
@@ -144,6 +145,8 @@ class DefaultUserRoleTest extends TestCase
         ]);
 
         (require database_path('migrations/2026_11_02_120000_grant_default_user_role_permissions.php'))->up();
+        // Keyin qo‘shilgan standart ruxsatlar o‘z migratsiyasida beriladi.
+        (require database_path('migrations/2026_11_12_100000_add_units_permission.php'))->up();
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $names = $role->fresh()->permissions->pluck('name')->sort()->values()->all();
