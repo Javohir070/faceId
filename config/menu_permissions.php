@@ -15,6 +15,7 @@ return [
         'sync' => 'Sinxronizatsiya',
         'reports' => 'Hisobotlar',
         'attendance' => 'Davomat',
+        'units' => "Tarkibiy bo'linmalar",
         'reports-pull' => 'Event tortish',
         'users' => 'Foydalanuvchilar',
         'roles' => 'Rollar',
@@ -38,9 +39,9 @@ return [
 
     // `user` rolining standart huquqlari (DatabaseSeeder). O‘zgarsa mavjud bazalar uchun migratsiya ham kerak
     // (2026_11_02_120000_grant_default_user_role_permissions, 2026_11_03_100000_remove_extra_permissions_from_user_role,
-    // 2026_11_04_100000_grant_event_pull_to_all_roles).
+    // 2026_11_04_100000_grant_event_pull_to_all_roles, 2026_11_12_100000_add_units_permission).
     'user_role' => [
-        'full' => ['employees', 'groups', 'reports', 'reports-pull', 'notes', 'schedules', 'sync', 'attendance'],
+        'full' => ['employees', 'groups', 'reports', 'reports-pull', 'notes', 'schedules', 'sync', 'attendance', 'units'],
         'view' => ['devices'],
     ],
 ];

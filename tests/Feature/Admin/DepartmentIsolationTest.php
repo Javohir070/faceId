@@ -129,6 +129,7 @@ class DepartmentIsolationTest extends TestCase
             route('admin.attendance.index', ['period' => 'month', 'anchor' => '2026-10-13']),
             route('admin.attendance.index', ['tab' => 'notes']),
             route('admin.attendance.index', ['period' => 'month', 'anchor' => '2026-10-13', 'day_employee_id' => $this->foreign->id, 'day_date' => '2026-10-13']),
+            route('admin.units.index'),
             route('admin.reports.pull'),
             ...array_map(
                 fn (int $type): string => route('admin.reports.index', [...$range, 'type' => $type]),

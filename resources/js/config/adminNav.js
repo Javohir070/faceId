@@ -10,6 +10,7 @@ import {
     HomeOutlined,
     IdcardOutlined,
     KeyOutlined,
+    PartitionOutlined,
     SafetyCertificateOutlined,
     ScheduleOutlined,
     SettingOutlined,
@@ -47,6 +48,7 @@ export const adminNavGroups = [
                 icon: FormOutlined,
             },
             { key: 'attendance', href: route('admin.attendance.index'), label: 'Davomat', icon: ScheduleOutlined },
+            { key: 'units', href: route('admin.units.index'), label: "Tarkibiy bo'linmalar", icon: PartitionOutlined },
             {
                 key: 'reports-group',
                 label: 'Hisobotlar',

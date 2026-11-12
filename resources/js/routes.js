@@ -51,6 +51,7 @@ const routeBuilders = {
     'admin.attendance.index': () => '/admin/attendance',
     'admin.attendance.export': () => '/admin/attendance/export',
     'admin.attendance.notes.store': () => '/admin/attendance/notes',
+    'admin.units.index': () => '/admin/units',
     'admin.reports.pull': () => '/admin/reports/pull',
     'admin.reports.pull.store': () => '/admin/reports/pull',
     'admin.reports.reconcile': () => '/admin/reports/reconcile',

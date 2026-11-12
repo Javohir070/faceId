@@ -6,6 +6,7 @@ use App\Http\Resources\EmployeeResource;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Group;
+use App\Services\Groups\GroupTree;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -19,6 +20,10 @@ class MembersPanelService
 {
     /** Panel uzun ro‘yxat uchun emas: qolgani Xodimlar sahifasida filtr bilan ochiladi. */
     private const LIMIT = 500;
+
+    public function __construct(
+        private readonly GroupTree $groupTree,
+    ) {}
 
     /**
      * @param  string|null  $key  "group:5" yoki "department:2"
@@ -46,7 +51,7 @@ class MembersPanelService
             return null;
         }
 
-        $order = $this->groupOrder($group->department_id, $group->id);
+        $order = $this->groupTree->order((int) $group->department_id, $group->id);
         $groupIds = array_keys($order);
 
         return $this->panel(
@@ -75,50 +80,9 @@ class MembersPanelService
             $department->name,
             null,
             Employee::query()->where('department_id', $department->id),
-            $this->groupOrder($department->id, null),
+            $this->groupTree->order($department->id),
             ['department_ids' => [$department->id]],
         );
-    }
-
-    /**
-     * Guruhlar daraxti chuqurlik bo‘yicha: ota, keyin uning pastki guruhlari (nomi bo‘yicha).
-     * $rootId berilsa faqat shu guruh va uning ostidagilar. Sikl bo‘lsa takror kirilmaydi.
-     *
-     * @return array<int, array{index: int, path: string}>
-     */
-    private function groupOrder(?int $departmentId, ?int $rootId): array
-    {
-        $groups = Group::query()
-            ->where('department_id', $departmentId)
-            ->orderBy('name')
-            ->get(['id', 'name', 'parent_id']);
-
-        $known = $groups->pluck('id')->flip();
-        $children = $groups->groupBy(fn (Group $group): int => $group->parent_id ?? 0);
-        $order = [];
-
-        $visit = function (Group $group, string $parentPath) use (&$visit, &$order, $children): void {
-            if (isset($order[$group->id])) {
-                return;
-            }
-
-            $path = $parentPath === '' ? $group->name : $parentPath.' › '.$group->name;
-            $order[$group->id] = ['index' => count($order), 'path' => $path];
-
-            foreach ($children->get($group->id, collect()) as $child) {
-                $visit($child, $path);
-            }
-        };
-
-        $roots = $rootId !== null
-            ? $groups->where('id', $rootId)
-            : $groups->filter(fn (Group $group): bool => $group->parent_id === null || ! $known->has($group->parent_id));
-
-        foreach ($roots as $root) {
-            $visit($root, '');
-        }
-
-        return $order;
     }
 
     /**

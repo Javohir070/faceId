@@ -83,7 +83,10 @@ export default function SidePanel({ state, title, subtitle = null, footer = null
             )}
             title={(
                 <div className="min-w-0">
-                    <p className="truncate text-base font-extrabold text-ink">{title}</p>
+                    {/* Uzun nom ikki qatorgacha to‘liq ko‘rinadi, undan uzuni "…" bilan qisqaradi (to‘liq nomi title'da). */}
+                    <p className="line-clamp-2 break-words text-base font-extrabold leading-snug text-ink" title={typeof title === 'string' ? title : undefined}>
+                        {title}
+                    </p>
                     {subtitle ? <p className="text-xs font-semibold text-ink-muted">{subtitle}</p> : null}
                 </div>
             )}
