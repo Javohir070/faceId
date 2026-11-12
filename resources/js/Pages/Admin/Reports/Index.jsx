@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Button, DatePicker, Select, TreeSelect } from 'antd';
+import { Alert, Button, DatePicker, Select, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
@@ -39,6 +39,9 @@ export default function Index({
     schedules,
 }) {
     const can = usePage().props.can || {};
+    const errors = usePage().props.errors || {};
+    // Filtr qoidalari serverda (masalan tugash sanasi boshlanishidan oldin) — xato bo‘lsa sahifa qaytadi, sabab shu yerda.
+    const filterErrors = [...new Set(Object.values(errors))];
     const [form, setForm] = useState({
         employee_id: filters.employee_id ?? null,
         department_ids: filters.department_ids ?? [],
@@ -224,6 +227,7 @@ export default function Index({
                         className="w-full"
                         placeholder="Sana va vaqt dan"
                         value={form.date_from ? dayjs(form.date_from) : null}
+                        disabledDate={(current) => Boolean(form.date_to) && current.isAfter(dayjs(form.date_to), 'day')}
                         onChange={(value) => updateField('date_from', value ? value.format('YYYY-MM-DD HH:mm:ss') : null)}
                     />
                     <DatePicker
@@ -231,9 +235,23 @@ export default function Index({
                         className="w-full"
                         placeholder="Sana va vaqt gacha"
                         value={form.date_to ? dayjs(form.date_to) : null}
+                        disabledDate={(current) => Boolean(form.date_from) && current.isBefore(dayjs(form.date_from), 'day')}
                         onChange={(value) => updateField('date_to', value ? value.format('YYYY-MM-DD HH:mm:ss') : null)}
                     />
                 </div>
+
+                {filterErrors.length > 0 && (
+                    <Alert
+                        type="error"
+                        showIcon
+                        className="!mt-4"
+                        message={filterErrors.length === 1 ? filterErrors[0] : (
+                            <ul className="m-0 list-disc pl-4">
+                                {filterErrors.map((message) => <li key={message}>{message}</li>)}
+                            </ul>
+                        )}
+                    />
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-3 justify-end">
                     <a

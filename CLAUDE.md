@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Biocontrol** — biometric attendance and access-control admin panel. Laravel 12 + Inertia.js + React 19 (JSX), Tailwind + Ant Design 6, integrated with Hikvision Face ID devices over ISAPI. The displayed app name comes from `APP_NAME` (default `EIdora`); the system is called Biocontrol in code and docs.
 
-**All user-facing strings, flash messages, labels, and most code comments are in Uzbek.** Match that when adding features — don't introduce English UI text.
+**All user-facing strings, flash messages, labels, and most code comments are in Uzbek.** Match that when adding features — don't introduce English UI text. Laravel's default validation and login messages come from `lang/uz` (`validation.php` with an `attributes` map of field names, `auth.php`); `config/app.php` pins `locale` to `uz` on purpose, ignoring `APP_LOCALE`. A new form field that relies on default messages needs an entry in that `attributes` map (`UzbekValidationMessagesTest`).
 
 ## Commands
 

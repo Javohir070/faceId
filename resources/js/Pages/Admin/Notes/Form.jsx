@@ -57,11 +57,11 @@ export default function Form({
                         />
                     </FormField>
 
-                    <FormField label="Tip" error={errors.type} required>
+                    <FormField label="Tur" error={errors.type} required>
                         <Select
                             className="w-full"
                             size="large"
-                            placeholder="Tipni tanlang"
+                            placeholder="Turini tanlang"
                             value={data.type}
                             status={errors.type ? 'error' : undefined}
                             options={types}

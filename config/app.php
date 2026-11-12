@@ -78,8 +78,11 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // Tizim faqat o‘zbekcha (validatsiya va login xabarlari lang/uz dan). Atayin .env dan olinmaydi:
+    // serverdagi eski APP_LOCALE=en xabarlarni yana inglizchaga qaytarib qo‘ymasin.
+    'locale' => 'uz',
 
+    // lang/uz da yo‘q kalitlar (masalan paketlarning tarjimalari) inglizcha chiqadi.
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),

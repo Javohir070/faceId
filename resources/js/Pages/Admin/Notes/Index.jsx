@@ -89,7 +89,7 @@ export default function Index({
                     <Select
                         allowClear
                         className="w-full"
-                        placeholder="Tip"
+                        placeholder="Tur"
                         value={form.type}
                         options={types}
                         onChange={(value) => updateField('type', value ?? null)}
@@ -135,7 +135,7 @@ export default function Index({
                         <tr>
                             <th className="w-16">N#</th>
                             <th>Xodim</th>
-                            <th>Tip</th>
+                            <th>Tur</th>
                             <th>Sana</th>
                             <th>Izoh</th>
                             <th className="text-right">Amallar</th>
