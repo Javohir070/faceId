@@ -11,6 +11,7 @@ use App\Models\Face;
 use App\Models\Note;
 use App\Models\Report;
 use App\Models\Schedule;
+use App\Services\Employees\EmployeeName;
 use App\Services\Hikvision\EmployeeSyncService;
 use App\Services\Reports\AttendanceCalculator;
 use Carbon\Carbon;
@@ -177,6 +178,12 @@ class LegacyApiService
                 'valid_from_dt' => $validFrom,
                 'valid_to_dt' => $validTo,
             ];
+
+            // Familiya, Ism, Otasining ismi to‘liq ismdan bo‘linadi. Ism o‘zgarmagan bo‘lsa, formada ajratilgan
+            // qismlar saqlanadi.
+            if ($employee?->name !== $name) {
+                $data += EmployeeName::split($name);
+            }
 
             $employee = $employee === null
                 ? $this->employeeRepository->create([...$data, 'card' => $card, ...$defaults])

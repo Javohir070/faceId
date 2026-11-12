@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\MergesScopedDepartmentId;
+use App\Http\Requests\Concerns\ValidatesEmployeeNameParts;
 use App\Rules\AvailableSchedule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,6 +11,7 @@ use Illuminate\Validation\Rule;
 class StoreEmployeeRequest extends FormRequest
 {
     use MergesScopedDepartmentId;
+    use ValidatesEmployeeNameParts;
 
     public function authorize(): bool
     {
@@ -31,7 +33,7 @@ class StoreEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            ...$this->nameRules(),
             'card' => ['required', 'digits:14', Rule::unique('employees', 'card')],
             'gender' => ['required', 'integer', Rule::in([1, 2])],
             'position' => ['nullable', 'string', 'max:255'],
@@ -56,6 +58,7 @@ class StoreEmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->nameMessages(),
             'card.required' => 'JSHSHIR kiriting.',
             'card.digits' => 'JSHSHIR aniq 14 xonali son bo‘lishi kerak.',
             'card.unique' => 'Bu JSHSHIR boshqa xodimda bor.',

@@ -42,7 +42,11 @@ class Employee extends Model
      * @var list<string>
      */
     protected $fillable = [
+        // To‘liq ism "Familiya Ism Otasining ismi" — formada qismlardan yig‘iladi (EmployeeName).
         'name',
+        'last_name',
+        'first_name',
+        'middle_name',
         'card',
         'gender',
         'position',

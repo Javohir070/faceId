@@ -36,7 +36,10 @@ export default function Form({
     const cardLocked = isEdit && linkedDevices.length > 0;
 
     const { data, setData, post, processing, errors } = useForm({
-        name: employee?.name || '',
+        // To‘liq ism (name) ni server shu uchtasidan yig‘adi: "Familiya Ism Otasining ismi".
+        last_name: employee?.last_name || '',
+        first_name: employee?.first_name || '',
+        middle_name: employee?.middle_name || '',
         card: employee?.card || '',
         gender: employee?.gender ?? null,
         position: employee?.position || '',
@@ -86,16 +89,53 @@ export default function Form({
             >
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-start">
                     <div className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <FormField label="F.I.Sh." error={errors.name} required>
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <FormField label="Familiya" htmlFor="employee-last-name" error={errors.last_name} required>
                                 <Input
+                                    id="employee-last-name"
                                     size="large"
-                                    value={data.name}
-                                    status={errors.name ? 'error' : undefined}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    autoComplete="family-name"
+                                    maxLength={80}
+                                    placeholder="Masalan: Valiyev"
+                                    value={data.last_name}
+                                    status={errors.last_name ? 'error' : undefined}
+                                    onChange={(e) => setData('last_name', e.target.value)}
                                 />
                             </FormField>
 
+                            <FormField label="Ism" htmlFor="employee-first-name" error={errors.first_name} required>
+                                <Input
+                                    id="employee-first-name"
+                                    size="large"
+                                    autoComplete="given-name"
+                                    maxLength={80}
+                                    placeholder="Masalan: Ali"
+                                    value={data.first_name}
+                                    status={errors.first_name ? 'error' : undefined}
+                                    onChange={(e) => setData('first_name', e.target.value)}
+                                />
+                            </FormField>
+
+                            <FormField
+                                label="Otasining ismi"
+                                htmlFor="employee-middle-name"
+                                error={errors.middle_name}
+                                hint="Ixtiyoriy."
+                            >
+                                <Input
+                                    id="employee-middle-name"
+                                    size="large"
+                                    autoComplete="additional-name"
+                                    maxLength={80}
+                                    placeholder="Masalan: Akmal o‘g‘li"
+                                    value={data.middle_name}
+                                    status={errors.middle_name ? 'error' : undefined}
+                                    onChange={(e) => setData('middle_name', e.target.value)}
+                                />
+                            </FormField>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <FormField
                                 label="JSHSHIR"
                                 error={errors.card}
@@ -118,9 +158,7 @@ export default function Form({
                                     }}
                                 />
                             </FormField>
-                        </div>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
                             <FormField label="Jins" error={errors.gender} required>
                                 <Select
                                     className="w-full"
@@ -133,16 +171,6 @@ export default function Form({
                                         { value: 2, label: 'Ayol' },
                                     ]}
                                     onChange={(value) => setData('gender', value)}
-                                />
-                            </FormField>
-
-                            <FormField label="Lavozim" error={errors.position}>
-                                <Input
-                                    size="large"
-                                    value={data.position}
-                                    status={errors.position ? 'error' : undefined}
-                                    placeholder="Masalan: Operator"
-                                    onChange={(e) => setData('position', e.target.value)}
                                 />
                             </FormField>
                         </div>
@@ -225,6 +253,16 @@ export default function Form({
                                     status={errors.schedule_id ? 'error' : undefined}
                                     options={scheduleOptions}
                                     onChange={(value) => setData('schedule_id', value)}
+                                />
+                            </FormField>
+
+                            <FormField label="Lavozim" error={errors.position}>
+                                <Input
+                                    size="large"
+                                    value={data.position}
+                                    status={errors.position ? 'error' : undefined}
+                                    placeholder="Masalan: Operator"
+                                    onChange={(e) => setData('position', e.target.value)}
                                 />
                             </FormField>
                         </div>

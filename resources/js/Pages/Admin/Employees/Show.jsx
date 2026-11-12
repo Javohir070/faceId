@@ -71,6 +71,9 @@ function ProfileCard({ employee, canGroups }) {
             </div>
 
             <dl className="mt-5 border-t border-line pt-1">
+                <DetailRow label="Familiya">{employee.last_name || '—'}</DetailRow>
+                <DetailRow label="Ism">{employee.first_name || '—'}</DetailRow>
+                <DetailRow label="Otasining ismi">{employee.middle_name || '—'}</DetailRow>
                 <DetailRow label="JSHSHIR">
                     <span className="tabular-nums">{employee.card}</span>
                 </DetailRow>

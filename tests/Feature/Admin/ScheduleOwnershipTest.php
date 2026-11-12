@@ -340,7 +340,8 @@ class ScheduleOwnershipTest extends TestCase
     private function employeePayload(Schedule $schedule, string $number): array
     {
         return [
-            'name' => 'Yangi Xodim',
+            'last_name' => 'Yangi',
+            'first_name' => 'Xodim',
             'card' => $number,
             'gender' => 1,
             'schedule_id' => $schedule->id,

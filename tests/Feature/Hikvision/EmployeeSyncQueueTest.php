@@ -49,7 +49,8 @@ class EmployeeSyncQueueTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
-                'name' => 'Yangi Xodim',
+                'last_name' => 'Yangi',
+                'first_name' => 'Xodim',
                 'card' => '99887766554433',
                 'gender' => 1,
                 'department_id' => $department->id,

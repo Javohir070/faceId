@@ -168,6 +168,50 @@ class LegacyApiTest extends TestCase
         $this->assertDatabaseCount('employees', 1);
     }
 
+    public function test_add_employee_keeps_the_full_name_and_splits_it_into_parts(): void
+    {
+        $this->partialMock(EmployeeSyncService::class, fn (MockInterface $mock) => $mock->shouldNotReceive('transferOne'));
+
+        $this->legacy($this->employeePayload(['name' => '  Valiyev  Ali Akmal o‘g‘li ']))
+            ->assertOk()
+            ->assertExactJson(['status' => true, 'alerts' => ['Saved successfully']]);
+
+        $employee = Employee::query()->where('card', '12345678901234')->firstOrFail();
+
+        // To‘liq ism avvalgidek yoziladi (faqat chetlari kesiladi), qismlar unga qo‘shimcha.
+        $this->assertSame('Valiyev  Ali Akmal o‘g‘li', $employee->name);
+        $this->assertSame('Valiyev', $employee->last_name);
+        $this->assertSame('Ali', $employee->first_name);
+        $this->assertSame('Akmal o‘g‘li', $employee->middle_name);
+    }
+
+    public function test_add_employee_resplits_the_parts_only_when_the_name_changes(): void
+    {
+        // Operator formada ikki so‘zli familiyani o‘zi ajratgan: bir xil ism kelsa, bu qismlar saqlanadi.
+        $employee = Employee::factory()->create([
+            'card' => '12345678901234',
+            'name' => 'Ibn Sino Abu Ali',
+            'last_name' => 'Ibn Sino',
+            'first_name' => 'Abu Ali',
+            'middle_name' => null,
+        ]);
+
+        $this->partialMock(EmployeeSyncService::class, fn (MockInterface $mock) => $mock->shouldNotReceive('transferOne'));
+
+        $this->legacy($this->employeePayload(['name' => 'Ibn Sino Abu Ali']))
+            ->assertExactJson(['status' => true, 'alerts' => ['Saved successfully']]);
+
+        $employee->refresh();
+        $this->assertSame(['Ibn Sino', 'Abu Ali', null], [$employee->last_name, $employee->first_name, $employee->middle_name]);
+
+        $this->legacy($this->employeePayload(['name' => 'Karimova Dilnoza']))
+            ->assertExactJson(['status' => true, 'alerts' => ['Saved successfully']]);
+
+        $employee->refresh();
+        $this->assertSame('Karimova Dilnoza', $employee->name);
+        $this->assertSame(['Karimova', 'Dilnoza', null], [$employee->last_name, $employee->first_name, $employee->middle_name]);
+    }
+
     public function test_new_card_needs_configured_department_and_schedule(): void
     {
         config(['legacy_api.department_id' => null]);

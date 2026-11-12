@@ -92,7 +92,8 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
-                'name' => 'Ali Valiyev',
+                'last_name' => 'Ali',
+                'first_name' => 'Valiyev',
                 'card' => '12345678901234',
                 'gender' => 1,
                 'position' => 'Operator',
@@ -120,7 +121,9 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
-                'name' => 'Ali Valiyev Updated',
+                'last_name' => 'Ali',
+                'first_name' => 'Valiyev',
+                'middle_name' => 'Updated',
                 'card' => '12345678901234',
                 'gender' => 2,
                 'position' => 'Nazoratchi',
@@ -140,7 +143,9 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
-                'name' => 'Ali Valiyev Updated',
+                'last_name' => 'Ali',
+                'first_name' => 'Valiyev',
+                'middle_name' => 'Updated',
                 'card' => '12345678901234',
                 'gender' => 2,
                 'position' => 'Nazoratchi',
@@ -252,7 +257,9 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
-                'name' => $employee->name,
+                'last_name' => $employee->last_name,
+                'first_name' => $employee->first_name,
+                'middle_name' => $employee->middle_name,
                 'card' => '22222222222222',
                 'gender' => $employee->gender,
                 'position' => $employee->position,
@@ -280,7 +287,9 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.employees.update', $employee), [
-                'name' => $employee->name,
+                'last_name' => $employee->last_name,
+                'first_name' => $employee->first_name,
+                'middle_name' => $employee->middle_name,
                 'card' => '22222222222222',
                 'gender' => $employee->gender,
                 'position' => $employee->position,
@@ -423,7 +432,8 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
-                'name' => 'Grouped User',
+                'last_name' => 'Grouped',
+                'first_name' => 'User',
                 'card' => '55556666777788',
                 'gender' => 1,
                 'department_id' => $department->id,
@@ -437,7 +447,8 @@ class EmployeeAdminTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('admin.employees.store'), [
-                'name' => 'Grouped User',
+                'last_name' => 'Grouped',
+                'first_name' => 'User',
                 'card' => '55556666777788',
                 'gender' => 1,
                 'department_id' => $department->id,

@@ -100,6 +100,10 @@ class EmployeePullServiceTest extends TestCase
         $this->assertDatabaseCount('employees', 2);
         $this->assertDatabaseHas('employees', ['card' => '1001', 'name' => 'Ali Valiyev']);
         $this->assertDatabaseHas('employees', ['card' => '1002', 'name' => 'Dilnoza Karimova']);
+        // Terminal bitta ism beradi: 1-so‘z familiya, 2-so‘z ism.
+        $this->assertDatabaseHas('employees', [
+            'card' => '1001', 'last_name' => 'Ali', 'first_name' => 'Valiyev', 'middle_name' => null,
+        ]);
         $this->assertDatabaseHas('departments', ['name' => 'Qurilmadan']);
         $this->assertDatabaseHas('schedules', ['name' => 'Standart']);
 
@@ -154,9 +158,54 @@ class EmployeePullServiceTest extends TestCase
 
         $employee->refresh();
         $this->assertSame('Yangilangan Ism', $employee->name);
+        $this->assertSame(['Yangilangan', 'Ism', null], [$employee->last_name, $employee->first_name, $employee->middle_name]);
         $this->assertSame($department->id, $employee->department_id);
         $this->assertTrue($device->employees()->where('employees.id', $employee->id)->exists());
         $this->assertDatabaseCount('employees', 1);
+    }
+
+    public function test_pull_keeps_the_name_parts_when_the_name_is_unchanged(): void
+    {
+        Http::fake([
+            '*UserInfo/Search*' => Http::response([
+                'UserInfoSearch' => [
+                    'responseStatusStrg' => 'OK',
+                    'UserInfo' => [
+                        [
+                            'employeeNo' => '5555',
+                            'name' => 'Ibn Sino Abu Ali',
+                            'Valid' => [
+                                'beginTime' => '2026-02-01T00:00:00',
+                                'endTime' => '2031-01-01T00:00:00',
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+            '*FDSearch*' => Http::response('', 404),
+            '*picture*' => Http::response('', 404),
+        ]);
+
+        // Operator formada ikki so‘zli familiyani o‘zi ajratgan — terminal shu ismni qaytarsa, qismlar buzilmaydi.
+        $employee = Employee::factory()->create([
+            'card' => '5555',
+            'name' => 'Ibn Sino Abu Ali',
+            'last_name' => 'Ibn Sino',
+            'first_name' => 'Abu Ali',
+            'middle_name' => null,
+        ]);
+
+        $device = Device::factory()->create([
+            'user_id' => User::factory(),
+            'category_id' => Category::factory(),
+            'is_online' => true,
+        ]);
+
+        app(EmployeePullService::class)->pullDevice($device);
+
+        $employee->refresh();
+        $this->assertSame('Ibn Sino Abu Ali', $employee->name);
+        $this->assertSame(['Ibn Sino', 'Abu Ali', null], [$employee->last_name, $employee->first_name, $employee->middle_name]);
     }
 
     public function test_pull_downloads_face_from_pic_url_and_saves_to_faces_table(): void

@@ -76,7 +76,8 @@ class DepartmentIsolationTest extends TestCase
     private function employeePayload(array $overrides = []): array
     {
         return [
-            'name' => 'Yangi Xodim',
+            'last_name' => 'Yangi',
+            'first_name' => 'Xodim',
             'card' => '10000300000000',
             'gender' => 1,
             'schedule_id' => $this->schedule->id,
@@ -203,7 +204,8 @@ class DepartmentIsolationTest extends TestCase
     {
         $this->actingAs($this->user)
             ->put(route('admin.employees.update', $this->mine), [
-                'name' => 'Mening Xodimim',
+                'last_name' => 'Mening',
+                'first_name' => 'Xodimim',
                 'card' => $this->mine->card,
                 'gender' => 1,
                 'schedule_id' => $this->schedule->id,

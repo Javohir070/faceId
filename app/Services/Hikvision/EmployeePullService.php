@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\Face;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Services\Employees\EmployeeName;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -211,6 +212,7 @@ class EmployeePullService
         if ($existing === null) {
             $employee = Employee::query()->create([
                 'name' => $name,
+                ...EmployeeName::split($name),
                 'card' => $employeeNo,
                 'gender' => $gender,
                 'department_id' => $department->id,
@@ -226,6 +228,11 @@ class EmployeePullService
                 'valid_from_dt' => $validFrom,
                 'valid_to_dt' => $validTo,
             ];
+
+            // Ism o‘zgarmagan bo‘lsa, formada ajratilgan Familiya / Ism / Otasining ismi saqlanadi.
+            if ($existing->name !== $name) {
+                $fill += EmployeeName::split($name);
+            }
 
             if ($gender !== null) {
                 $fill['gender'] = $gender;

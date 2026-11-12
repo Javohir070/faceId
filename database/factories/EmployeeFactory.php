@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Schedule;
+use App\Services\Employees\EmployeeName;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +21,11 @@ class EmployeeFactory extends Factory
         $validFrom = fake()->dateTimeBetween('-1 month', 'now');
 
         return [
-            'name' => fake()->name(),
+            'name' => EmployeeName::join(fake()->lastName(), fake()->firstName(), fake()->firstNameMale().' o‘g‘li'),
+            // Qismlar to‘liq ismdan olinadi: ['name' => …] berilganda ham ular mos keladi.
+            'last_name' => fn (array $attributes): ?string => EmployeeName::split($attributes['name'])['last_name'],
+            'first_name' => fn (array $attributes): ?string => EmployeeName::split($attributes['name'])['first_name'],
+            'middle_name' => fn (array $attributes): ?string => EmployeeName::split($attributes['name'])['middle_name'],
             'card' => fake()->unique()->numerify('########'),
             'gender' => fake()->randomElement([Employee::GENDER_MALE, Employee::GENDER_FEMALE]),
             'position' => fake()->optional()->jobTitle(),

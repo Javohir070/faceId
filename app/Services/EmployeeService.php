@@ -8,6 +8,7 @@ use App\Interfaces\ScheduleRepositoryInterface;
 use App\Models\Employee;
 use App\Models\Face;
 use App\Models\Group;
+use App\Services\Employees\EmployeeName;
 use App\Services\Hikvision\EmployeeSyncService;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -65,7 +66,7 @@ class EmployeeService
             $faceFile = $data['face'] ?? null;
             unset($data['face'], $data['remove_face']);
 
-            $employee = $this->employeeRepository->create($data);
+            $employee = $this->employeeRepository->create($this->withFullName($data));
 
             if ($faceFile instanceof UploadedFile) {
                 $this->syncFace($employee, $faceFile);
@@ -82,7 +83,7 @@ class EmployeeService
             $removeFace = (bool) ($data['remove_face'] ?? false);
             unset($data['face'], $data['remove_face']);
 
-            $employee = $this->employeeRepository->update($employee, $data);
+            $employee = $this->employeeRepository->update($employee, $this->withFullName($data));
 
             if ($removeFace) {
                 $this->employeeSyncService->queueRemoveFace($employee);
@@ -138,6 +139,27 @@ class EmployeeService
     public function loadForEdit(Employee $employee): Employee
     {
         return $this->employeeRepository->loadRelations($employee, ['department', 'group', 'schedule', 'face', 'devices']);
+    }
+
+    /**
+     * Formadan kelgan Familiya, Ism, Otasining ismi tozalanadi va to‘liq ism (`name`) shulardan yig‘iladi.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withFullName(array $data): array
+    {
+        $lastName = EmployeeName::clean($data['last_name'] ?? null);
+        $firstName = EmployeeName::clean($data['first_name'] ?? null);
+        $middleName = EmployeeName::clean($data['middle_name'] ?? null);
+
+        return [
+            ...$data,
+            'last_name' => $lastName,
+            'first_name' => $firstName,
+            'middle_name' => $middleName,
+            'name' => EmployeeName::join($lastName, $firstName, $middleName),
+        ];
     }
 
     private function syncFace(Employee $employee, UploadedFile $file): Face

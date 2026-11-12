@@ -87,7 +87,7 @@ class EmployeeJshshirTest extends TestCase
         $employee = Employee::factory()->create(['card' => '1234567890123']);
 
         $this->actingAs($this->admin())
-            ->put(route('admin.employees.update', $employee), $this->updatePayload($employee, ['name' => 'Yangi ism']))
+            ->put(route('admin.employees.update', $employee), $this->updatePayload($employee, ['last_name' => 'Yangi', 'first_name' => 'ism', 'middle_name' => null]))
             ->assertSessionHasNoErrors();
 
         $this->assertSame('Yangi ism', $employee->fresh()->name);
@@ -152,7 +152,8 @@ class EmployeeJshshirTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return [
-            'name' => 'Yangi Xodim',
+            'last_name' => 'Yangi',
+            'first_name' => 'Xodim',
             'card' => self::JSHSHIR,
             'gender' => 1,
             'department_id' => Department::factory()->create()->id,
@@ -171,7 +172,9 @@ class EmployeeJshshirTest extends TestCase
     private function updatePayload(Employee $employee, array $overrides = []): array
     {
         return [
-            'name' => $employee->name,
+            'last_name' => $employee->last_name,
+            'first_name' => $employee->first_name,
+            'middle_name' => $employee->middle_name,
             'card' => $employee->card,
             'gender' => $employee->gender,
             'position' => $employee->position,

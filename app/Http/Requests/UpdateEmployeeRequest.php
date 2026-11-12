@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\MergesScopedDepartmentId;
+use App\Http\Requests\Concerns\ValidatesEmployeeNameParts;
 use App\Models\Employee;
 use App\Rules\AvailableSchedule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +12,7 @@ use Illuminate\Validation\Rule;
 class UpdateEmployeeRequest extends FormRequest
 {
     use MergesScopedDepartmentId;
+    use ValidatesEmployeeNameParts;
 
     public function authorize(): bool
     {
@@ -35,7 +37,7 @@ class UpdateEmployeeRequest extends FormRequest
         $employee = $this->route('employee');
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            ...$this->nameRules(),
             'card' => [
                 'required',
                 Rule::unique('employees', 'card')->ignore($employee->id),
@@ -80,6 +82,7 @@ class UpdateEmployeeRequest extends FormRequest
     public function messages(): array
     {
         return [
+            ...$this->nameMessages(),
             'card.required' => 'JSHSHIR kiriting.',
             'card.unique' => 'Bu JSHSHIR boshqa xodimda bor.',
             'gender.required' => 'Jinsni tanlang.',
