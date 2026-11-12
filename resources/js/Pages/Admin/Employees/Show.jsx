@@ -52,10 +52,11 @@ function ProfileCard({ employee, canGroups }) {
         <section className="card">
             <div className="flex flex-col items-center text-center">
                 {employee.face_preview ? (
+                    // Terminal rasmi tik to‘rtburchak (3:4) — doiraga kesilmaydi, yuz tanib olinadigan kattalikda.
                     <img
                         src={employee.face_preview}
                         alt={employee.name}
-                        className="h-24 w-24 rounded-full object-cover ring-4 ring-surface-muted"
+                        className="aspect-[3/4] w-full max-w-60 rounded-xl border border-line bg-surface-muted object-cover object-top"
                     />
                 ) : (
                     <InitialsAvatar name={employee.name} size="xl" round />
