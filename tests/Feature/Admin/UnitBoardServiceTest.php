@@ -177,6 +177,29 @@ class UnitBoardServiceTest extends TestCase
         $this->assertNull($units[3]['employees'][0]['group']);
     }
 
+    public function test_department_filter_keeps_only_that_department(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-11 12:00:00'));
+
+        $group = Group::factory()->create(['name' => 'Devonxona', 'department_id' => $this->department->id]);
+        $inside = $this->employee(['group_id' => $group->id]);
+        $this->punch($inside, '2026-11-11 08:30', 'in');
+        $this->employee(['group_id' => null]);
+
+        $bureau = Department::factory()->create(['name' => 'Byuro']);
+        $this->employee(['department_id' => $bureau->id]);
+        $this->employee(['department_id' => $bureau->id]);
+
+        $board = app(UnitBoardService::class)->build(now(), false, $this->department->id);
+
+        $this->assertSame(['total' => 2, 'inside' => 1, 'outside' => 1, 'excused' => 0, 'unexcused' => 1], $board['counts']);
+        $this->assertSame(['Devonxona', 'Guruhsiz'], array_column($board['units'], 'title'));
+        $this->assertSame(['Agentlik', 'Agentlik'], array_column($board['units'], 'department'));
+
+        $this->assertSame(2, app(UnitBoardService::class)->build(now(), false, $bureau->id)['counts']['total']);
+        $this->assertSame(4, app(UnitBoardService::class)->build(now(), false)['counts']['total']);
+    }
+
     public function test_inside_employees_come_first_in_card(): void
     {
         $this->travelTo(Carbon::parse('2026-11-11 12:00:00'));

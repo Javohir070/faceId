@@ -70,6 +70,75 @@ class UnitPageTest extends TestCase
                 ->where('board.units.0.employees.0.name', 'Mening Xodimim'));
     }
 
+    public function test_page_filters_by_department(): void
+    {
+        $agency = Department::factory()->create(['name' => 'Agentlik']);
+        $bureau = Department::factory()->create(['name' => 'Byuro']);
+        $this->employee($agency, ['name' => 'Agentlik Xodimi']);
+        $this->employee($bureau, ['name' => 'Byuro Xodimi 1']);
+        $this->employee($bureau, ['name' => 'Byuro Xodimi 2']);
+
+        $this->actingAs($this->createUserWithPermissions([$this->unitsPermission()]))
+            ->get(route('admin.units.index', ['department_id' => $bureau->id]))
+            ->assertOk()
+            ->assertDontSee('Agentlik Xodimi', false)
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.department_id', $bureau->id)
+                ->where('departmentLocked', false)
+                ->where('departments', [
+                    ['id' => $agency->id, 'name' => 'Agentlik'],
+                    ['id' => $bureau->id, 'name' => 'Byuro'],
+                ])
+                ->where('board.counts.total', 2)
+                ->where('board.counts.unexcused', 2)
+                ->has('board.units', 1)
+                ->where('board.units.0.department', 'Byuro'));
+    }
+
+    public function test_page_without_filter_shows_all_departments(): void
+    {
+        $this->employee(Department::factory()->create());
+        $this->employee(Department::factory()->create());
+
+        $this->actingAs($this->createUserWithPermissions([$this->unitsPermission()]))
+            ->get(route('admin.units.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.department_id', null)
+                ->where('board.counts.total', 2)
+                ->has('board.units', 2));
+    }
+
+    public function test_department_user_cannot_filter_into_other_department(): void
+    {
+        $own = Department::factory()->create(['name' => 'Mening Bolimim']);
+        $other = Department::factory()->create(['name' => 'Begona Bolim']);
+        $this->employee($own, ['name' => 'Mening Xodimim']);
+        $this->employee($other, ['name' => 'Begona Xodim']);
+
+        $user = $this->createDepartmentUserWithPermissions($own->id, [$this->unitsPermission()]);
+
+        $this->actingAs($user)
+            ->get(route('admin.units.index', ['department_id' => $other->id]))
+            ->assertOk()
+            ->assertDontSee('Begona Xodim', false)
+            ->assertDontSee('Begona Bolim', false)
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('departmentLocked', true)
+                ->where('departments', [['id' => $own->id, 'name' => 'Mening Bolimim']])
+                ->where('board.counts.total', 0)
+                ->where('board.units', []));
+    }
+
+    public function test_invalid_department_filter_is_rejected(): void
+    {
+        $this->actingAs($this->createUserWithPermissions([$this->unitsPermission()]))
+            ->from(route('admin.units.index'))
+            ->get(route('admin.units.index', ['department_id' => 'abc']))
+            ->assertRedirect(route('admin.units.index'))
+            ->assertSessionHasErrors('department_id');
+    }
+
     public function test_user_without_department_sees_empty_board(): void
     {
         $this->employee(Department::factory()->create());

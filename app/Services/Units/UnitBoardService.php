@@ -31,10 +31,11 @@ class UnitBoardService
      *     units: list<array{key: string, title: string, department: string, total: int, inside: int, employees: list<array<string, mixed>>}>
      * }
      */
-    public function build(CarbonInterface $now, bool $withFaces): array
+    public function build(CarbonInterface $now, bool $withFaces, ?int $departmentId = null): array
     {
         $now = Carbon::instance($now);
-        $employees = $this->employees($now, $withFaces);
+        // Sanoqlar filtrlangan xodimlardan hisoblanadi — filtr tugmalaridagi sonlar ham shu bo‘lim bo‘yicha.
+        $employees = $this->employees($now, $withFaces, $departmentId);
 
         // Davomat jadvali bilan bir xil: tungi smenada "bugun" 12 soat siljitiladi.
         $today = [];
@@ -92,16 +93,18 @@ class UnitBoardService
 
     /**
      * Amal qilish muddati hozir ichida bo‘lgan xodimlar. JSHSHIR (`card`) atayin olinmaydi.
+     * Bo‘lim filtri global scope ustidan qo‘shiladi: cheklangan foydalanuvchi boshqa bo‘limni so‘rasa bo‘sh ro‘yxat oladi.
      *
      * @return Collection<int, Employee>
      */
-    private function employees(Carbon $now, bool $withFaces): Collection
+    private function employees(Carbon $now, bool $withFaces, ?int $departmentId): Collection
     {
         // select() withMax() dan oldin: aks holda withMax `employees.*` ni tanlaydi va JSHSHIR ham o‘qiladi.
         $query = Employee::query()
             ->select(['id', 'name', 'position', 'department_id', 'group_id', 'schedule_id'])
             ->where('valid_from_dt', '<=', $now)
             ->where('valid_to_dt', '>=', $now)
+            ->when($departmentId !== null, fn ($query) => $query->where('department_id', $departmentId))
             ->with(['schedule', 'department:id,name'])
             ->orderBy('name')
             ->orderBy('id');

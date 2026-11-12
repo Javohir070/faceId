@@ -1,11 +1,12 @@
-import { usePage } from '@inertiajs/react';
-import { Empty, Segmented } from 'antd';
+import { router, usePage } from '@inertiajs/react';
+import { Empty, Segmented, Select } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../../Components/PageHeader';
 import UnitCard from '../../../Components/Units/UnitCard';
 import UnitPanel from '../../../Components/Units/UnitPanel';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import useInertiaPoll from '../../../hooks/useInertiaPoll';
+import { route } from '../../../routes';
 
 /** Filtr → kartochkada qoladigan xodimlar. `count` — tugma yonidagi son (board.counts dan). */
 const FILTERS = [
@@ -16,13 +17,23 @@ const FILTERS = [
     { value: 'unexcused', label: 'Sababsiz', count: 'unexcused', match: (employee) => employee.unexcused },
 ];
 
-export default function Index({ board }) {
+export default function Index({ board, filters = {}, departments = [], departmentLocked = false }) {
     const { can = {} } = usePage().props;
     const [filter, setFilter] = useState('all');
     const [openKey, setOpenKey] = useState(null);
     const canOpenProfile = Boolean(can.employees);
 
+    // Bo‘lim URL'da turadi: 30 soniyalik yangilanish joriy URL'ni qayta so‘raydi, tanlov yo‘qolmaydi.
     useInertiaPoll(['board'], 30000);
+
+    const changeDepartment = (value) => {
+        setOpenKey(null);
+        router.get(route('admin.units.index'), value ? { department_id: value } : {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
 
     // Panel sahifadagi `board` dan o‘qiydi: yangilanishda u ham yangilanadi.
     const openUnit = openKey ? board.units.find((unit) => unit.key === openKey) ?? null : null;
@@ -56,19 +67,35 @@ export default function Index({ board }) {
                 subtitle="Bugun kim binoda. Kartochkani bosing — guruh tafsiloti, rasmni bosing — xodim ma’lumoti chiqadi. Sahifa har 30 soniyada yangilanadi."
             />
 
-            <div className="max-w-full overflow-x-auto pb-1">
-                <Segmented
-                    value={filter}
-                    onChange={setFilter}
-                    options={FILTERS.map((item) => ({
-                        value: item.value,
-                        label: (
-                            <span className="whitespace-nowrap px-1 font-bold">
-                                {item.label} <span className="tabular-nums text-ink-muted">{board.counts[item.count]}</span>
-                            </span>
-                        ),
-                    }))}
-                />
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="max-w-full overflow-x-auto pb-1">
+                    <Segmented
+                        value={filter}
+                        onChange={setFilter}
+                        options={FILTERS.map((item) => ({
+                            value: item.value,
+                            label: (
+                                <span className="whitespace-nowrap px-1 font-bold">
+                                    {item.label} <span className="tabular-nums text-ink-muted">{board.counts[item.count]}</span>
+                                </span>
+                            ),
+                        }))}
+                    />
+                </div>
+                {/* Bo‘limga cheklangan foydalanuvchida bitta bo‘lim bor — tanlov kerak emas. */}
+                {!departmentLocked && (
+                    <Select
+                        allowClear
+                        showSearch
+                        placeholder="Bo‘lim"
+                        aria-label="Bo‘lim bo‘yicha filtr"
+                        optionFilterProp="label"
+                        value={filters.department_id ?? undefined}
+                        options={departments.map((department) => ({ value: department.id, label: department.name }))}
+                        onChange={(value) => changeDepartment(value ?? null)}
+                        className="mb-1 w-full sm:w-64"
+                    />
+                )}
             </div>
 
             {visible.length > 0 ? (

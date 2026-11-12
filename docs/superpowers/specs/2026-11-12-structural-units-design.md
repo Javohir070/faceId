@@ -39,7 +39,8 @@ Quyidagilarni foydalanuvchi chatda tasdiqlagan ("Hammasi to‘g‘ri"):
 - Tepada filtr tugmalari, har birining yonida soni (Hammasi / Binoda / Binoda emas / Sabablilar / Sababsiz).
   Alohida uchta hisoblagich kartochkasi avval qilingan edi, foydalanuvchi ko‘rib olib tashlattirdi — sonlar
   filtr tugmalarida yetarli. Filtr tanlansa kartochkalarda faqat shu xodimlar qoladi, bo‘sh kartochkalar
-  yashiriladi.
+  yashiriladi. Keyin **bo‘lim tanlovi** qo‘shildi (`?department_id=`, sonlar ham shu bo‘lim bo‘yicha):
+  [2026-11-12-units-department-filter-design.md](2026-11-12-units-department-filter-design.md).
 - Xodim bosilganda kichik oyna: rasm, holat nuqtasi, F.I.Sh., lavozim, guruh, **Kirgan vaqti** (bugungi birinchi
   kirish), chiqib ketgan bo‘lsa **Chiqqan vaqti**, izoh bo‘lsa uning turi (Kechikdi / Erta ketdi / Kelmadi),
   **"Profilni ochish"** havolasi. Xona, telefon, email yo‘q (bizda bunday ma’lumot ham yo‘q).
