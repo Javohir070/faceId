@@ -109,6 +109,8 @@ The one deliberate exception is the legacy API, `POST /api/legacy` (`LegacyApiSe
 - It bypasses global scopes.
 - Its English alert strings and string-typed numbers are intentional: don't translate or "fix" them.
 
+The second outward channel is the **directory API**, `GET /api/v1/departments|groups|employees` (`App\Http\Controllers\Api\V1\DirectoryController` → `DirectoryApiService`, [docs/directory-api.md](docs/directory-api.md)). Read-only, HTTP Basic (`directory.api` → `VerifyDirectoryApiAuth`, credentials in `config/directory_api.php`; either one empty means the API is closed, never open). Raqamli Idora pulls the employee list through it and matches people by `employees.card` (JSHSHIR). It bypasses global scopes on purpose, so a department-scoped session in a browser cannot change what an external system sees. Faces are never exposed. Note for anyone mapping the two systems: a `department` here is an *organization* (Agentlik, Fond, …) and a `group` is the actual unit — the external system's "department" maps to our **group**.
+
 Sync, transfer, device Clear and "remove from device" run **synchronously in the request** (`set_time_limit(0)`) and report counts back in the flash. The Sinxronizatsiya page calls `POST /admin/sync/transfer-one` once per employee × device pair from a progress modal — the one place JSX uses raw `fetch`. Only `EmployeeService::delete()` and face removal in `update()` go through the queue (`RemoveHikvisionUsersJob`, `RemoveHikvisionFacesJob`); the other jobs in `app/Jobs/Hikvision/` and the `queue*` helpers on `EmployeeSyncService` are currently unused.
 
 Events arrive through **three independent channels**, all converging on `ReportService`:

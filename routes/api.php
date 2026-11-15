@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\LegacyApiController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WebhookController;
@@ -15,3 +16,16 @@ Route::post('/telegram/webhook', TelegramWebhookController::class)
 Route::any('/legacy', LegacyApiController::class)
     ->middleware(RestrictLegacyApiIps::class)
     ->name('api.legacy');
+
+/*
+|--------------------------------------------------------------------------
+| Ma’lumotnoma — tashqi tizimlar uchun (v1)
+|--------------------------------------------------------------------------
+| Bo‘limlar, guruhlar va xodimlar. Faqat o‘qiydi; himoyasi HTTP Basic
+| (DIRECTORY_API_USER / DIRECTORY_API_PASSWORD). Batafsil: docs/directory-api.md.
+*/
+Route::middleware('directory.api')->prefix('v1')->name('api.v1.')->group(function (): void {
+    Route::get('/departments', [DirectoryController::class, 'departments'])->name('departments');
+    Route::get('/groups', [DirectoryController::class, 'groups'])->name('groups');
+    Route::get('/employees', [DirectoryController::class, 'employees'])->name('employees');
+});
