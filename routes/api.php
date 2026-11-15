@@ -26,6 +26,9 @@ Route::any('/legacy', LegacyApiController::class)
 */
 Route::middleware('directory.api')->prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/departments', [DirectoryController::class, 'departments'])->name('departments');
+    Route::get('/departments/{id}', [DirectoryController::class, 'department'])
+        ->whereNumber('id')
+        ->name('department');
     Route::get('/groups', [DirectoryController::class, 'groups'])->name('groups');
     Route::get('/employees', [DirectoryController::class, 'employees'])->name('employees');
 });

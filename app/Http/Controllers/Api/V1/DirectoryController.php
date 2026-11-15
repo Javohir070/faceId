@@ -32,6 +32,24 @@ class DirectoryController extends Controller
         ]);
     }
 
+    /** Bitta bo'lim id bo'yicha. Topilmasa 404. */
+    public function department(int $id): JsonResponse
+    {
+        $bolim = $this->directory->department($id);
+
+        if ($bolim === null) {
+            return response()->json(
+                ['ok' => false, 'error' => ['code' => 'NOT_FOUND', 'message' => 'Bo‘lim topilmadi.']],
+                404,
+            );
+        }
+
+        return response()->json([
+            'ok' => true,
+            'department' => $bolim,
+        ]);
+    }
+
     /** Guruhlar (tarkibiy bo'linmalar). */
     public function groups(Request $request): JsonResponse
     {

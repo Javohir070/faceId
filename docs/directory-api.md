@@ -6,7 +6,7 @@ ro‘yxatini shu yerdan o‘qiydi. Faqat **o‘qiydi**: hech bir amal bazani yok
 Eski `/api/legacy` dan farqi: u eski tizimning `api.php` formatini saqlash uchun turibdi va IP bo‘yicha
 ochiladi. Bu esa yangi kanal — oddiy JSON, HTTP Basic, sahifalash va `updated_since` bilan.
 
-- **Manzil:** `GET https://<server>/api/v1/departments | /groups | /employees`
+- **Manzil:** `GET https://<server>/api/v1/departments | /departments/{id} | /groups | /employees`
 - **Himoya:** HTTP Basic — `DIRECTORY_API_USER` / `DIRECTORY_API_PASSWORD`
 - **Javob:** har doim `{"ok": true, ...}`; xatoda `{"ok": false, "error": {...}}` yoki Laravel’ning 422 tekshiruv xatosi
 - **Kod:** `App\Http\Controllers\Api\V1\DirectoryController` → `App\Services\DirectoryApiService`,
@@ -44,6 +44,22 @@ Parametrsiz. Har bo‘limda nechta guruh va xodim borligi ham qaytadi.
   {"id": 13, "name": "Agentlik", "employees_count": 101, "groups_count": 29}
 ]}
 ```
+
+### GET /api/v1/departments/{id}
+
+Bitta bo‘lim id bo‘yicha — maydonlari ro‘yxatdagi bilan bir xil.
+
+```json
+{"ok": true, "department": {"id": 13, "name": "Agentlik", "employees_count": 101, "groups_count": 29}}
+```
+
+Bunday bo‘lim bo‘lmasa — 404:
+
+```json
+{"ok": false, "error": {"code": "NOT_FOUND", "message": "Bo‘lim topilmadi."}}
+```
+
+`id` raqam bo‘lmasa (`/departments/abc`) ham 404 qaytadi, lekin Laravel’ning oddiy `{"message": ...}` javobi bilan.
 
 ### GET /api/v1/groups
 

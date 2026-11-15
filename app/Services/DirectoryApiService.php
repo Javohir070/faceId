@@ -29,20 +29,49 @@ class DirectoryApiService
      */
     public function departments(): array
     {
+        return $this->bolimlarSorovi()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Department $bolim): array => $this->bolim($bolim))
+            ->all();
+    }
+
+    /**
+     * Bitta bo'lim id bo'yicha — ro'yxatdagi bilan bir xil maydonlar.
+     * Topilmasa `null`.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function department(int $id): ?array
+    {
+        $bolim = $this->bolimlarSorovi()->find($id);
+
+        return $bolim ? $this->bolim($bolim) : null;
+    }
+
+    /**
+     * @return Builder<Department>
+     */
+    private function bolimlarSorovi(): Builder
+    {
         return Department::query()
             ->withCount([
                 'employees' => fn (Builder $q) => $q->withoutGlobalScopes(),
                 'groups' => fn (Builder $q) => $q->withoutGlobalScopes(),
-            ])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Department $bolim): array => [
-                'id' => $bolim->id,
-                'name' => $bolim->name,
-                'employees_count' => (int) $bolim->employees_count,
-                'groups_count' => (int) $bolim->groups_count,
-            ])
-            ->all();
+            ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function bolim(Department $bolim): array
+    {
+        return [
+            'id' => $bolim->id,
+            'name' => $bolim->name,
+            'employees_count' => (int) $bolim->employees_count,
+            'groups_count' => (int) $bolim->groups_count,
+        ];
     }
 
     /**

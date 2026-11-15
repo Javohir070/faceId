@@ -82,6 +82,42 @@ class DirectoryApiTest extends TestCase
         $this->assertSame(0, $bolimlar['Fond']['groups_count']);
     }
 
+    public function test_bitta_bolim_id_boyicha_qaytadi(): void
+    {
+        $agentlik = Department::factory()->create(['name' => 'Agentlik']);
+        Department::factory()->create(['name' => 'Fond']);
+
+        Group::factory()->count(2)->create(['department_id' => $agentlik->id]);
+        $this->xodim($agentlik);
+
+        $this->soro('/api/v1/departments/'.$agentlik->id)
+            ->assertOk()
+            ->assertExactJson([
+                'ok' => true,
+                'department' => [
+                    'id' => $agentlik->id,
+                    'name' => 'Agentlik',
+                    'employees_count' => 1,
+                    'groups_count' => 2,
+                ],
+            ]);
+    }
+
+    public function test_yoq_bolim_404_qaytaradi(): void
+    {
+        $this->soro('/api/v1/departments/999999')
+            ->assertNotFound()
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+    }
+
+    public function test_bitta_bolim_parolsiz_berilmaydi(): void
+    {
+        $bolim = Department::factory()->create();
+
+        $this->getJson('/api/v1/departments/'.$bolim->id)->assertUnauthorized();
+    }
+
     public function test_guruhlar_bolim_boyicha_filtrlanadi(): void
     {
         $agentlik = Department::factory()->create();
