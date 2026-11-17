@@ -39,6 +39,8 @@ return [
                     base_path('vendor'),
                     base_path('node_modules'),
                     storage_path('framework'),
+                    // Oylik baza zaxiralari (db:backup, config/db_backup.php) kunlik zip'ga qo‘shilmaydi.
+                    env('DB_BACKUP_PATH') ?: storage_path('app/private/db-backups'),
                 ],
 
                 /*

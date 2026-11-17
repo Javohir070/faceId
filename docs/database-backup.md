@@ -30,8 +30,10 @@ storage/app/private/db-backups/
 - Papka `0700`, fayllar `0600`. Serverda cron root nomidan ishlaydi, shuning uchun fayllar root'niki bo‘ladi va
   veb-server ularni o‘qiy olmaydi (o‘qishi kerak ham emas).
 - Dumpda **JSHSHIR va yuz rasmlari** (`faces` jadvali) bor: faylni public papkaga, chatga yoki pochtaga qo‘ymang.
-- Aylantirish faqat `{baza}-YYYY-MM-DD-HHMMSS.sql.gz` shaklidagi fayllarga tegadi. Papkaga qo‘lda qo‘yilgan
-  boshqa fayllar o‘chirilmaydi. Yangi nusxa olinmasa, eskilari ham o‘chirilmaydi.
+- Aylantirish faqat **shu bazaning** `{baza}-YYYY-MM-DD-HHMMSS.sql.gz` fayllariga tegadi. Papkadagi boshqa
+  fayllar, boshqa baza dump'lari ham, o‘chirilmaydi. Yangi nusxa olinmasa, eskilari ham o‘chirilmaydi.
+- Kunlik Spatie zip'i bu papkani o‘z ichiga olmaydi (`config/backup.php` → `exclude`), aks holda har kunlik
+  zip'ga 12 ta oylik dump qo‘shilib borardi.
 
 ## Qanday ishlaydi
 
@@ -41,8 +43,9 @@ storage/app/private/db-backups/
    `--single-transaction` InnoDB jadvallarini qulflamasdan izchil nusxa oladi, ya’ni tizim ishlashda davom etadi.
    `--no-tablespaces` PROCESS huquqi bo‘lmagan foydalanuvchi uchun kerak (MySQL 8).
 3. Butunlik tekshiruvi: chiqish kodi 0 va dump oxirida `-- Dump completed` qatori bor.
-4. PHP dumpni `.sql.gz` ga siqadi (`gzip` buyrug‘i kerak emas, Windows'da ham ishlaydi). Yarim yozilgan fayl
-   `.part` nomida qoladi va nusxa hisoblanmaydi.
+4. PHP dumpni `.sql.gz.part` ga siqadi (`gzip` buyrug‘i kerak emas, Windows'da ham ishlaydi). Keyin `.part`
+   qaytadan ochib o‘qiladi: hajmi xom dump bilan teng va oxirida `-- Dump completed` bo‘lsagina `.sql.gz` ga
+   qayta nomlanadi. Disk to‘lib, fayl kesilib qolsa xato beriladi va eski nusxalar o‘chirilmaydi.
 5. Vaqtinchalik `.cnf` va siqilmagan `.sql` xato bo‘lsa ham o‘chiriladi.
 6. Eski nusxalar o‘chiriladi, keyin Telegram xabari yuboriladi va `storage/logs` ga yoziladi.
 
@@ -51,7 +54,7 @@ storage/app/private/db-backups/
 | O‘zgaruvchi | Standart | Ma’nosi |
 |---|---|---|
 | `DB_BACKUP_ENABLED` | `true` | `false` — scheduler ishga tushirmaydi (qo‘lda `db:backup` baribir ishlaydi) |
-| `DB_BACKUP_KEEP` | `12` | nechta eng yangi nusxa saqlanadi (kamida 1) |
+| `DB_BACKUP_KEEP` | `12` | nechta eng yangi nusxa saqlanadi; bo‘sh, `0` yoki noto‘g‘ri qiymat — 12 |
 | `DB_BACKUP_PATH` | bo‘sh → `storage/app/private/db-backups` | boshqa papka; public bo‘lmasin |
 | `DB_BACKUP_TIMEOUT` | `3600` | `mysqldump` uchun soniya |
 | `MYSQL_DUMP_BINARY_PATH` | bo‘sh → `PATH` dagi `mysqldump` | Windows/XAMPP: `C:/xampp/mysql/bin`. Linux serverda **bo‘sh** qoldiring |

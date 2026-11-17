@@ -3,6 +3,7 @@
 namespace Tests\Feature\Console;
 
 use App\Models\User;
+use App\Services\Backup\DatabaseBackupService;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,6 +114,56 @@ class DbBackupCommandTest extends TestCase
         ], $this->filesInBackupDir());
     }
 
+    public function test_rotation_ignores_dumps_of_other_databases(): void
+    {
+        config(['db_backup.keep' => 1]);
+        File::ensureDirectoryExists($this->backupDir);
+        file_put_contents($this->backupDir.'/eidora_db-2026-11-01-040000.sql.gz', gzencode('old'));
+        file_put_contents($this->backupDir.'/biocontrol_db-2026-11-01-040000.sql.gz', gzencode('other system'));
+
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        $this->assertSame([
+            'biocontrol_db-2026-11-01-040000.sql.gz',
+            'eidora_db-2026-12-01-040000.sql.gz',
+        ], $this->filesInBackupDir());
+    }
+
+    public function test_blank_or_invalid_keep_falls_back_to_twelve(): void
+    {
+        foreach (['' => 12, 'abc' => 12, '0' => 12, '5' => 5] as $value => $expected) {
+            $_ENV['DB_BACKUP_KEEP'] = $_SERVER['DB_BACKUP_KEEP'] = (string) $value;
+
+            try {
+                $config = require config_path('db_backup.php');
+            } finally {
+                unset($_ENV['DB_BACKUP_KEEP'], $_SERVER['DB_BACKUP_KEEP']);
+            }
+
+            $this->assertSame($expected, $config['keep'], "DB_BACKUP_KEEP=\"{$value}\"");
+        }
+
+        $_ENV['DB_BACKUP_TIMEOUT'] = $_SERVER['DB_BACKUP_TIMEOUT'] = '';
+
+        try {
+            $config = require config_path('db_backup.php');
+        } finally {
+            unset($_ENV['DB_BACKUP_TIMEOUT'], $_SERVER['DB_BACKUP_TIMEOUT']);
+        }
+
+        $this->assertSame(3600, $config['timeout']);
+    }
+
+    public function test_daily_spatie_backup_excludes_monthly_dumps(): void
+    {
+        $this->assertContains(
+            storage_path('app/private/db-backups'),
+            config('backup.backup.source.files.exclude'),
+        );
+    }
+
     public function test_failed_dump_keeps_old_backups(): void
     {
         File::ensureDirectoryExists($this->backupDir);
@@ -136,6 +187,29 @@ class DbBackupCommandTest extends TestCase
             ->assertFailed();
 
         $this->assertSame([], $this->filesInBackupDir());
+    }
+
+    public function test_truncated_compressed_file_is_rejected(): void
+    {
+        File::ensureDirectoryExists($this->backupDir);
+        file_put_contents($this->backupDir.'/eidora_db-2026-11-01-040000.sql.gz', gzencode('old'));
+        config(['db_backup.keep' => 1]);
+
+        // Disk to‘lganda gzwrite/gzclose xato qaytarmaydi: natijada oxiri kesilgan .gz qoladi.
+        $this->app->instance(DatabaseBackupService::class, new class extends DatabaseBackupService
+        {
+            protected function compress(string $raw, string $partial): void
+            {
+                file_put_contents($partial, substr((string) gzencode((string) file_get_contents($raw)), 0, -12));
+            }
+        });
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')
+            ->expectsOutputToContain('Zaxira olinmadi')
+            ->assertFailed();
+
+        $this->assertSame(['eidora_db-2026-11-01-040000.sql.gz'], $this->filesInBackupDir());
     }
 
     public function test_non_mysql_connection_fails_without_running_dump(): void

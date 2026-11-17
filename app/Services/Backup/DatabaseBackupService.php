@@ -15,8 +15,6 @@ use RuntimeException;
  */
 class DatabaseBackupService
 {
-    private const FILE_PATTERN = '/^.+-(\d{4}-\d{2}-\d{2}-\d{6})\.sql\.gz$/';
-
     private const CHUNK_BYTES = 1048576;
 
     private const COMPLETED_MARKER = '-- Dump completed';
@@ -41,11 +39,8 @@ class DatabaseBackupService
 
         try {
             $directory = $this->prepareDirectory();
-            $filename = sprintf(
-                '%s-%s.sql.gz',
-                preg_replace('/[^A-Za-z0-9_.-]/', '_', $database),
-                now()->format('Y-m-d-His'),
-            );
+            $prefix = (string) preg_replace('/[^A-Za-z0-9_.-]/', '_', $database);
+            $filename = sprintf('%s-%s.sql.gz', $prefix, now()->format('Y-m-d-His'));
             $target = $directory.DIRECTORY_SEPARATOR.$filename;
 
             $this->createBackup($config, $database, $directory, $target);
@@ -53,7 +48,7 @@ class DatabaseBackupService
             umask($previousUmask);
         }
 
-        [$kept, $deleted] = $this->rotate($directory, $filename);
+        [$kept, $deleted] = $this->rotate($directory, $prefix, $filename);
 
         clearstatcache(true, $target);
 
@@ -75,6 +70,7 @@ class DatabaseBackupService
             $this->dump($credentials, $raw, $database);
             $this->assertComplete($raw);
             $this->compress($raw, $partial);
+            $this->assertCompressedCopy($raw, $partial);
 
             if (! rename($partial, $target)) {
                 throw new RuntimeException('Zaxira faylini saqlab bo‘lmadi.');
@@ -202,7 +198,7 @@ class DatabaseBackupService
         }
     }
 
-    private function compress(string $raw, string $partial): void
+    protected function compress(string $raw, string $partial): void
     {
         $input = fopen($raw, 'rb');
         $output = gzopen($partial, 'wb6');
@@ -215,7 +211,8 @@ class DatabaseBackupService
             while (! feof($input)) {
                 $chunk = fread($input, self::CHUNK_BYTES);
 
-                if ($chunk === false || ($chunk !== '' && gzwrite($output, $chunk) === false)) {
+                // Xatoda gzwrite false emas, 0 qaytaradi: yozilgan baytlar soni tekshiriladi.
+                if ($chunk === false || ($chunk !== '' && gzwrite($output, $chunk) !== strlen($chunk))) {
                     throw new RuntimeException('Zaxirani siqib bo‘lmadi: yozishda xato (disk to‘lgan bo‘lishi mumkin).');
                 }
             }
@@ -230,19 +227,57 @@ class DatabaseBackupService
     }
 
     /**
+     * gzclose yozish xatosini bildirmaydi (doim true), shuning uchun siqilgan fayl qaytadan o‘qiladi:
+     * ochilgan hajm xom dump bilan teng va oxirida «-- Dump completed» bo‘lishi kerak.
+     */
+    private function assertCompressedCopy(string $raw, string $partial): void
+    {
+        clearstatcache(true, $raw);
+        $expected = (int) filesize($raw);
+        $input = gzopen($partial, 'rb');
+
+        if ($input === false) {
+            throw new RuntimeException('Siqilgan zaxirani tekshirib bo‘lmadi: fayl ochilmadi.');
+        }
+
+        $bytes = 0;
+        $tail = '';
+
+        try {
+            while (! gzeof($input)) {
+                $chunk = gzread($input, self::CHUNK_BYTES);
+
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+
+                $bytes += strlen($chunk);
+                $tail = substr($tail.$chunk, -1024);
+            }
+        } finally {
+            gzclose($input);
+        }
+
+        if ($bytes !== $expected || ! str_contains($tail, self::COMPLETED_MARKER)) {
+            throw new RuntimeException('Siqilgan zaxira buzilgan (disk to‘lgan bo‘lishi mumkin), saqlanmadi.');
+        }
+    }
+
+    /**
      * Yangi nusxa doim qoladi; qolganlari nomidagi vaqt bo‘yicha, eng yangilari saqlanadi.
-     * Faqat {baza}-YYYY-MM-DD-HHMMSS.sql.gz shaklidagi fayllarga tegiladi.
+     * Faqat shu bazaning {baza}-YYYY-MM-DD-HHMMSS.sql.gz fayllariga tegiladi (papka boshqa tizim bilan umumiy bo‘lsa ham).
      *
      * @return array{0: int, 1: int} [saqlangan, o‘chirilgan]
      */
-    private function rotate(string $directory, string $fresh): array
+    private function rotate(string $directory, string $prefix, string $fresh): array
     {
         $keep = max((int) config('db_backup.keep', 12), 1);
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d{4}-\d{2}-\d{2}-\d{6})\.sql\.gz$/';
         $older = [];
 
         foreach (scandir($directory) ?: [] as $file) {
             if ($file !== $fresh
-                && preg_match(self::FILE_PATTERN, $file, $matches) === 1
+                && preg_match($pattern, $file, $matches) === 1
                 && is_file($directory.DIRECTORY_SEPARATOR.$file)) {
                 $older[] = [$matches[1], $file];
             }
