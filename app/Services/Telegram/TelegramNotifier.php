@@ -23,6 +23,8 @@ class TelegramNotifier
 
     public const CATEGORY_DIGEST = 'digest';
 
+    public const CATEGORY_BACKUP = 'backup';
+
     public function __construct(
         private readonly TelegramBotService $bot,
     ) {}
@@ -62,6 +64,22 @@ class TelegramNotifier
                     $employee->department_id !== null,
                     fn (Builder $query) => $query->orWhere('department_id', $employee->department_id),
                 ))
+            ->pluck('telegram_chat_id');
+
+        return $this->send($users, $text);
+    }
+
+    /**
+     * Tizim xabari (masalan baza zaxirasi): faqat super-admin'lar, xabar filtri «all» bo‘lsa. Guruhlarga yuborilmaydi.
+     */
+    public function notifySuperAdmins(string $text): int
+    {
+        if ((string) config('telegram.token') === '') {
+            return 0;
+        }
+
+        $users = $this->linkedUsers(self::CATEGORY_BACKUP)
+            ->where(fn (Builder $query) => $this->whereSuperAdmin($query))
             ->pluck('telegram_chat_id');
 
         return $this->send($users, $text);

@@ -2,14 +2,22 @@
 
 namespace Tests\Feature\Console;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
+use Tests\Concerns\CreatesTelegramAdmin;
 use Tests\TestCase;
 
 class DbBackupCommandTest extends TestCase
 {
+    use CreatesTelegramAdmin;
+    use RefreshDatabase;
+
     private const PASSWORD = 's3cr"et\\pa#ss';
 
     private const COMPLETE_DUMP = "-- MySQL dump\nINSERT INTO `employees` VALUES (1);\n-- Dump completed on 2026-12-01  4:00:00\n";
@@ -138,6 +146,57 @@ class DbBackupCommandTest extends TestCase
             ->assertFailed();
 
         Process::assertNothingRan();
+    }
+
+    public function test_success_is_reported_to_super_admins_only(): void
+    {
+        $this->fakeTelegram();
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '222', 'telegram_notify_prefs' => 'device']);
+        User::factory()->create(['telegram_chat_id' => '333', 'telegram_notify_prefs' => 'all']);
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn (Request $request): bool => $request['chat_id'] === '111'
+            && str_contains((string) $request['text'], 'Baza zaxirasi olindi')
+            && str_contains((string) $request['text'], 'eidora_db-2026-12-01-040000.sql.gz')
+            && str_contains((string) $request['text'], 'eng ko‘pi 12'));
+    }
+
+    public function test_failure_is_reported_to_super_admins(): void
+    {
+        $this->fakeTelegram();
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
+        Process::fake(fn () => Process::result('', 'mysqldump: Got error: 1045: Access denied for user', 2));
+
+        $this->artisan('db:backup')->assertFailed();
+
+        Http::assertSent(fn (Request $request): bool => $request['chat_id'] === '111'
+            && str_contains((string) $request['text'], 'Baza zaxirasi olinmadi')
+            && str_contains((string) $request['text'], 'Access denied')
+            && ! str_contains((string) $request['text'], 's3cr'));
+    }
+
+    public function test_telegram_error_does_not_change_exit_code(): void
+    {
+        $this->fakeTelegram(500);
+        $this->createTelegramSuperAdmin(['telegram_chat_id' => '111']);
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        Http::assertSentCount(1);
+    }
+
+    private function fakeTelegram(int $status = 200): void
+    {
+        config(['telegram.token' => 'test-token']);
+
+        Http::fake([
+            'https://api.telegram.org/*' => Http::response(['ok' => $status === 200], $status),
+        ]);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Backup\DatabaseBackupResult;
 use App\Services\Backup\DatabaseBackupService;
+use App\Services\Telegram\TelegramNotifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class DbBackupCommand extends Command
 
     protected $description = 'Bazaning siqilgan zaxira nusxasini oladi va eski nusxalarni o‘chiradi (har oy scheduler orqali)';
 
-    public function handle(DatabaseBackupService $backups): int
+    public function handle(DatabaseBackupService $backups, TelegramNotifier $telegram): int
     {
         try {
             $result = $backups->run();
@@ -24,6 +25,7 @@ class DbBackupCommand extends Command
 
             Log::error('Baza zaxirasi olinmadi', ['error' => $exception->getMessage()]);
             $this->error("Zaxira olinmadi: {$reason}");
+            $this->notify($telegram, "❌ Baza zaxirasi olinmadi\nSabab: {$reason}");
 
             return self::FAILURE;
         }
@@ -43,7 +45,27 @@ class DbBackupCommand extends Command
             $result->deleted,
         ));
 
+        $this->notify($telegram, sprintf(
+            "✅ Baza zaxirasi olindi\nFayl: %s\nHajmi: %s\nSaqlangan nusxalar: %d ta (eng ko‘pi %d)",
+            $result->filename,
+            self::humanSize($result),
+            $result->kept,
+            max((int) config('db_backup.keep', 12), 1),
+        ));
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Xabar yuborilmasa ham zaxira natijasi o‘zgarmaydi (baza ishlamay qolganda oluvchilar so‘rovi ham yiqiladi).
+     */
+    private function notify(TelegramNotifier $telegram, string $text): void
+    {
+        try {
+            $telegram->notifySuperAdmins($text);
+        } catch (Throwable $exception) {
+            Log::warning('Baza zaxirasi: Telegram xabari yuborilmadi', ['error' => $exception->getMessage()]);
+        }
     }
 
     public static function humanSize(DatabaseBackupResult $result): string
