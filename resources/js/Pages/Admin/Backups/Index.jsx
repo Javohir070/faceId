@@ -54,7 +54,8 @@ export default function Index({ backups, unreadable, keep }) {
                         {backups.map((backup, index) => (
                             <tr key={backup.filename}>
                                 <td className="font-medium text-ink-subtle">{index + 1}</td>
-                                <td className="font-bold text-ink break-all">{backup.filename}</td>
+                                {/* Tor ekranda nom faqat chiziqchalardan keyin bo‘linadi, tugma ko‘rinib turadi. */}
+                                <td className="font-bold text-ink">{backup.filename}</td>
                                 <td className="whitespace-nowrap tabular-nums">{backup.created_at}</td>
                                 <td className="whitespace-nowrap tabular-nums">{formatSize(backup.bytes)}</td>
                                 <td className="text-right">

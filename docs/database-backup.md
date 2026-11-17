@@ -56,6 +56,7 @@ storage/app/private/db-backups/
 | `DB_BACKUP_ENABLED` | `true` | `false` — scheduler ishga tushirmaydi (qo‘lda `db:backup` baribir ishlaydi) |
 | `DB_BACKUP_KEEP` | `12` | nechta eng yangi nusxa saqlanadi; bo‘sh, `0` yoki noto‘g‘ri qiymat — 12 |
 | `DB_BACKUP_PATH` | bo‘sh → `storage/app/private/db-backups` | boshqa papka; public bo‘lmasin |
+| `DB_BACKUP_GROUP` | bo‘sh → papka `0700`, fayllar `0600` | veb-server guruhi (odatda `www-data`): papka `0750`, fayllar `0640` shu guruhga — panel ko‘rishi va yuklab berishi uchun |
 | `DB_BACKUP_TIMEOUT` | `3600` | `mysqldump` uchun soniya |
 | `MYSQL_DUMP_BINARY_PATH` | bo‘sh → `PATH` dagi `mysqldump` | Windows/XAMPP: `C:/xampp/mysql/bin`. Linux serverda **bo‘sh** qoldiring |
 
@@ -70,6 +71,18 @@ fayl esa umuman yuborilmaydi.
 - Xatoda: qisqa sabab, masalan `mysqldump xato bilan tugadi (kod 2): … Access denied …`.
 
 Telegram ishlamasa ham zaxira natijasi o‘zgarmaydi, xato logga yoziladi.
+
+## Panelda: Admin → Sozlamalar → Zaxira nusxalari
+
+`/admin/backups` — shu bazaning zaxiralari (fayl, sana va vaqt, hajmi), yangisi tepada, va **yuklab olish**.
+Zaxira olish, o‘chirish va tiklash panelda yo‘q (ataylab): tiklash — pastdagi buyruqlar bilan serverda.
+
+- **Faqat super-admin** (`role:super-admin`). Ruxsat qatori yo‘q, rollar orqali berib bo‘lmaydi.
+- Yuklab olishdan oldin **parol qayta so‘raladi** (`password.confirm`, keyin 3 soat so‘ralmaydi).
+- Har yuklab olish logga yoziladi: `Baza zaxirasi yuklab olindi` — foydalanuvchi id va email, fayl, IP.
+- Fayl nomi papkadagi shu bazaning zaxira fayllaridan biriga aynan teng bo‘lishi kerak, aks holda 404.
+- Serverda veb-server fayllarni o‘qiy olishi uchun `DB_BACKUP_GROUP` kerak (pastda 4-band). O‘qiy olmasa sahifada
+  "Zaxira papkasini o‘qib bo‘lmadi" ogohlantirishi chiqadi.
 
 ## Qo‘lda ishga tushirish
 
@@ -104,8 +117,10 @@ tiklang (oldin uning ham zaxirasini oling).
    `DB_BACKUP_KEEP` ni qo‘shing. `php artisan config:cache` ishlatilsa, `.env` o‘zgargach uni qayta ishga tushiring.
 3. **Baza foydalanuvchisining huquqlari** (`eidora`): `SELECT`, `SHOW VIEW`, `TRIGGER`, `LOCK TABLES`.
    Tekshirish: `SHOW GRANTS FOR 'eidora'@'%';`.
-4. **Papka:** `storage/app/private` ga cron foydalanuvchisi (root) yoza olishi kerak. `db-backups` papkasini
-   buyruq o‘zi `0700` bilan yaratadi.
+4. **Papka va panel:** `storage/app/private` ga cron foydalanuvchisi (root) yoza olishi kerak. Panel fayllarni
+   ko‘rishi uchun `.env` ga veb-server guruhini yozing: `DB_BACKUP_GROUP=www-data`. Veb-server foydalanuvchisini
+   bilish: `ps -o user= -C php-fpm8.3 | sort -u` (versiyangizni qo‘ying) yoki `stat -c %G storage/logs/laravel.log`.
+   Keyingi `db:backup` papkani `0750`, barcha nusxalarni `0640` qilib shu guruhga beradi (eskilarini ham).
 5. **Joy:** `du -sh storage/app/private/*` va `df -h`. Bitta nusxa siqilgan holda taxminan bazaning yarmidan
    kamroq (yuz rasmlari yomon siqiladi), 12 ta nusxa shuning 12 barobari.
 6. **Cron** allaqachon `php artisan schedule:run` ni har daqiqada ishga tushiradi, qo‘shimcha cron qatori kerak
@@ -122,3 +137,4 @@ tiklang (oldin uning ham zaxirasini oling).
 | `PROCESS privilege` | eski kod yoki `--no-tablespaces` ni bilmaydigan `mysqldump` |
 | `«-- Dump completed» qatori yo‘q` | dump yarmida to‘xtagan (disk to‘lgan, ulanish uzilgan); `df -h` |
 | `Zaxira papkasiga yozib bo‘lmaydi` | papka egasi yoki ruxsati; buyruqni cron foydalanuvchisi nomidan ishga tushiring |
+| Panelda "Zaxira papkasini o‘qib bo‘lmadi" yoki yuklab olishda 404 | `DB_BACKUP_GROUP` yo‘q yoki noto‘g‘ri; logda `fayllarni guruhga berib bo‘lmadi`; tuzatib `db:backup` ni qayta ishga tushiring |

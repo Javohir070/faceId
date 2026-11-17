@@ -33,7 +33,7 @@ Artisan commands specific to this project:
 - `devices:stream-events` — long-running realtime alertStream listener; **run in its own terminal**. The scheduler only ever starts it as `devices:stream-events --ensure` (a no-op while a manager is alive), and only when `HIKVISION_ALERT_STREAM_AUTOSTART=true` — never schedule it without `--ensure` (see the comment at the bottom of `routes/console.php`)
 - `devices:pull-employees {device?}` — import employees from a device
 - `employees:notify-expiry`, `telegram:daily-digest`, `telegram:set-webhook {url?}`
-- `db:backup` — monthly gzipped `mysqldump` of the database into `storage/app/private/db-backups` (keeps `DB_BACKUP_KEEP`, default 12; Telegram to super-admins), scheduled on the 1st at 04:00. Separate from the daily Spatie `backup:run` (whole project + DB). See [docs/database-backup.md](docs/database-backup.md)
+- `db:backup` — monthly gzipped `mysqldump` of the database into `storage/app/private/db-backups` (keeps `DB_BACKUP_KEEP`, default 12; Telegram to super-admins), scheduled on the 1st at 04:00. Separate from the daily Spatie `backup:run` (whole project + DB). Super-admins list and download them at Admin → Sozlamalar → Zaxira nusxalari (`/admin/backups`): guarded by `role:super-admin` + `password.confirm`, not by a permission row; the web server reads the files only if `DB_BACKUP_GROUP` is set. See [docs/database-backup.md](docs/database-backup.md)
 
 ## Request layering
 
