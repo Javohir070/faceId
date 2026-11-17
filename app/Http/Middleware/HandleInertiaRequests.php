@@ -69,6 +69,8 @@ class HandleInertiaRequests extends Middleware
                 'users' => $user->can($menuPermissions['users']),
                 'roles' => $user->can($menuPermissions['roles']),
                 'permissions' => $user->can($menuPermissions['permissions']),
+                // Zaxira nusxalari ruxsat bilan emas, faqat super-admin roli bilan ochiladi (routes/web.php).
+                'backups' => $user->hasRole('super-admin'),
                 ...$this->actionAbilities($user),
                 'employees.extend' => $user->canExtendEmployeeValidity(),
             ] : null,

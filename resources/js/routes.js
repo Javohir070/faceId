@@ -59,6 +59,8 @@ const routeBuilders = {
     ...resource('admin.users', '/admin/users'),
     ...resource('admin.roles', '/admin/roles'),
     ...resource('admin.permissions', '/admin/permissions'),
+    'admin.backups.index': () => '/admin/backups',
+    'admin.backups.download': (filename) => `/admin/backups/${encodeURIComponent(filename)}/download`,
 };
 
 /**

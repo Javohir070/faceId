@@ -5,6 +5,7 @@ import {
     BarChartOutlined,
     CalendarOutlined,
     ClusterOutlined,
+    DatabaseOutlined,
     FormOutlined,
     HistoryOutlined,
     HomeOutlined,
@@ -65,6 +66,8 @@ export const adminNavGroups = [
                     { key: 'users', href: route('admin.users.index'), label: 'Foydalanuvchilar', icon: TeamOutlined },
                     { key: 'roles', href: route('admin.roles.index'), label: 'Rollar', icon: SafetyCertificateOutlined },
                     { key: 'permissions', href: route('admin.permissions.index'), label: 'Ruxsatlar', icon: KeyOutlined },
+                    // Faqat super-admin: can.backups (HandleInertiaRequests).
+                    { key: 'backups', href: route('admin.backups.index'), label: 'Zaxira nusxalari', icon: DatabaseOutlined },
                     {
                         key: 'employees-pull',
                         permission: 'employees-pull',

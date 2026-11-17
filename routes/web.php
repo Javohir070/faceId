@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BiocontrolController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DepartmentController;
@@ -180,6 +181,15 @@ Route::middleware('auth')->group(function () {
             ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['roles']['create'])
             ->middlewareFor(['edit', 'update'], 'permission:'.$actionPermissions['roles']['edit'])
             ->middlewareFor('destroy', 'permission:'.$actionPermissions['roles']['delete']);
+        // Baza zaxira nusxalari: ruxsat qatori yo‘q, faqat super-admin (fayl — butun baza). docs/database-backup.md
+        Route::get('backups', [BackupController::class, 'index'])
+            ->middleware('role:super-admin')
+            ->name('backups.index');
+        Route::get('backups/{filename}/download', [BackupController::class, 'download'])
+            ->middleware(['role:super-admin', 'password.confirm'])
+            ->where('filename', '[A-Za-z0-9_.-]+')
+            ->name('backups.download');
+
         Route::resource('permissions', PermissionController::class)
             ->middleware('permission:'.$menuPermissions['permissions'])
             ->middlewareFor(['create', 'store'], 'permission:'.$actionPermissions['permissions']['create'])

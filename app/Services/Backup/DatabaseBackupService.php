@@ -2,6 +2,7 @@
 
 namespace App\Services\Backup;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
@@ -40,7 +41,7 @@ class DatabaseBackupService
 
         try {
             $directory = $this->prepareDirectory();
-            $prefix = (string) preg_replace('/[^A-Za-z0-9_.-]/', '_', $database);
+            $prefix = $this->filePrefix($database);
             $filename = sprintf('%s-%s.sql.gz', $prefix, now()->format('Y-m-d-His'));
             $target = $directory.DIRECTORY_SEPARATOR.$filename;
 
@@ -88,9 +89,70 @@ class DatabaseBackupService
         }
     }
 
+    /**
+     * Panel uchun: shu bazaning zaxiralari, yangisi birinchi. `unreadable` — papka bor, lekin veb-server uni
+     * o‘qiy olmaydi (serverda DB_BACKUP_GROUP sozlanmagan).
+     *
+     * @return array{unreadable: bool, items: list<array{filename: string, bytes: int, created_at: string}>}
+     */
+    public function backups(): array
+    {
+        $directory = $this->directory();
+
+        if (! is_dir($directory) || ! is_readable($directory)) {
+            return ['unreadable' => is_dir($directory), 'items' => []];
+        }
+
+        $items = [];
+
+        foreach ($this->backupFiles($directory, $this->filePrefix($this->databaseName())) as [$stamp, $file]) {
+            $items[] = [
+                'filename' => $file,
+                'bytes' => (int) @filesize($directory.DIRECTORY_SEPARATOR.$file),
+                'created_at' => Carbon::createFromFormat('Y-m-d-His', $stamp)->format('Y-m-d H:i:s'),
+            ];
+        }
+
+        return ['unreadable' => false, 'items' => $items];
+    }
+
+    /**
+     * Yuklab olish uchun to‘liq yo‘l: nom papkadagi shu bazaning zaxira fayllaridan biriga aynan teng bo‘lishi
+     * kerak (yo‘l bilan chiqib bo‘lmaydi). Topilmasa yoki o‘qib bo‘lmasa — null.
+     */
+    public function downloadPath(string $filename): ?string
+    {
+        $directory = $this->directory();
+
+        foreach ($this->backupFiles($directory, $this->filePrefix($this->databaseName())) as [, $file]) {
+            if ($file === $filename) {
+                $path = $directory.DIRECTORY_SEPARATOR.$file;
+
+                return is_readable($path) ? $path : null;
+            }
+        }
+
+        return null;
+    }
+
+    private function directory(): string
+    {
+        return rtrim((string) config('db_backup.path'), '/\\');
+    }
+
+    private function databaseName(): string
+    {
+        return (string) config('database.connections.'.config('db_backup.connection').'.database', '');
+    }
+
+    private function filePrefix(string $database): string
+    {
+        return (string) preg_replace('/[^A-Za-z0-9_.-]/', '_', $database);
+    }
+
     private function prepareDirectory(): string
     {
-        $directory = rtrim((string) config('db_backup.path'), '/\\');
+        $directory = $this->directory();
 
         File::ensureDirectoryExists($directory, 0700);
         @chmod($directory, 0700);
