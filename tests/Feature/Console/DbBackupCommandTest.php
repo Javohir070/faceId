@@ -144,6 +144,41 @@ class DbBackupCommandTest extends TestCase
         Log::shouldHaveReceived('warning')
             ->withArgs(fn (string $message, array $context = []): bool => ($context['group'] ?? null) === 'biocontrol-no-such-group')
             ->once();
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            // Guruhga berib bo‘lmadi — ruxsat ham kengaymaydi (fayl eski guruhga ochilib qolmasin).
+            clearstatcache();
+            $this->assertSame('600', decoct(fileperms($this->backupDir.'/eidora_db-2026-12-01-040000.sql.gz') & 0777));
+        }
+    }
+
+    public function test_failed_backup_still_shares_directory_with_group(): void
+    {
+        config(['db_backup.group' => 'biocontrol-no-such-group']);
+        Log::spy();
+        Process::fake(fn () => Process::result('', 'mysqldump: Got error: 1045: Access denied for user', 2));
+
+        $this->artisan('db:backup')->assertFailed();
+
+        // Zaxira yiqilsa ham papka guruhga ochilishi kerak: panel eski nusxalarni ko‘rsatib turadi.
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context = []): bool => ($context['group'] ?? null) === 'biocontrol-no-such-group')
+            ->once();
+    }
+
+    public function test_failed_backup_leaves_directory_readable_for_group(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || ! function_exists('posix_getegid')) {
+            $this->markTestSkipped('Fayl guruhi va ruxsatlari faqat Linux/Unix da tekshiriladi.');
+        }
+
+        config(['db_backup.group' => (string) posix_getgrgid(posix_getegid())['name']]);
+        Process::fake(fn () => Process::result('', 'mysqldump: Got error: 1045: Access denied for user', 2));
+
+        $this->artisan('db:backup')->assertFailed();
+
+        clearstatcache();
+        $this->assertSame('750', decoct(fileperms($this->backupDir) & 0777));
     }
 
     public function test_group_gets_read_access(): void

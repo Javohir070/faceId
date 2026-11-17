@@ -21,8 +21,11 @@ class DatabaseBackupService
 
     private const COMPLETED_MARKER = '-- Dump completed';
 
+    private bool $groupWarningLogged = false;
+
     public function run(): DatabaseBackupResult
     {
+        $this->groupWarningLogged = false;
         $connection = (string) config('db_backup.connection');
         $config = (array) config("database.connections.{$connection}", []);
 
@@ -51,7 +54,10 @@ class DatabaseBackupService
         }
 
         [$kept, $deleted] = $this->rotate($directory, $prefix, $filename);
-        $this->shareWithGroup($directory, $prefix);
+        $this->shareWithGroup(array_map(
+            fn (array $backup): string => $directory.DIRECTORY_SEPARATOR.$backup[1],
+            $this->backupFiles($directory, $prefix),
+        ));
 
         clearstatcache(true, $target);
 
@@ -160,6 +166,10 @@ class DatabaseBackupService
         if (! is_writable($directory)) {
             throw new RuntimeException("Zaxira papkasiga yozib bo‘lmaydi: {$directory}");
         }
+
+        // Papka dump'dan oldin guruhga ochiladi: zaxira yiqilsa ham panel eski nusxalarni ko‘rsataveradi.
+        // Vaqtinchalik .cnf va xom .sql baribir 0600.
+        $this->shareWithGroup([$directory]);
 
         return $directory;
     }
@@ -375,9 +385,12 @@ class DatabaseBackupService
 
     /**
      * DB_BACKUP_GROUP berilsa veb-server (panel) zaxiralarni o‘qiy oladi: papka 0750, fayllar 0640, guruh — shu.
-     * Eski nusxalar ham. Guruhga berib bo‘lmasa zaxira buzilmaydi, faqat ogohlantirish yoziladi.
+     * Avval guruh beriladi, ruxsat faqat shundan keyin kengayadi: guruh berilmasa fayl eski guruhiga ochilib
+     * qolmaydi. Bunda zaxira buzilmaydi, bir ishga tushishda bitta ogohlantirish yoziladi.
+     *
+     * @param  list<string>  $paths
      */
-    private function shareWithGroup(string $directory, string $prefix): void
+    private function shareWithGroup(array $paths): void
     {
         $group = trim((string) config('db_backup.group'));
 
@@ -386,22 +399,18 @@ class DatabaseBackupService
         }
 
         $failed = false;
-        $paths = [$directory];
-
-        foreach ($this->backupFiles($directory, $prefix) as [, $file]) {
-            $paths[] = $directory.DIRECTORY_SEPARATOR.$file;
-        }
 
         foreach ($paths as $path) {
-            @chmod($path, is_dir($path) ? 0750 : 0640);
-
-            if (! @chgrp($path, $group)) {
+            if (@chgrp($path, $group)) {
+                @chmod($path, is_dir($path) ? 0750 : 0640);
+            } else {
                 $failed = true;
             }
         }
 
-        if ($failed) {
-            Log::warning('Baza zaxirasi: fayllarni guruhga berib bo‘lmadi', ['group' => $group, 'path' => $directory]);
+        if ($failed && ! $this->groupWarningLogged) {
+            $this->groupWarningLogged = true;
+            Log::warning('Baza zaxirasi: fayllarni guruhga berib bo‘lmadi', ['group' => $group, 'path' => $this->directory()]);
         }
     }
 }

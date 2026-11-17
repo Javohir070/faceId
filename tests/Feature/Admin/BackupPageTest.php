@@ -97,6 +97,21 @@ class BackupPageTest extends TestCase
             ->assertRedirect(route('password.confirm'));
     }
 
+    public function test_confirming_password_from_inertia_form_hands_download_to_browser(): void
+    {
+        $this->makeBackups();
+        $admin = $this->createUserWithPermissions();
+        $download = route('admin.backups.download', self::NEWEST);
+
+        $this->actingAs($admin)->get($download)->assertRedirect(route('password.confirm'));
+
+        // Inertia XHR binar javobni dialog qilib ko‘rsatadi: brauzer o‘zi ochishi kerak (409 + X-Inertia-Location).
+        $this->actingAs($admin)
+            ->post('/confirm-password', ['password' => 'password'], ['X-Inertia' => 'true'])
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', $download);
+    }
+
     public function test_download_returns_file_and_logs(): void
     {
         $this->makeBackups();
