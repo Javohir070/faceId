@@ -15,6 +15,10 @@ return [
     // Nechta eng yangi nusxa saqlanadi. Bo‘sh yoki noto‘g‘ri qiymat — 12 (aks holda 0 → 1 bo‘lib, 11 nusxa o‘chardi).
     'keep' => (int) env('DB_BACKUP_KEEP') > 0 ? (int) env('DB_BACKUP_KEEP') : 12,
 
+    // Veb-server foydalanuvchisining guruhi (masalan www-data): panel zaxiralarni ko‘rsatishi va yuklab berishi
+    // uchun papka 0750, fayllar 0640 shu guruhga beriladi. Bo‘sh — faqat cron egasi (0700/0600).
+    'group' => (string) env('DB_BACKUP_GROUP', ''),
+
     'connection' => env('DB_CONNECTION', 'mysql'),
 
     // mysqldump turgan papka; bo‘sh bo‘lsa PATH dagi mysqldump. Spatie zaxirasi bilan umumiy o‘zgaruvchi.

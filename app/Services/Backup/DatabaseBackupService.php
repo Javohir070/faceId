@@ -3,6 +3,7 @@
 namespace App\Services\Backup;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -49,6 +50,7 @@ class DatabaseBackupService
         }
 
         [$kept, $deleted] = $this->rotate($directory, $prefix, $filename);
+        $this->shareWithGroup($directory, $prefix);
 
         clearstatcache(true, $target);
 
@@ -272,18 +274,10 @@ class DatabaseBackupService
     private function rotate(string $directory, string $prefix, string $fresh): array
     {
         $keep = max((int) config('db_backup.keep', 12), 1);
-        $pattern = '/^'.preg_quote($prefix, '/').'-(\d{4}-\d{2}-\d{2}-\d{6})\.sql\.gz$/';
-        $older = [];
-
-        foreach (scandir($directory) ?: [] as $file) {
-            if ($file !== $fresh
-                && preg_match($pattern, $file, $matches) === 1
-                && is_file($directory.DIRECTORY_SEPARATOR.$file)) {
-                $older[] = [$matches[1], $file];
-            }
-        }
-
-        rsort($older);
+        $older = array_values(array_filter(
+            $this->backupFiles($directory, $prefix),
+            fn (array $backup): bool => $backup[1] !== $fresh,
+        ));
 
         $deleted = 0;
 
@@ -294,5 +288,58 @@ class DatabaseBackupService
         }
 
         return [count($older) - $deleted + 1, $deleted];
+    }
+
+    /**
+     * Shu bazaning zaxira fayllari, yangisi birinchi.
+     *
+     * @return list<array{0: string, 1: string}> [nomdagi vaqt YYYY-MM-DD-HHMMSS, fayl nomi]
+     */
+    private function backupFiles(string $directory, string $prefix): array
+    {
+        $pattern = '/^'.preg_quote($prefix, '/').'-(\d{4}-\d{2}-\d{2}-\d{6})\.sql\.gz$/';
+        $backups = [];
+
+        foreach (@scandir($directory) ?: [] as $file) {
+            if (preg_match($pattern, $file, $matches) === 1 && is_file($directory.DIRECTORY_SEPARATOR.$file)) {
+                $backups[] = [$matches[1], $file];
+            }
+        }
+
+        rsort($backups);
+
+        return $backups;
+    }
+
+    /**
+     * DB_BACKUP_GROUP berilsa veb-server (panel) zaxiralarni o‘qiy oladi: papka 0750, fayllar 0640, guruh — shu.
+     * Eski nusxalar ham. Guruhga berib bo‘lmasa zaxira buzilmaydi, faqat ogohlantirish yoziladi.
+     */
+    private function shareWithGroup(string $directory, string $prefix): void
+    {
+        $group = trim((string) config('db_backup.group'));
+
+        if ($group === '') {
+            return;
+        }
+
+        $failed = false;
+        $paths = [$directory];
+
+        foreach ($this->backupFiles($directory, $prefix) as [, $file]) {
+            $paths[] = $directory.DIRECTORY_SEPARATOR.$file;
+        }
+
+        foreach ($paths as $path) {
+            @chmod($path, is_dir($path) ? 0750 : 0640);
+
+            if (! @chgrp($path, $group)) {
+                $failed = true;
+            }
+        }
+
+        if ($failed) {
+            Log::warning('Baza zaxirasi: fayllarni guruhga berib bo‘lmadi', ['group' => $group, 'path' => $directory]);
+        }
     }
 }

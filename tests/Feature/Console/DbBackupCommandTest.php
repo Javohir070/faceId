@@ -12,6 +12,7 @@ use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Tests\Concerns\CreatesTelegramAdmin;
 use Tests\TestCase;
@@ -129,6 +130,42 @@ class DbBackupCommandTest extends TestCase
             'biocontrol_db-2026-11-01-040000.sql.gz',
             'eidora_db-2026-12-01-040000.sql.gz',
         ], $this->filesInBackupDir());
+    }
+
+    public function test_unknown_group_does_not_break_backup(): void
+    {
+        config(['db_backup.group' => 'biocontrol-no-such-group']);
+        Log::spy();
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        $this->assertSame(['eidora_db-2026-12-01-040000.sql.gz'], $this->filesInBackupDir());
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context = []): bool => ($context['group'] ?? null) === 'biocontrol-no-such-group')
+            ->once();
+    }
+
+    public function test_group_gets_read_access(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || ! function_exists('posix_getegid')) {
+            $this->markTestSkipped('Fayl guruhi va ruxsatlari faqat Linux/Unix da tekshiriladi.');
+        }
+
+        $group = (string) posix_getgrgid(posix_getegid())['name'];
+        config(['db_backup.group' => $group]);
+        File::ensureDirectoryExists($this->backupDir);
+        $old = $this->backupDir.'/eidora_db-2026-11-01-040000.sql.gz';
+        file_put_contents($old, gzencode('old'));
+        chmod($old, 0600);
+        $this->fakeDump(self::COMPLETE_DUMP);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        clearstatcache();
+        $this->assertSame('750', decoct(fileperms($this->backupDir) & 0777));
+        $this->assertSame('640', decoct(fileperms($this->backupDir.'/eidora_db-2026-12-01-040000.sql.gz') & 0777));
+        $this->assertSame('640', decoct(fileperms($old) & 0777));
     }
 
     public function test_blank_or_invalid_keep_falls_back_to_twelve(): void
