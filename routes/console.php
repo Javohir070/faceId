@@ -50,6 +50,14 @@ Schedule::command('backup:monitor')
     ->at('03:00')
     ->withoutOverlapping();
 
+// Bazaning oylik zaxirasi (kunlik Spatie zaxirasidan alohida): har oy 1-sanasi, Spatie va solishtirishdan keyin.
+// Fayllar storage/app/private/db-backups da, oxirgi DB_BACKUP_KEEP tasi saqlanadi. Hujjat: docs/database-backup.md
+Schedule::command('db:backup')
+    ->monthlyOn(1, '04:00')
+    ->when(fn (): bool => (bool) config('db_backup.enabled', true))
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // alertStream — uzluksiz jarayon; oddiy holda alohida terminalda ishga tushiriladi:
 // php artisan devices:stream-events
 //

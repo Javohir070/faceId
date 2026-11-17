@@ -3,6 +3,8 @@
 namespace Tests\Feature\Console;
 
 use App\Models\User;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Process\PendingProcess;
@@ -188,6 +190,16 @@ class DbBackupCommandTest extends TestCase
         $this->artisan('db:backup')->assertSuccessful();
 
         Http::assertSentCount(1);
+    }
+
+    public function test_backup_is_scheduled_monthly(): void
+    {
+        $events = collect(app(Schedule::class)->events())
+            ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'db:backup'));
+
+        $this->assertCount(1, $events);
+        $this->assertSame('0 4 1 * *', $events->first()->expression);
+        $this->assertTrue($events->first()->withoutOverlapping);
     }
 
     private function fakeTelegram(int $status = 200): void
