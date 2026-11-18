@@ -12,6 +12,12 @@ use Spatie\Permission\Models\Role;
 
 class RoleService
 {
+    /**
+     * Tashqi tizimlarning API ruxsatlari guruhi (`menu_permissions.api`). Ular bo‘lim cheklovisiz ishlaydi,
+     * shuning uchun forma “Hammasini belgilash” da ularni olmaydi (qatordagi `api` belgisi).
+     */
+    public const API_GROUP = 'Tashqi API';
+
     public function __construct(
         private readonly RoleRepositoryInterface $roleRepository,
         private readonly PermissionRepositoryInterface $permissionRepository,
@@ -24,15 +30,16 @@ class RoleService
 
     /**
      * Rol formasidagi jadval: har bir ko‘rish ruxsati qatori va uning qo‘shish/tahrirlash/o‘chirish ruxsati nomi.
-     * Amal ruxsatlari alohida qator bo‘lib chiqmaydi.
+     * Amal ruxsatlari alohida qator bo‘lib chiqmaydi. `api` — tashqi tizim ruxsati (API_GROUP).
      *
-     * @return array<string, array<int, array{id: int, name: string, create: ?string, edit: ?string, delete: ?string}>>
+     * @return array<string, array<int, array{id: int, name: string, create: ?string, edit: ?string, delete: ?string, api: bool}>>
      */
     public function permissionMatrix(): array
     {
         $actions = collect(config('menu_permissions.actions'))
             ->mapWithKeys(fn (array $names, string $resource): array => [config("menu_permissions.resources.{$resource}") => $names]);
         $existing = Permission::query()->where('guard_name', 'web')->pluck('name')->flip();
+        $apiPermissions = collect(config('menu_permissions.api', []))->values();
         $actionFor = fn (string $view, string $action): ?string => isset($actions[$view][$action], $existing[$actions[$view][$action]])
             ? $actions[$view][$action]
             : null;
@@ -46,6 +53,7 @@ class RoleService
                     'create' => $actionFor($permission->name, 'create'),
                     'edit' => $actionFor($permission->name, 'edit'),
                     'delete' => $actionFor($permission->name, 'delete'),
+                    'api' => $apiPermissions->contains($permission->name),
                 ])
                 ->all())
             ->all();
@@ -60,6 +68,7 @@ class RoleService
             ->prepend(config('menu_permissions.home'), 'home')
             ->values();
         $actionPermissions = collect(config('menu_permissions.actions'))->flatten();
+        $apiPermissions = collect(config('menu_permissions.api', []))->values();
 
         $settingsPermissions = collect([
             'Sozlamalar',
@@ -78,9 +87,11 @@ class RoleService
                     && ! $settingsPermissions->contains($permission->name)
             ),
             'Sozlamalar' => $permissions->filter(fn (Permission $permission) => $settingsPermissions->contains($permission->name)),
+            self::API_GROUP => $permissions->filter(fn (Permission $permission) => $apiPermissions->contains($permission->name)),
             'Boshqa' => $permissions->filter(
                 fn (Permission $permission) => ! $menuPermissions->contains($permission->name)
                     && ! $settingsPermissions->contains($permission->name)
+                    && ! $apiPermissions->contains($permission->name)
             ),
         ];
     }

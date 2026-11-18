@@ -44,12 +44,20 @@ class ParkingApiTest extends TestCase
         $this->assertFalse(Role::findByName('user', 'web')->hasPermissionTo(self::RUXSAT));
     }
 
-    /** Administrator ruxsatni rol formasidan beradi — u matritsaning "Boshqa" guruhida turadi. */
-    public function test_ruxsat_rol_matritsasida_boshqa_guruhida_korinadi(): void
+    /**
+     * Administrator ruxsatni rol formasidan beradi. U alohida "Tashqi API" guruhida va `api` belgisi bilan turadi:
+     * forma "Hammasini belgilash" da uni olmaydi — aks holda bo'lim roli jim turib hamma bo'limning JSHSHIR
+     * ro'yxatini olardi.
+     */
+    public function test_ruxsat_rol_matritsasida_alohida_api_guruhida_korinadi(): void
     {
-        $boshqa = collect(app(RoleService::class)->permissionMatrix()['Boshqa'] ?? [])->pluck('name');
+        $matritsa = app(RoleService::class)->permissionMatrix();
+        $qator = collect($matritsa[RoleService::API_GROUP] ?? [])->firstWhere('name', self::RUXSAT);
 
-        $this->assertContains(self::RUXSAT, $boshqa);
+        $this->assertNotNull($qator);
+        $this->assertTrue($qator['api']);
+        $this->assertNotContains(self::RUXSAT, collect($matritsa['Boshqa'] ?? [])->pluck('name'));
+        $this->assertFalse(collect($matritsa['Asosiy'])->contains('api', true));
     }
 
     public function test_parolsiz_sorov_401(): void
@@ -59,6 +67,56 @@ class ParkingApiTest extends TestCase
             ->assertHeader('WWW-Authenticate')
             ->assertJsonPath('ok', false)
             ->assertJsonPath('error.code', 'UNAUTHORIZED');
+    }
+
+    /**
+     * Ko'p HTTP klientlar parolni faqat 401 chaqirig'idan keyin yuboradi. Login-parolsiz so'rov xato urinish
+     * emas: u cheklovga tushmasligi va logni to'ldirmasligi kerak.
+     */
+    public function test_parolsiz_sorovlar_cheklovga_tushmaydi_va_logga_yozilmaydi(): void
+    {
+        Log::spy();
+        $user = $this->parkingUser();
+
+        for ($i = 0; $i < 7; $i++) {
+            $this->getJson(self::URL)->assertUnauthorized()->assertHeader('WWW-Authenticate');
+        }
+
+        $this->sorov($user)->assertOk();
+        Log::shouldNotHaveReceived('warning');
+    }
+
+    /** MySQL `utf8mb4_unicode_ci` katta-kichik harf va oxirgi bo'shliqqa qaramay o'sha foydalanuvchini topadi. */
+    public function test_email_yozilishini_ozgartirib_cheklovni_chetlab_bolmaydi(): void
+    {
+        $user = $this->parkingUser();
+        $variantlar = [
+            strtoupper($user->email),
+            $user->email.' ',
+            ' '.$user->email,
+            ucfirst($user->email),
+            $user->email,
+        ];
+
+        foreach ($variantlar as $email) {
+            $this->getJson(self::URL, $this->basic($email, 'boshqa-parol'))->assertUnauthorized();
+        }
+
+        $this->sorov($user)->assertStatus(429);
+    }
+
+    /** Bir IP dan har xil emaillar bilan parol terish ham to'xtatiladi. */
+    public function test_bir_ipdan_kop_emaillar_bilan_urinish_cheklanadi(): void
+    {
+        $user = $this->parkingUser();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->getJson(self::URL, $this->basic("taxmin{$i}@example.uz", 'boshqa-parol'))->assertUnauthorized();
+        }
+
+        $this->sorov($user)
+            ->assertStatus(429)
+            ->assertJsonPath('error.code', 'TOO_MANY_ATTEMPTS');
     }
 
     public function test_notogri_parol_401_va_logga_yoziladi(): void

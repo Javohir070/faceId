@@ -23,7 +23,8 @@ function rowNames(row) {
 function PermissionMatrix({ groups, selected, onChange }) {
     const isOn = (name) => selected.includes(name);
     const groupEntries = Object.entries(groups).filter(([, rows]) => rows.length > 0);
-    const allNames = groupEntries.flatMap(([, rows]) => rows.flatMap(rowNames));
+    // Tashqi API ruxsatlari bo‘lim cheklovisiz ishlaydi — “Hammasini belgilash” ularni olmaydi, faqat qo‘lda belgilanadi.
+    const allNames = groupEntries.flatMap(([, rows]) => rows.filter((row) => !row.api).flatMap(rowNames));
 
     const toggleView = (row, checked) => onChange(checked
         ? [...new Set([...selected, row.name])]
@@ -67,6 +68,14 @@ function PermissionMatrix({ groups, selected, onChange }) {
                                     {group}
                                 </th>
                             </tr>
+                            {rows.some((row) => row.api) && (
+                                <tr>
+                                    <td colSpan={ACTIONS.length + 2} className="border-t border-line px-4 py-2 text-xs text-ink-muted">
+                                        Bo‘lim cheklovisiz ishlaydi: rol egasi API orqali hamma bo‘limlar xodimlarini JSHSHIR bilan oladi.
+                                        “Hammasini belgilash” bularni belgilamaydi — faqat tashqi tizim foydalanuvchisiga bering.
+                                    </td>
+                                </tr>
+                            )}
                             {rows.map((row) => (
                                 <tr key={row.id} className="transition-colors duration-150 ease-productive hover:bg-surface-muted/60">
                                     <td className="border-t border-line px-4 py-2.5 font-semibold text-ink">{row.name}</td>

@@ -22,7 +22,11 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AuthenticateParkingApi
 {
+    /** Bir IP va email uchun daqiqasiga xato urinishlar. */
     private const MAX_ATTEMPTS = 5;
+
+    /** Bir IP dan har qanday emaillar bilan daqiqasiga xato urinishlar — email almashtirib parol terishga qarshi. */
+    private const MAX_IP_ATTEMPTS = 20;
 
     private const DECAY_SECONDS = 60;
 
@@ -33,11 +37,26 @@ class AuthenticateParkingApi
 
         $email = (string) $request->getUser();
         $parol = (string) $request->getPassword();
-        $ip = ClientIp::from($request);
-        $kalit = 'parking-api|'.Str::lower($email).'|'.$ip;
 
-        if (RateLimiter::tooManyAttempts($kalit, self::MAX_ATTEMPTS)) {
-            $soniya = RateLimiter::availableIn($kalit);
+        // Ko'p HTTP klientlar parolni faqat 401 chaqirig'idan keyin yuboradi — bu xato urinish emas,
+        // shuning uchun cheklovga ham, logga ham tushmaydi.
+        if ($email === '' || $parol === '') {
+            return $this->kirishKerak('Email va parol yuborilmagan.');
+        }
+
+        $ip = ClientIp::from($request);
+        // Kalit panel loginidagi kabi normallashtiriladi: MySQL (utf8mb4_unicode_ci) katta-kichik harf, oxirgi
+        // bo'shliq va urg'uga qaramay o'sha foydalanuvchini topadi — har yozilish o'z hisobini olmasligi kerak.
+        $emailKaliti = 'parking-api|'.Str::transliterate(Str::lower(trim($email))).'|'.$ip;
+        $ipKaliti = 'parking-api-ip|'.$ip;
+
+        $bloklangan = array_filter([
+            $emailKaliti => RateLimiter::tooManyAttempts($emailKaliti, self::MAX_ATTEMPTS),
+            $ipKaliti => RateLimiter::tooManyAttempts($ipKaliti, self::MAX_IP_ATTEMPTS),
+        ]);
+
+        if ($bloklangan !== []) {
+            $soniya = max(array_map(fn (string $kalit): int => RateLimiter::availableIn($kalit), array_keys($bloklangan)));
 
             return $this->xato(
                 'TOO_MANY_ATTEMPTS',
@@ -49,21 +68,19 @@ class AuthenticateParkingApi
 
         $guard = Auth::guard('web');
 
-        if ($email === '' || $parol === '' || ! $guard->once(['email' => $email, 'password' => $parol])) {
-            RateLimiter::hit($kalit, self::DECAY_SECONDS);
+        if (! $guard->once(['email' => $email, 'password' => $parol])) {
+            RateLimiter::hit($emailKaliti, self::DECAY_SECONDS);
+            RateLimiter::hit($ipKaliti, self::DECAY_SECONDS);
 
             // Parol logga yozilmaydi.
             Log::warning('Parking API: email yoki parol noto‘g‘ri', ['email' => $email, 'ip' => $ip]);
 
-            return $this->xato(
-                'UNAUTHORIZED',
-                'Email yoki parol noto‘g‘ri.',
-                401,
-                ['WWW-Authenticate' => 'Basic realm="Biocontrol Parking API", charset="UTF-8"'],
-            );
+            return $this->kirishKerak('Email yoki parol noto‘g‘ri.');
         }
 
-        RateLimiter::clear($kalit);
+        // IP hisobi ataylab tozalanmaydi: bitta haqiqiy akkaunt bilan uni nolga tushirib, boshqa emaillarga
+        // parol terishni davom ettirib bo'lardi.
+        RateLimiter::clear($emailKaliti);
 
         $user = $guard->user();
 
@@ -74,6 +91,14 @@ class AuthenticateParkingApi
         }
 
         return $next($request);
+    }
+
+    /** 401 va WWW-Authenticate: HTTP klientlar shu sarlavha bo'lsagina Basic ma'lumotini yuborishni biladi. */
+    private function kirishKerak(string $xabar): JsonResponse
+    {
+        return $this->xato('UNAUTHORIZED', $xabar, 401, [
+            'WWW-Authenticate' => 'Basic realm="Biocontrol Parking API", charset="UTF-8"',
+        ]);
     }
 
     /**

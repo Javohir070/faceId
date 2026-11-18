@@ -17,8 +17,12 @@ Raqamli Idora uchun ochilgan `/api/v1/...` dan ([directory-api.md](directory-api
 
 ## Sozlash (panelda)
 
-1. **Admin → Sozlamalar → Rollar → Qo‘shish.** Masalan, `parking` nomli rol oching va matritsaning “Boshqa” qismidan
-   faqat **Parking API** ni belgilang. Boshqa ruxsat bermang: bu foydalanuvchi panelda hech narsa ko‘rmasligi kerak.
+1. **Admin → Sozlamalar → Rollar → Qo‘shish.** Masalan, `parking` nomli rol oching va matritsaning “Tashqi API”
+   qismidan faqat **Parking API** ni belgilang. Boshqa ruxsat bermang: bu foydalanuvchi panelda hech narsa
+   ko‘rmasligi kerak.
+
+   **Bu ruxsatni bo‘lim rollariga bermang.** U bo‘lim cheklovisiz ishlaydi: rol egasi o‘z paroli bilan hamma
+   bo‘limlar xodimlarini JSHSHIR bilan oladi. Shuning uchun rol formasidagi “Hammasini belgilash” uni belgilamaydi.
 2. **Admin → Sozlamalar → Foydalanuvchilar → Qo‘shish.** Masalan, `parking@...` emaili va uzun tasodifiy parol
    bilan foydalanuvchi yarating va unga `parking` rolini bering. Forma bo‘limni talab qiladi — istalganini tanlang,
    ro‘yxatga ta’sir qilmaydi.
@@ -55,16 +59,21 @@ so‘rovdayoq 401 yoki 403 qaytadi.
 
 | HTTP | `error.code` | Qachon |
 |---|---|---|
-| 401 | `UNAUTHORIZED` | Basic sarlavha yo‘q, email yoki parol noto‘g‘ri. Javobda `WWW-Authenticate: Basic` |
+| 401 | `UNAUTHORIZED` | Basic sarlavha yo‘q yoki email/parol noto‘g‘ri. Javobda `WWW-Authenticate: Basic` |
 | 403 | `FORBIDDEN` | Email va parol to‘g‘ri, lekin rolida `Parking API` ruxsati yo‘q |
-| 429 | `TOO_MANY_ATTEMPTS` | Bir IP va email dan bir daqiqada 5 ta xato urinish. `Retry-After` sarlavhasida necha soniya kutish kerakligi |
+| 429 | `TOO_MANY_ATTEMPTS` | Bir daqiqada bir IP va email dan 5 ta yoki bir IP dan istalgan emaillar bilan 20 ta xato urinish. `Retry-After` sarlavhasida necha soniya kutish kerakligi |
 | 422 | — | `limit` 1..1000 oralig‘ida emas, `page` 1 dan kichik yoki `search` 100 belgidan uzun |
 
-- 429 holatida to‘g‘ri parol ham qabul qilinmaydi: cheklov paroldan oldin tekshiriladi. Muvaffaqiyatli kirish xato
-  hisobini tozalaydi.
+- 429 holatida to‘g‘ri parol ham qabul qilinmaydi: cheklov paroldan oldin tekshiriladi. Muvaffaqiyatli kirish shu
+  email hisobini tozalaydi, IP hisobi esa daqiqa o‘tib o‘zi tushadi.
+- Email katta-kichik harf va chetidagi bo‘shliqlardan qat’i nazar bitta hisobga tushadi.
+- Basic sarlavhasiz so‘rov xato urinish hisoblanmaydi va logga yozilmaydi: ko‘p HTTP klientlar parolni faqat 401
+  javobidan keyin yuboradi.
 - `Accept: application/json` yuborilmasa ham xatolar JSON bo‘lib qaytadi.
-- Rad etilgan so‘rov `storage/logs/laravel.log` ga `warning` bo‘lib yoziladi: email va IP, ruxsat bo‘lmaganda esa
-  `user_id`. Parol va `search` qiymati logga yozilmaydi.
+- Noto‘g‘ri parol yoki ruxsatsiz so‘rov `storage/logs/laravel.log` ga `warning` bo‘lib yoziladi: email va IP, ruxsat
+  bo‘lmaganda esa `user_id`. Parol va `search` qiymati `laravel.log` ga yozilmaydi.
+- `search` so‘rov manzilida (`?search=...`) ketadi, shuning uchun JSHSHIR bo‘yicha qidiruv **veb-server
+  (nginx) access log**iga tushadi. Kerak bo‘lsa, shu manzil uchun access logni o‘chiring yoki qisqa saqlang.
 
 ## Xavfsizlik
 
