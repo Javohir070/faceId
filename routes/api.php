@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ParkingController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\LegacyApiController;
 use App\Http\Controllers\TelegramWebhookController;
@@ -31,4 +32,15 @@ Route::middleware('directory.api')->prefix('v1')->name('api.v1.')->group(functio
         ->name('department');
     Route::get('/groups', [DirectoryController::class, 'groups'])->name('groups');
     Route::get('/employees', [DirectoryController::class, 'employees'])->name('employees');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Parking tizimi
+|--------------------------------------------------------------------------
+| Xodimlar ro‘yxati (id, FISH, JSHSHIR). Faqat o‘qiydi; panel foydalanuvchisining
+| email va paroli (HTTP Basic) va `Parking API` ruxsati. Batafsil: docs/parking-api.md.
+*/
+Route::middleware('parking.api')->prefix('parking')->name('api.parking.')->group(function (): void {
+    Route::get('/employees', [ParkingController::class, 'employees'])->name('employees');
 });

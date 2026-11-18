@@ -207,6 +207,7 @@ return [
         'order' => 'tartib',
         'parent_id' => 'yuqori guruh',
         'password' => 'parol',
+        'page' => 'sahifa',
         'password_confirmation' => 'parol tasdig‘i',
         'period' => 'davr',
         'permissions' => 'ruxsatlar',
