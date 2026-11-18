@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             config('menu_permissions.home'),
             ...array_values(config('menu_permissions.resources')),
             ...array_merge(...array_map('array_values', array_values(config('menu_permissions.actions')))),
+            ...array_values(config('menu_permissions.api')),
             'Sozlamalar',
         ];
 

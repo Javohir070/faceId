@@ -37,6 +37,13 @@ return [
         'permissions' => ['create' => 'Ruxsatlarni qo‘shish', 'edit' => 'Ruxsatlarni tahrirlash', 'delete' => 'Ruxsatlarni o‘chirish'],
     ],
 
+    // Tashqi tizimlarning API ga kirish ruxsatlari — menyu emas. Panelda shu ruxsatli rol va foydalanuvchi yaratiladi,
+    // tizim o‘sha foydalanuvchining email va paroli bilan kiradi (docs/parking-api.md). Yangi kalit qo‘shilsa
+    // mavjud bazalar uchun migratsiya ham kerak (2026_11_18_100000_add_parking_api_permission).
+    'api' => [
+        'parking' => 'Parking API',
+    ],
+
     // `user` rolining standart huquqlari (DatabaseSeeder). O‘zgarsa mavjud bazalar uchun migratsiya ham kerak
     // (2026_11_02_120000_grant_default_user_role_permissions, 2026_11_03_100000_remove_extra_permissions_from_user_role,
     // 2026_11_04_100000_grant_event_pull_to_all_roles, 2026_11_12_100000_add_units_permission).
