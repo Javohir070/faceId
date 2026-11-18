@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\RoleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -41,6 +42,14 @@ class ParkingApiTest extends TestCase
 
         $this->assertTrue(Role::findByName('super-admin', 'web')->hasPermissionTo(self::RUXSAT));
         $this->assertFalse(Role::findByName('user', 'web')->hasPermissionTo(self::RUXSAT));
+    }
+
+    /** Administrator ruxsatni rol formasidan beradi — u matritsaning "Boshqa" guruhida turadi. */
+    public function test_ruxsat_rol_matritsasida_boshqa_guruhida_korinadi(): void
+    {
+        $boshqa = collect(app(RoleService::class)->permissionMatrix()['Boshqa'] ?? [])->pluck('name');
+
+        $this->assertContains(self::RUXSAT, $boshqa);
     }
 
     public function test_parolsiz_sorov_401(): void
