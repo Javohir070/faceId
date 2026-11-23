@@ -6,8 +6,8 @@ Boshqa tizimlar Biocontrol’ga xodim qo‘shadi, tahrirlaydi va o‘chiradi. Ad
 **foydalanuvchi** ochadi. Tizim o‘sha foydalanuvchi nomidan ishlaydi: xodim foydalanuvchining **bo‘limiga** tushadi va
 foydalanuvchiga biriktirilgan **terminallarga darhol yoziladi**.
 
-- **Maqsad emas:** ro‘yxat yoki o‘qish (buning uchun `/api/v1` va `/api/parking` bor), guruh yoki jadval yaratish,
-  boshqa bo‘lim xodimiga tegish.
+- **Maqsad emas:** guruh yoki jadval yaratish, boshqa bo‘lim xodimiga tegish. (Ro‘yxat dastlab maqsad emas edi —
+  2026-11-23 foydalanuvchi so‘rovi bilan qo‘shildi, pastdagi “GET” bo‘limi.)
 - **Anti-maqsad:** tizim boshqa bo‘lim xodimini o‘zgartira olishi yoki o‘chira olishi; foydalanuvchiga biriktirilmagan
   terminalga yozish; kirishsiz yoki ruxsatsiz ochiq qolish; xato javobsiz yashirin terminal xatosi.
 
@@ -99,3 +99,16 @@ bilmasdi. Xato javob bilan xodimni qoldirish bu holatni ko‘rinadigan qiladi.
 - Terminal natijasini `transferOne()` natijasidan javob shakliga o‘girish va xabar matnlari.
 - O‘chirishda hamma terminallarga yetish uchun `AssignedDevicesScope` ni chetlab o‘tish usuli.
 - Rol formasidagi “Tashqi API” ogohlantirish matnini ikkala API ga mos umumlashtirish.
+
+## Qo‘shimcha: xodimlar ro‘yxati (2026-11-23)
+
+Foydalanuvchi so‘rovi: “xodim list ham chiqar, shu bo‘limga tegishli”.
+
+**GET /api/integration/employees?search=&page=&limit=** — API foydalanuvchisi bo‘limining xodimlari
+(`BelongsToDepartmentScope` o‘z holicha). Kirish va 403 lar boshqa amallardagidek (bo‘limsiz, super-admin).
+Jadval sozlamasi talab qilinmaydi.
+
+- `search` — FISH yoki JSHSHIR ichidan (100 belgigacha); `limit` sukut 200, 1..1000; `page` sukut 1. Noto‘g‘ri — 422.
+- Javob 200: `{"ok": true, "count", "total", "page", "limit", "has_more", "employees": [...]}`; har xodim — POST javobidagi
+  `employee` bilan bir xil maydonlar. Tartib `id` bo‘yicha.
+- Sozlamalar parking API dan olingan (qidiruv + sahifalash) — Claude qarori, foydalanuvchi so‘ramagan maydonlar qo‘shilmadi.
