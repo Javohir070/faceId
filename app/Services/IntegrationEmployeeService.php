@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Rules\Base64Image;
 use App\Services\Hikvision\EmployeeSyncService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -23,10 +24,47 @@ use Illuminate\Http\UploadedFile;
  */
 class IntegrationEmployeeService
 {
+    public const LIMIT_DEFAULT = 200;
+
+    public const LIMIT_MAX = 1000;
+
     public function __construct(
         private readonly EmployeeService $employees,
         private readonly EmployeeSyncService $sync,
     ) {}
+
+    /**
+     * Foydalanuvchi bo'limi xodimlari (BelongsToDepartmentScope o'z holicha), `id` bo'yicha, sahifalab.
+     * `search` — FISH yoki JSHSHIR ichida.
+     *
+     * @return array{total: int, page: int, limit: int, has_more: bool, items: list<array<string, mixed>>}
+     */
+    public function list(?string $search = null, int $limit = self::LIMIT_DEFAULT, int $page = 1): array
+    {
+        $limit = max(1, min($limit, self::LIMIT_MAX));
+        $page = max(1, $page);
+        $search = trim((string) $search);
+
+        $query = Employee::query()
+            ->when($search !== '', fn (Builder $q) => $q->where(
+                fn (Builder $w) => $w->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('card', 'like', '%'.$search.'%'),
+            ))
+            ->orderBy('id');
+
+        $total = (clone $query)->toBase()->getCountForPagination();
+
+        return [
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'has_more' => $page * $limit < $total,
+            'items' => $query->forPage($page, $limit)->get()
+                ->map(fn (Employee $employee): array => $this->employeePayload($employee))
+                ->values()
+                ->all(),
+        ];
+    }
 
     /**
      * Sozlangan jadval — umumiy yoki foydalanuvchi bo'limiga tegishli bo'lsa. Aks holda `null` (API 503).

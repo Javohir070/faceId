@@ -564,6 +564,108 @@ class IntegrationEmployeeApiTest extends TestCase
         return $ochirilgan;
     }
 
+    /** Ro'yxat faqat API foydalanuvchisi bo'limidan; maydonlar POST javobidagi bilan bir xil. */
+    public function test_royxat_faqat_foydalanuvchi_bolimi_xodimlari(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+        Employee::factory()->create(['department_id' => Department::factory()->create()->id]);
+
+        $javob = $this->royxat($this->apiUser())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('page', 1)
+            ->assertJsonPath('limit', 200)
+            ->assertJsonPath('has_more', false);
+
+        $this->assertSame([
+            'id' => $xodim->id,
+            'jshshir' => '32610883420049',
+            'fish' => 'Aminov Sabur Muxtarovich',
+            'last_name' => 'Aminov',
+            'first_name' => 'Sabur',
+            'middle_name' => 'Muxtarovich',
+            'gender' => $xodim->gender,
+            'position' => $xodim->position,
+            'department_id' => $this->bolim->id,
+            'group_id' => null,
+            'valid_from' => '2026-12-01 00:00:00',
+            'valid_to' => '2027-12-01 23:59:59',
+        ], $javob->json('employees.0'));
+    }
+
+    public function test_royxatda_fish_va_jshshir_boyicha_qidiradi(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+        $this->mavjudXodim();
+        Employee::factory()->create(['name' => 'Karimova Dilnoza', 'card' => '42201995510012', 'department_id' => $this->bolim->id]);
+
+        $this->royxat($user, '?search=Dilnoza')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('employees.0.jshshir', '42201995510012');
+
+        $this->royxat($user, '?search=3261088')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('employees.0.fish', 'Aminov Sabur Muxtarovich');
+    }
+
+    public function test_royxat_sahifalanadi(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+        $xodimlar = Employee::factory()->count(3)->create(['department_id' => $this->bolim->id]);
+
+        $this->royxat($user, '?limit=2&page=1')
+            ->assertOk()
+            ->assertJsonPath('count', 2)
+            ->assertJsonPath('total', 3)
+            ->assertJsonPath('has_more', true)
+            ->assertJsonPath('employees.0.id', $xodimlar[0]->id);
+
+        $this->royxat($user, '?limit=2&page=2')
+            ->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('has_more', false)
+            ->assertJsonPath('employees.0.id', $xodimlar[2]->id);
+
+        $this->royxat($user, '?limit=1001')->assertUnprocessable()->assertJsonValidationErrors('limit');
+        $this->royxat($user, '?page=0')->assertUnprocessable()->assertJsonValidationErrors('page');
+    }
+
+    /** Ro'yxat uchun jadval sozlamasi kerak emas. */
+    public function test_royxat_jadval_sozlanmasa_ham_ishlaydi(): void
+    {
+        $this->terminalYozilmasin();
+        config(['integration_api.schedule_id' => null]);
+        $this->mavjudXodim();
+
+        $this->royxat($this->apiUser())->assertOk()->assertJsonPath('total', 1);
+    }
+
+    public function test_royxatni_bolimsiz_super_admin_va_ruxsatsiz_ola_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $this->mavjudXodim();
+
+        $this->royxat($this->apiUser(bolimId: null))->assertForbidden()->assertJsonPath('error.code', 'NO_DEPARTMENT');
+        $this->royxat($this->apiUser(ruxsatlar: ['Parking API']))->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $admin = $this->apiUser();
+        $admin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->royxat($admin)->assertForbidden()->assertJsonPath('error.code', 'SUPER_ADMIN');
+    }
+
+    private function royxat(User $user, string $query = ''): TestResponse
+    {
+        return $this->getJson(self::URL.$query, $this->basic($user));
+    }
+
     private function mavjudXodim(?Department $bolim = null): Employee
     {
         return Employee::factory()->create([

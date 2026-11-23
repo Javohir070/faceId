@@ -8,6 +8,7 @@ use App\Http\Requests\StoreIntegrationEmployeeRequest;
 use App\Http\Requests\UpdateIntegrationEmployeeRequest;
 use App\Services\IntegrationEmployeeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,6 +22,32 @@ class IntegrationEmployeeController extends Controller
     public function __construct(
         private readonly IntegrationEmployeeService $integration,
     ) {}
+
+    /** Foydalanuvchi bo'limi xodimlari. `search` — FISH yoki JSHSHIR ichida; sahifalanadi. */
+    public function index(Request $request): JsonResponse
+    {
+        $filtr = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:'.IntegrationEmployeeService::LIMIT_MAX],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $natija = $this->integration->list(
+            $filtr['search'] ?? null,
+            (int) ($filtr['limit'] ?? IntegrationEmployeeService::LIMIT_DEFAULT),
+            (int) ($filtr['page'] ?? 1),
+        );
+
+        return response()->json([
+            'ok' => true,
+            'count' => count($natija['items']),
+            'total' => $natija['total'],
+            'page' => $natija['page'],
+            'limit' => $natija['limit'],
+            'has_more' => $natija['has_more'],
+            'employees' => $natija['items'],
+        ]);
+    }
 
     /** Xodim qo'shish: bazaga, so'ng foydalanuvchining terminallariga. */
     public function store(StoreIntegrationEmployeeRequest $request): JsonResponse

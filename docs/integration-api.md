@@ -1,6 +1,6 @@
 # Integratsiya API (`/api/integration/employees`)
 
-Boshqa tizimlar shu API orqali Biocontrol’ga **xodim qo‘shadi, tahrirlaydi va o‘chiradi**. Har bir tizim panel
+Boshqa tizimlar shu API orqali o‘z bo‘limi **xodimlari ro‘yxatini oladi**, Biocontrol’ga **xodim qo‘shadi, tahrirlaydi va o‘chiradi**. Har bir tizim panel
 **foydalanuvchisi** nomidan ishlaydi:
 
 - xodim o‘sha foydalanuvchining **bo‘limiga** tushadi;
@@ -70,6 +70,28 @@ Javob **201**:
   (masalan bo‘sh `{}`).
 - Foydalanuvchiga terminal biriktirilmagan bo‘lsa `terminals: []`.
 
+## GET /api/integration/employees — ro‘yxat
+
+API foydalanuvchisi **bo‘limining** xodimlari (boshqa bo‘limlar ko‘rinmaydi), `id` bo‘yicha tartiblangan.
+`INTEGRATION_API_SCHEDULE_ID` talab qilinmaydi.
+
+| Parametr | Majburiy | Izoh |
+|---|---|---|
+| `search` | yo‘q | FISH yoki JSHSHIR ichidan qidiradi (`Aminov`, `32610883`). 100 belgigacha |
+| `limit` | yo‘q | Sukut 200, eng ko‘pi 1000 |
+| `page` | yo‘q | Sukut 1 |
+
+```json
+{"ok": true, "count": 1, "total": 87, "page": 1, "limit": 200, "has_more": false,
+ "employees": [{"id": 1501, "jshshir": "32610883420049", "fish": "Aminov Sabur Muxtarovich",
+                "last_name": "Aminov", "first_name": "Sabur", "middle_name": "Muxtarovich", "gender": 1,
+                "position": null, "department_id": 13, "group_id": null,
+                "valid_from": "2026-12-01 00:00:00", "valid_to": "2027-12-01 23:59:59"}]}
+```
+
+Har xodim maydonlari `POST` javobidagi `employee` bilan bir xil. Hammasini olish uchun `has_more` `false` bo‘lguncha
+`page` ni oshiring. Muddati tugagan xodimlar ham ro‘yxatda (`valid_to` ga qarang).
+
 ## PUT (yoki PATCH) /api/integration/employees/{jshshir} — tahrirlash
 
 Maydonlar `POST` dagidek, lekin **hammasi ixtiyoriy**: faqat yuborilganlari o‘zgaradi. `jshshir` o‘zgarmaydi. Ismning
@@ -108,7 +130,7 @@ eshikdan o‘taverardi. Terminal butunlay ishdan chiqqan bo‘lsa, xodimni panel
 | 403 | `NO_DEPARTMENT` | Foydalanuvchiga bo‘lim biriktirilmagan |
 | 403 | `SUPER_ADMIN` | Super-admin bilan kirilgan — tashqi tizim uchun alohida foydalanuvchi oching |
 | 404 | `NOT_FOUND` | Bu JSHSHIR li xodim yo‘q yoki boshqa bo‘limniki |
-| 422 | — | Tekshiruv xatosi (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
+| 422 | — | Tekshiruv xatosi, ro‘yxatda noto‘g‘ri `limit`/`page` ham (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
 | 429 | `TOO_MANY_ATTEMPTS` | Ko‘p xato parol ([parking-api.md](parking-api.md)) |
 | 502 | `TERMINAL_ERROR` | O‘chirishda terminal xatosi, xodim bazada qoldi |
 | 503 | `NOT_CONFIGURED` | `INTEGRATION_API_SCHEDULE_ID` yo‘q yoki foydalanuvchi bo‘limiga mos emas |
