@@ -10,6 +10,7 @@ use App\Jobs\Hikvision\SyncEmployeeJob;
 use App\Jobs\Hikvision\TransferEmployeesJob;
 use App\Models\Device;
 use App\Models\Employee;
+use App\Models\Scopes\AssignedDevicesScope;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -316,12 +317,16 @@ class EmployeeSyncService
     }
 
     /**
+     * Id’lar chaqiruvchida tekshirilgan (panelda VisibleDevice, integratsiya API da xodim yozilgan terminallar).
+     * AssignedDevicesScope ataylab olib tashlanadi: API foydalanuvchisi nomidan o‘chirishda unga biriktirilmagan
+     * terminal jim tushib qolsa, xodim o‘sha terminalda qolib, eshikdan o‘taverardi.
+     *
      * @param  list<int>  $deviceIds
      * @return array{success:int, failed:int, errors:list<array{ip:string, message:string}>}
      */
     public function removeFromDevices(Employee $employee, array $deviceIds): array
     {
-        $devices = Device::query()->whereIn('id', $deviceIds)->get();
+        $devices = Device::withoutGlobalScope(AssignedDevicesScope::class)->whereIn('id', $deviceIds)->get();
         $success = 0;
         $failed = 0;
         $errors = [];

@@ -120,6 +120,47 @@ class IntegrationEmployeeService
     }
 
     /**
+     * Xodimni u yozilgan **hamma** terminallardan (faqat foydalanuvchiniki emas — panel qoidasi kabi) so'rovning
+     * o'zida o'chiradi, keyin bazadan. Biror terminaldan o'chmasa xodim bazada qoladi (`deleted: false`) —
+     * navbatga qo'yilmaydi: serverda queue worker ishlamasa, o'chirilgan xodim terminalda qolib, o'taverardi.
+     *
+     * @return array{deleted: bool, terminals: list<array{id: int, name: string, status: string, message: string}>}
+     */
+    public function delete(Employee $employee): array
+    {
+        if (function_exists('set_time_limit')) {
+            set_time_limit(0);
+        }
+
+        $terminals = $employee->devices()
+            ->withoutGlobalScopes()
+            ->orderBy('devices.id')
+            ->get()
+            ->map(function (Device $device) use ($employee): array {
+                $natija = $this->sync->removeFromDevices($employee, [$device->id]);
+                $ochdi = $natija['success'] === 1;
+
+                return [
+                    'id' => $device->id,
+                    'name' => (string) $device->name,
+                    'status' => $ochdi ? 'success' : 'failed',
+                    'message' => $ochdi ? 'O‘chirildi' : ($natija['errors'][0]['message'] ?? 'Terminal xodimni o‘chirmadi'),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $hammasi = collect($terminals)->every(fn (array $terminal): bool => $terminal['status'] === 'success');
+
+        if ($hammasi) {
+            // Terminal bog'lanishlari yuqorida uzildi — EmployeeService navbatga hech narsa qo'ymaydi.
+            $this->employees->delete($employee);
+        }
+
+        return ['deleted' => $hammasi, 'terminals' => $terminals];
+    }
+
+    /**
      * Xodimni foydalanuvchiga biriktirilgan har bir terminalga yozadi (so'rovning o'zida).
      *
      * @return list<array{id: int, name: string, status: string, message: string}>

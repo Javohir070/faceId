@@ -10,9 +10,11 @@ use App\Models\Group;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Services\Hikvision\EmployeeSyncService;
+use App\Services\Hikvision\HikvisionUserService;
 use App\Services\RoleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Mockery\MockInterface;
 use Spatie\Permission\Models\Permission;
@@ -413,6 +415,117 @@ class IntegrationEmployeeApiTest extends TestCase
         $this->tahrirla($this->apiUser(bolimId: null), $xodim->card, ['last_name' => 'Buzildi'])
             ->assertForbidden()
             ->assertJsonPath('error.code', 'NO_DEPARTMENT');
+    }
+
+    /**
+     * Xodim u yozilgan hamma terminallardan o'chiriladi — API foydalanuvchisiga ko'rinmaydiganidan ham —
+     * keyin bazadan. Hammasi so'rovning o'zida: navbatga hech narsa tushmaydi.
+     */
+    public function test_xodim_hamma_terminallardan_va_bazadan_ochiriladi(): void
+    {
+        Queue::fake();
+        $user = $this->apiUser();
+        $oziniki = Device::factory()->create(['user_id' => $user->id, 'name' => 'Kirish 1']);
+        $begona = Device::factory()->create(['name' => 'Boshqa tizim']);
+        $xodim = $this->mavjudXodim();
+        $xodim->devices()->attach([$oziniki->id => ['synced_at' => now()], $begona->id => ['synced_at' => now()]]);
+        $ochirilgan = $this->terminaldanOchirish(fn (Device $device): bool => true);
+
+        $this->ochir($user, $xodim->card)
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('terminals', [
+                ['id' => $oziniki->id, 'name' => 'Kirish 1', 'status' => 'success', 'message' => 'O‘chirildi'],
+                ['id' => $begona->id, 'name' => 'Boshqa tizim', 'status' => 'success', 'message' => 'O‘chirildi'],
+            ]);
+
+        $this->assertSame([[$oziniki->id, '32610883420049'], [$begona->id, '32610883420049']], $ochirilgan->chaqiriqlar);
+        $this->assertModelMissing($xodim);
+        Queue::assertNothingPushed();
+    }
+
+    /** Terminaldan o'chmasa xodim bazada qoladi: aks holda u terminalda qolib, eshikdan o'taverardi. */
+    public function test_terminal_xatosida_xodim_qoladi_502(): void
+    {
+        Queue::fake();
+        $user = $this->apiUser();
+        $yaxshi = Device::factory()->create(['user_id' => $user->id]);
+        $yomon = Device::factory()->create(['user_id' => $user->id]);
+        $xodim = $this->mavjudXodim();
+        $xodim->devices()->attach([$yaxshi->id => ['synced_at' => now()], $yomon->id => ['synced_at' => now()]]);
+        $this->terminaldanOchirish(fn (Device $device): bool => $device->is($yaxshi));
+
+        $this->ochir($user, $xodim->card)
+            ->assertStatus(502)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('error.code', 'TERMINAL_ERROR')
+            ->assertJsonPath('terminals.0.status', 'success')
+            ->assertJsonPath('terminals.1.status', 'failed')
+            ->assertJsonPath('terminals.1.message', 'Terminal xodimni o‘chirmadi');
+
+        $this->assertModelExists($xodim);
+        $this->assertSame([$yomon->id], $xodim->devices()->withoutGlobalScopes()->pluck('devices.id')->all());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_terminalga_yozilmagan_xodim_ochiriladi(): void
+    {
+        $this->terminaldanOchirish(fn (): bool => throw new \LogicException('chaqirilmasligi kerak'));
+        $xodim = $this->mavjudXodim();
+
+        $this->ochir($this->apiUser(), $xodim->card)
+            ->assertOk()
+            ->assertJsonPath('terminals', []);
+
+        $this->assertModelMissing($xodim);
+    }
+
+    public function test_boshqa_bolim_xodimini_ochirib_bolmaydi_404(): void
+    {
+        $this->terminaldanOchirish(fn (): bool => throw new \LogicException('chaqirilmasligi kerak'));
+        $begona = $this->mavjudXodim(Department::factory()->create());
+
+        $this->ochir($this->apiUser(), $begona->card)
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+
+        $this->assertModelExists($begona);
+    }
+
+    public function test_bolimsiz_foydalanuvchi_ochira_olmaydi(): void
+    {
+        $xodim = $this->mavjudXodim();
+
+        $this->ochir($this->apiUser(bolimId: null), $xodim->card)
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'NO_DEPARTMENT');
+
+        $this->assertModelExists($xodim);
+    }
+
+    private function ochir(User $user, string $jshshir): TestResponse
+    {
+        return $this->deleteJson(self::URL.'/'.$jshshir, [], $this->basic($user));
+    }
+
+    /** Terminal darajasidagi `deleteUser` soxtalanadi; qaysi terminal va JSHSHIR bilan chaqirilgani yig'iladi. */
+    private function terminaldanOchirish(\Closure $natija): object
+    {
+        $ochirilgan = new class
+        {
+            /** @var list<array{0: int, 1: string}> */
+            public array $chaqiriqlar = [];
+        };
+
+        $this->partialMock(HikvisionUserService::class, fn (MockInterface $mock) => $mock
+            ->shouldReceive('deleteUser')
+            ->andReturnUsing(function (Device $device, string $jshshir) use ($ochirilgan, $natija): bool {
+                $ochirilgan->chaqiriqlar[] = [$device->id, $jshshir];
+
+                return $natija($device);
+            }));
+
+        return $ochirilgan;
     }
 
     private function mavjudXodim(?Department $bolim = null): Employee

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DestroyIntegrationEmployeeRequest;
 use App\Http\Requests\StoreIntegrationEmployeeRequest;
 use App\Http\Requests\UpdateIntegrationEmployeeRequest;
 use App\Services\IntegrationEmployeeService;
@@ -68,6 +69,36 @@ class IntegrationEmployeeController extends Controller
             'employee' => $this->integration->employeePayload($natija['employee']),
             'terminals' => $natija['terminals'],
         ]);
+    }
+
+    /** Xodimni hamma terminallardan, so'ng bazadan o'chirish. Terminal xatosida xodim qoladi — 502. */
+    public function destroy(DestroyIntegrationEmployeeRequest $request): JsonResponse
+    {
+        $xodim = $request->employee();
+        $natija = $this->integration->delete($xodim);
+
+        if (! $natija['deleted']) {
+            Log::warning('Integratsiya API: xodim terminaldan o‘chmadi, bazada qoldi', [
+                'user_id' => $request->user()->id,
+                'employee_id' => $xodim->id,
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'error' => [
+                    'code' => 'TERMINAL_ERROR',
+                    'message' => 'Xodim ba’zi terminallardan o‘chirilmadi va bazada qoldi. Keyinroq qayta urinib ko‘ring.',
+                ],
+                'terminals' => $natija['terminals'],
+            ], 502);
+        }
+
+        Log::info('Integratsiya API: xodim o‘chirildi', [
+            'user_id' => $request->user()->id,
+            'employee_id' => $xodim->id,
+        ]);
+
+        return response()->json(['ok' => true, 'terminals' => $natija['terminals']]);
     }
 
     private function xato(string $kod, string $xabar, int $status): JsonResponse
