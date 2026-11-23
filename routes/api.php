@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApiTokenController;
 use App\Http\Controllers\Api\IntegrationEmployeeController;
 use App\Http\Controllers\Api\ParkingController;
 use App\Http\Controllers\Api\V1\DirectoryController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\LegacyApiController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\EnsureApiUserHasDepartment;
+use App\Http\Middleware\ForceJsonAccept;
 use App\Http\Middleware\RestrictLegacyApiIps;
 use Illuminate\Support\Facades\Route;
 
@@ -67,3 +69,14 @@ Route::middleware(['api.user:integration', EnsureApiUserHasDepartment::class])
             ->where('jshshir', '[0-9]+')
             ->name('employees.destroy');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Tashqi API tokeni — parking va integratsiya uchun
+|--------------------------------------------------------------------------
+| Email + parol bilan 24 soatlik token olish, `Authorization: Bearer` bilan bekor qilish.
+| Batafsil: docs/api-auth.md.
+*/
+Route::middleware(ForceJsonAccept::class)->prefix('auth')->name('api.auth.')->group(function (): void {
+    Route::post('/token', [ApiTokenController::class, 'store'])->name('token.store');
+});
