@@ -310,9 +310,17 @@ class ApiTokenTest extends TestCase
         $this->assertSame('0 0 * * *', $vazifa->expression);
     }
 
+    /**
+     * Token olish so'rovi foydalanuvchini guard’da qoldiradi, test ilovasi esa so'rovlar orasida guard’ni tozalamaydi.
+     * Productionda Bearer so'rovi alohida so'rov — shuni takrorlash uchun guard tozalanadi, aks holda bo'lim/terminal
+     * cheklovi testlari `fromToken()` foydalanuvchini qo'ymasa ham o'tib ketardi.
+     */
     private function tokenFor(User $user): string
     {
-        return (string) $this->tokenOl($user)->assertCreated()->json('token');
+        $token = (string) $this->tokenOl($user)->assertCreated()->json('token');
+        $this->app['auth']->forgetGuards();
+
+        return $token;
     }
 
     /**
