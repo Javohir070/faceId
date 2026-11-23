@@ -3,9 +3,11 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -119,6 +121,142 @@ class ApiTokenTest extends TestCase
                 && ($kontekst['user_id'] ?? null) === $user->id
                 && ! str_contains(json_encode($kontekst), explode('|', $token)[1]))
             ->once();
+    }
+
+    public function test_token_bilan_parking_royxati(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        Employee::factory()->create();
+
+        $this->getJson('/api/parking/employees', $this->bearer($this->tokenFor($user)))
+            ->assertOk()
+            ->assertJsonPath('total', 1);
+    }
+
+    /** Bearer bilan ham bo'lim cheklovi o'z holicha ishlaydi. */
+    public function test_token_bilan_integratsiya_royxati_bolim_cheklovi_bilan(): void
+    {
+        $bolim = Department::factory()->create();
+        $user = $this->apiUser(['Integratsiya API'], $bolim->id);
+        $ozimniki = Employee::factory()->create(['department_id' => $bolim->id]);
+        Employee::factory()->create();
+
+        $this->getJson('/api/integration/employees', $this->bearer($this->tokenFor($user)))
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('employees.0.id', $ozimniki->id);
+    }
+
+    public function test_super_admin_tokeni_integratsiyada_403(): void
+    {
+        $admin = $this->apiUser(['Integratsiya API']);
+        $admin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->getJson('/api/integration/employees', $this->bearer($this->tokenFor($admin)))
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'SUPER_ADMIN');
+    }
+
+    public function test_notogri_token_401(): void
+    {
+        $this->getJson('/api/parking/employees', $this->bearer('99|notogri-token'))
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'UNAUTHORIZED')
+            ->assertHeader('WWW-Authenticate', 'Bearer realm="Biocontrol API"');
+    }
+
+    public function test_muddati_otgan_token_401(): void
+    {
+        $token = $this->tokenFor($this->apiUser(['Parking API']));
+
+        Carbon::setTestNow('2026-11-24 09:59:59');
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertOk();
+
+        Carbon::setTestNow('2026-11-24 10:00:01');
+        $this->getJson('/api/parking/employees', $this->bearer($token))
+            ->assertUnauthorized()
+            ->assertHeader('WWW-Authenticate', 'Bearer realm="Biocontrol API"');
+    }
+
+    public function test_egasi_ochgan_token_401(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $token = $this->tokenFor($user);
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertOk();
+
+        // Model hodisalarisiz o'chirish: token jadvalda qoladi, lekin egasi yo'q.
+        User::query()->whereKey($user->id)->delete();
+
+        $this->getJson('/api/parking/employees', $this->bearer($token))
+            ->assertUnauthorized()
+            ->assertHeader('WWW-Authenticate', 'Bearer realm="Biocontrol API"');
+    }
+
+    /** Ruxsat har so'rovda tekshiriladi: roldan olinsa token qoladi, lekin ishlamaydi. */
+    public function test_ruxsat_olinsa_token_403(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $token = $this->tokenFor($user);
+        $user->revokePermissionTo('Parking API');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->getJson('/api/parking/employees', $this->bearer($token))
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'FORBIDDEN');
+    }
+
+    public function test_bearer_sessiyaga_yozilmaydi(): void
+    {
+        $token = $this->tokenFor($this->apiUser(['Parking API']));
+
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertOk();
+
+        $this->assertFalse(session()->has(Auth::guard('web')->getName()));
+    }
+
+    public function test_last_used_at_yangilanadi(): void
+    {
+        $token = $this->tokenFor($this->apiUser(['Parking API']));
+        Carbon::setTestNow('2026-11-23 12:30:00');
+
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertOk();
+
+        $this->assertSame('2026-11-23 12:30:00', PersonalAccessToken::findToken($token)->last_used_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_token_bekor_qilinadi(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $token = $this->tokenFor($user);
+        $boshqasi = $this->tokenFor($user);
+
+        $this->deleteJson(self::URL, [], $this->bearer($token))
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertNull(PersonalAccessToken::findToken($token));
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertUnauthorized();
+        $this->getJson('/api/parking/employees', $this->bearer($boshqasi))->assertOk();
+    }
+
+    public function test_tokensiz_yoki_notogri_token_bilan_bekor_qilish_401(): void
+    {
+        $this->deleteJson(self::URL)->assertUnauthorized()->assertJsonPath('error.code', 'UNAUTHORIZED');
+        $this->deleteJson(self::URL, [], $this->bearer('1|yoq'))->assertUnauthorized();
+    }
+
+    private function tokenFor(User $user): string
+    {
+        return (string) $this->tokenOl($user)->assertCreated()->json('token');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function bearer(string $token): array
+    {
+        return ['Authorization' => 'Bearer '.$token];
     }
 
     /**

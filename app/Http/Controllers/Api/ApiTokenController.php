@@ -7,7 +7,9 @@ use App\Http\Requests\IssueApiTokenRequest;
 use App\Models\User;
 use App\Services\ApiUserLogin;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Tashqi API tokeni: email + parol bilan olish va bekor qilish. Batafsil: docs/api-auth.md.
@@ -48,6 +50,23 @@ class ApiTokenController extends Controller
             'token_type' => 'Bearer',
             'expires_at' => $muddat->format('Y-m-d H:i:s'),
         ], 201);
+    }
+
+    /** `Authorization: Bearer` dagi tokenni bekor qilish (foydalanuvchining boshqa tokenlari qoladi). */
+    public function destroy(Request $request): JsonResponse
+    {
+        $matn = (string) $request->bearerToken();
+        $token = $matn !== '' ? PersonalAccessToken::findToken($matn) : null;
+
+        if ($token === null) {
+            return ApiUserLogin::bearerChallenge('Token yuborilmagan yoki noto‘g‘ri.');
+        }
+
+        $token->delete();
+
+        Log::info('Tashqi API: token bekor qilindi', ['user_id' => $token->tokenable_id, 'token_id' => $token->id]);
+
+        return response()->json(['ok' => true]);
     }
 
     private function hasApiPermission(User $user): bool

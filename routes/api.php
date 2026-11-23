@@ -79,4 +79,5 @@ Route::middleware(['api.user:integration', EnsureApiUserHasDepartment::class])
 */
 Route::middleware(ForceJsonAccept::class)->prefix('auth')->name('api.auth.')->group(function (): void {
     Route::post('/token', [ApiTokenController::class, 'store'])->name('token.store');
+    Route::delete('/token', [ApiTokenController::class, 'destroy'])->name('token.destroy');
 });

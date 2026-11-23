@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Tashqi API larga panel foydalanuvchisi email + paroli bilan kirish (docs/api-auth.md). Basic so'rovlar
@@ -73,6 +74,36 @@ class ApiUserLogin
 
         /** @var User */
         return $guard->user();
+    }
+
+    /**
+     * `Authorization: Bearer` dagi Sanctum tokeni egasi — token bor, muddati o'tmagan va egasi mavjud bo'lsa.
+     * Foydalanuvchi so'rov uchun guard’ga qo'yiladi (sessiyasiz, global scope’lar Basic’dagidek ishlaydi).
+     * Cheklov yo'q: token 40 belgilik tasodifiy, uni taxmin qilib bo'lmaydi.
+     */
+    public function fromToken(string $plainToken): ?User
+    {
+        $token = PersonalAccessToken::findToken($plainToken);
+
+        if ($token === null || ($token->expires_at !== null && $token->expires_at->lte(now()))) {
+            return null;
+        }
+
+        $user = $token->tokenable;
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $token->forceFill(['last_used_at' => now()])->save();
+        Auth::guard('web')->setUser($user->withAccessToken($token));
+
+        return $user;
+    }
+
+    public static function bearerChallenge(string $xabar): JsonResponse
+    {
+        return self::error('UNAUTHORIZED', $xabar, 401, ['WWW-Authenticate' => 'Bearer realm="Biocontrol API"']);
     }
 
     /** 401 va WWW-Authenticate: HTTP klientlar shu sarlavha bo'lsagina Basic ma'lumotini yuborishni biladi. */
