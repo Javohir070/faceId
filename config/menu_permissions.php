@@ -39,9 +39,11 @@ return [
 
     // Tashqi tizimlarning API ga kirish ruxsatlari — menyu emas. Panelda shu ruxsatli rol va foydalanuvchi yaratiladi,
     // tizim o‘sha foydalanuvchining email va paroli bilan kiradi (docs/parking-api.md). Yangi kalit qo‘shilsa
-    // mavjud bazalar uchun migratsiya ham kerak (2026_11_18_100000_add_parking_api_permission).
+    // mavjud bazalar uchun migratsiya ham kerak (2026_11_18_100000_add_parking_api_permission,
+    // 2026_11_23_100000_add_integration_api_permission). Kalit route dagi `api.user:<kalit>` bilan bir xil.
     'api' => [
         'parking' => 'Parking API',
+        'integration' => 'Integratsiya API',
     ],
 
     // `user` rolining standart huquqlari (DatabaseSeeder). O‘zgarsa mavjud bazalar uchun migratsiya ham kerak

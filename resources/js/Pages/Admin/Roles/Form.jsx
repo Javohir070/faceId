@@ -71,8 +71,9 @@ function PermissionMatrix({ groups, selected, onChange }) {
                             {rows.some((row) => row.api) && (
                                 <tr>
                                     <td colSpan={ACTIONS.length + 2} className="border-t border-line px-4 py-2 text-xs text-ink-muted">
-                                        Bo‘lim cheklovisiz ishlaydi: rol egasi API orqali hamma bo‘limlar xodimlarini JSHSHIR bilan oladi.
-                                        “Hammasini belgilash” bularni belgilamaydi — faqat tashqi tizim foydalanuvchisiga bering.
+                                        Tashqi tizimlar uchun: Parking API hamma bo‘limlar xodimlarini JSHSHIR bilan beradi, Integratsiya API
+                                        xodim qo‘shib terminallarga darhol yozadi. “Hammasini belgilash” bularni belgilamaydi — faqat tashqi
+                                        tizim foydalanuvchisiga bering.
                                     </td>
                                 </tr>
                             )}

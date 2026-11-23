@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\AuthenticateParkingApi;
+use App\Http\Middleware\AuthenticateApiUser;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\VerifyDirectoryApiAuth;
 use App\Http\Middleware\VerifyTelegramWebhookSecret;
@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'telegram.webhook' => VerifyTelegramWebhookSecret::class,
             'directory.api' => VerifyDirectoryApiAuth::class,
-            'parking.api' => AuthenticateParkingApi::class,
+            'api.user' => AuthenticateApiUser::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

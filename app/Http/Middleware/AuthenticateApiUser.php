@@ -13,14 +13,15 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Parking API ga kirish (docs/parking-api.md): panel foydalanuvchisining email va paroli HTTP Basic bilan
- * keladi, rolida `Parking API` ruxsati bo'lishi shart.
+ * Tashqi API larga panel foydalanuvchisi sifatida kirish: email va parol HTTP Basic bilan keladi, rolida
+ * `menu_permissions.api.<kalit>` ruxsati bo'lishi shart. Route da `api.user:parking` yoki `api.user:integration`
+ * (docs/parking-api.md, docs/integration-api.md).
  *
  * Tekshiruv sessiyasiz (`once`): foydalanuvchi faqat shu so'rov uchun tanilar, cookie ham, sessiya ham ochilmaydi.
  * Parol taxmin qilinmasligi uchun bir IP va email dan ketma-ket xatolar cheklanadi — cheklov paroldan oldin
  * tekshiriladi, aks holda to'g'ri parolni topish davom etaverardi.
  */
-class AuthenticateParkingApi
+class AuthenticateApiUser
 {
     /** Bir IP va email uchun daqiqasiga xato urinishlar. */
     private const MAX_ATTEMPTS = 5;
@@ -30,9 +31,9 @@ class AuthenticateParkingApi
 
     private const DECAY_SECONDS = 60;
 
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $ruxsatKaliti): Response
     {
-        // Parking tizimi Accept sarlavhasini yubormasa ham xatolar (masalan 422) redirect emas, JSON bo'lsin.
+        // Tashqi tizim Accept sarlavhasini yubormasa ham xatolar (masalan 422) redirect emas, JSON bo'lsin.
         $request->headers->set('Accept', 'application/json');
 
         $email = (string) $request->getUser();
@@ -47,8 +48,9 @@ class AuthenticateParkingApi
         $ip = ClientIp::from($request);
         // Kalit panel loginidagi kabi normallashtiriladi: MySQL (utf8mb4_unicode_ci) katta-kichik harf, oxirgi
         // bo'shliq va urg'uga qaramay o'sha foydalanuvchini topadi — har yozilish o'z hisobini olmasligi kerak.
-        $emailKaliti = 'parking-api|'.Str::transliterate(Str::lower(trim($email))).'|'.$ip;
-        $ipKaliti = 'parking-api-ip|'.$ip;
+        // Kalit ikkala API uchun umumiy: bitta foydalanuvchining paroli ikkalasida bir xil.
+        $emailKaliti = 'api-user|'.Str::transliterate(Str::lower(trim($email))).'|'.$ip;
+        $ipKaliti = 'api-user-ip|'.$ip;
 
         $bloklangan = array_filter([
             $emailKaliti => RateLimiter::tooManyAttempts($emailKaliti, self::MAX_ATTEMPTS),
@@ -73,7 +75,7 @@ class AuthenticateParkingApi
             RateLimiter::hit($ipKaliti, self::DECAY_SECONDS);
 
             // Parol logga yozilmaydi.
-            Log::warning('Parking API: email yoki parol noto‘g‘ri', ['email' => $email, 'ip' => $ip]);
+            Log::warning('Tashqi API: email yoki parol noto‘g‘ri', ['email' => $email, 'ip' => $ip, 'path' => $request->path()]);
 
             return $this->kirishKerak('Email yoki parol noto‘g‘ri.');
         }
@@ -84,10 +86,12 @@ class AuthenticateParkingApi
 
         $user = $guard->user();
 
-        if (! $user->can(config('menu_permissions.api.parking'))) {
-            Log::warning('Parking API: foydalanuvchida ruxsat yo‘q', ['user_id' => $user->id, 'ip' => $ip]);
+        $ruxsat = (string) config("menu_permissions.api.{$ruxsatKaliti}");
 
-            return $this->xato('FORBIDDEN', 'Bu foydalanuvchiga Parking API ruxsati berilmagan.', 403);
+        if ($ruxsat === '' || ! $user->can($ruxsat)) {
+            Log::warning('Tashqi API: foydalanuvchida ruxsat yo‘q', ['user_id' => $user->id, 'ip' => $ip, 'path' => $request->path()]);
+
+            return $this->xato('FORBIDDEN', "Bu foydalanuvchiga “{$ruxsat}” ruxsati berilmagan.", 403);
         }
 
         return $next($request);
@@ -97,7 +101,7 @@ class AuthenticateParkingApi
     private function kirishKerak(string $xabar): JsonResponse
     {
         return $this->xato('UNAUTHORIZED', $xabar, 401, [
-            'WWW-Authenticate' => 'Basic realm="Biocontrol Parking API", charset="UTF-8"',
+            'WWW-Authenticate' => 'Basic realm="Biocontrol API", charset="UTF-8"',
         ]);
     }
 
