@@ -304,6 +304,137 @@ class IntegrationEmployeeApiTest extends TestCase
             ->once();
     }
 
+    public function test_xodim_tahrirlanadi_va_qayta_yoziladi(): void
+    {
+        $user = $this->apiUser();
+        $terminal = Device::factory()->create(['user_id' => $user->id]);
+        $xodim = $this->mavjudXodim();
+        $yozilgan = $this->terminalNatijasi('success', 'OK');
+
+        $this->tahrirla($user, $xodim->card, ['valid_to' => '2028-06-30 23:59:59'])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('employee.valid_to', '2028-06-30 23:59:59')
+            ->assertJsonPath('employee.fish', 'Aminov Sabur Muxtarovich')
+            ->assertJsonPath('terminals.0.id', $terminal->id);
+
+        $xodim->refresh();
+        $this->assertSame('2028-06-30 23:59:59', $xodim->valid_to_dt->format('Y-m-d H:i:s'));
+        $this->assertSame('Aminov Sabur Muxtarovich', $xodim->name);
+        $this->assertSame('2026-12-01 00:00:00', $xodim->valid_from_dt->format('Y-m-d H:i:s'));
+        $this->assertSame([$terminal->id], $yozilgan->deviceIds);
+    }
+
+    /** Ismning bitta qismi berilsa, qolganlari saqlanadi va to'liq ism qayta yig'iladi. */
+    public function test_familiya_ozgartirilsa_qolgan_qismlar_saqlanadi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+
+        $this->tahrirla($this->apiUser(), $xodim->card, ['last_name' => 'Karimov'])
+            ->assertOk()
+            ->assertJsonPath('employee.fish', 'Karimov Sabur Muxtarovich');
+
+        $this->assertSame('Karimov Sabur Muxtarovich', $xodim->fresh()->name);
+    }
+
+    public function test_yuz_rasmi_almashtiriladi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+        Face::query()->create(['employee_id' => $xodim->id, 'face' => 'eski-rasm']);
+
+        $this->tahrirla($this->apiUser(), $xodim->card, ['face' => self::FACE])->assertOk();
+
+        $this->assertSame(self::FACE, Face::query()->where('employee_id', $xodim->id)->value('face'));
+    }
+
+    public function test_patch_ham_ishlaydi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+
+        $this->patchJson(self::URL.'/'.$xodim->card, ['position' => 'Bosh muhandis'], $this->basic($this->apiUser()))
+            ->assertOk()
+            ->assertJsonPath('employee.position', 'Bosh muhandis');
+    }
+
+    public function test_boshqa_bolim_xodimini_tahrirlab_bolmaydi_404(): void
+    {
+        $this->terminalYozilmasin();
+        $begona = $this->mavjudXodim(Department::factory()->create());
+
+        $this->tahrirla($this->apiUser(), $begona->card, ['last_name' => 'Buzildi'])
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+
+        $this->assertSame('Aminov', $begona->fresh()->last_name);
+    }
+
+    /** Topilmasa 404 — yuborilgan ma'lumot noto'g'ri bo'lsa ham, 422 emas. */
+    public function test_yoq_jshshir_404(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->tahrirla($this->apiUser(), '99999999999999', ['gender' => 7])
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+    }
+
+    public function test_valid_to_mavjud_valid_fromdan_oldin_422(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+
+        $this->tahrirla($this->apiUser(), $xodim->card, ['valid_to' => '2026-01-01 00:00:00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('valid_to');
+    }
+
+    public function test_tahrirda_buzuq_qiymatlar_422(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+        $user = $this->apiUser();
+        $begonaGuruh = Group::factory()->create(['department_id' => Department::factory()->create()->id]);
+
+        foreach ([['last_name' => ''], ['gender' => 3], ['face' => 'buzuq!!'], ['group_id' => $begonaGuruh->id]] as $payload) {
+            $this->tahrirla($user, $xodim->card, $payload)->assertUnprocessable();
+        }
+
+        $this->assertSame('Aminov Sabur Muxtarovich', $xodim->fresh()->name);
+    }
+
+    public function test_bolimsiz_foydalanuvchi_tahrirlay_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+
+        $this->tahrirla($this->apiUser(bolimId: null), $xodim->card, ['last_name' => 'Buzildi'])
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'NO_DEPARTMENT');
+    }
+
+    private function mavjudXodim(?Department $bolim = null): Employee
+    {
+        return Employee::factory()->create([
+            'name' => 'Aminov Sabur Muxtarovich',
+            'card' => '32610883420049',
+            'department_id' => ($bolim ?? $this->bolim)->id,
+            'schedule_id' => $this->jadval->id,
+            'valid_from_dt' => '2026-12-01 00:00:00',
+            'valid_to_dt' => '2027-12-01 23:59:59',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function tahrirla(User $user, string $jshshir, array $payload): TestResponse
+    {
+        return $this->putJson(self::URL.'/'.$jshshir, $payload, $this->basic($user));
+    }
+
     private function apiUser(?int $bolimId = -1, array $ruxsatlar = [self::RUXSAT]): User
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

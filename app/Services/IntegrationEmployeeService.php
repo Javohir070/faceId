@@ -78,6 +78,48 @@ class IntegrationEmployeeService
     }
 
     /**
+     * Faqat yuborilgan maydonlar o'zgaradi. Ismning berilmagan qismlari bazadagidek qoladi — to'liq ism
+     * EmployeeService da qismlardan qayta yig'iladi. Keyin xodim terminallarga qayta yoziladi.
+     *
+     * @param  array<string, mixed>  $data  UpdateIntegrationEmployeeRequest::validated()
+     * @return array{employee: Employee, terminals: list<array{id: int, name: string, status: string, message: string}>}
+     */
+    public function update(Employee $employee, array $data): array
+    {
+        $yangi = [
+            'last_name' => array_key_exists('last_name', $data) ? $data['last_name'] : $employee->last_name,
+            'first_name' => array_key_exists('first_name', $data) ? $data['first_name'] : $employee->first_name,
+            'middle_name' => array_key_exists('middle_name', $data) ? $data['middle_name'] : $employee->middle_name,
+        ];
+
+        foreach (['gender', 'position', 'group_id'] as $maydon) {
+            if (array_key_exists($maydon, $data)) {
+                $yangi[$maydon] = $data[$maydon];
+            }
+        }
+
+        if (array_key_exists('valid_from', $data)) {
+            $yangi['valid_from_dt'] = $this->sana($data['valid_from']);
+        }
+
+        if (array_key_exists('valid_to', $data)) {
+            $yangi['valid_to_dt'] = $this->sana($data['valid_to']);
+        }
+
+        $rasm = isset($data['face']) ? $this->rasmFayli((string) $data['face']) : null;
+
+        try {
+            $employee = $this->employees->update($employee, [...$yangi, ...($rasm ? ['face' => $rasm] : [])]);
+        } finally {
+            if ($rasm !== null) {
+                @unlink($rasm->getPathname());
+            }
+        }
+
+        return ['employee' => $employee, 'terminals' => $this->pushToTerminals($employee)];
+    }
+
+    /**
      * Xodimni foydalanuvchiga biriktirilgan har bir terminalga yozadi (so'rovning o'zida).
      *
      * @return list<array{id: int, name: string, status: string, message: string}>
