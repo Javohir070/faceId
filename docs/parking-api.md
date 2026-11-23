@@ -13,7 +13,7 @@ Raqamli Idora uchun ochilgan `/api/v1/...` dan ([directory-api.md](directory-api
 - **Himoya:** HTTP Basic — panel foydalanuvchisining **email** va **paroli**, rolida `Parking API` ruxsati bilan
 - **Javob:** `{"ok": true, ...}`; xatoda `{"ok": false, "error": {"code": ..., "message": ...}}` yoki Laravel’ning 422 tekshiruv xatosi
 - **Kod:** `App\Http\Controllers\Api\ParkingController` → `App\Services\ParkingApiService`, himoya
-  `App\Http\Middleware\AuthenticateParkingApi` (`parking.api`)
+  `App\Http\Middleware\AuthenticateApiUser` (`api.user:parking`, [integratsiya API](integration-api.md) bilan umumiy)
 
 ## Sozlash (panelda)
 
