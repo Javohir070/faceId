@@ -10,8 +10,9 @@ Bu “xodim terminalga faqat Sinxronizatsiya orqali boradi” qoidasidan ataylab
 `/api/legacy`). Terminallar boshqa tizimlar bilan umumiy: API foydalanuvchisiga faqat kerakli terminallarni
 biriktiring.
 
-- **Himoya:** HTTP Basic — panel foydalanuvchisining **email** va **paroli**, rolida `Integratsiya API` ruxsati.
-  Kirish, xato urinish cheklovi va xatolar parking API bilan bir xil ([parking-api.md](parking-api.md)).
+- **Himoya:** panel foydalanuvchisi, rolida `Integratsiya API` ruxsati — `Authorization: Bearer <token>`
+  (`POST /api/auth/token`) yoki HTTP Basic email + parol. Token olish, cheklov va kirish xatolari:
+  [api-auth.md](api-auth.md).
 - **Kod:** `App\Http\Controllers\Api\IntegrationEmployeeController` → `App\Services\IntegrationEmployeeService` →
   `EmployeeService` (baza) va `EmployeeSyncService` (terminal); himoya `api.user:integration`
   (`App\Http\Middleware\AuthenticateApiUser`) va `EnsureApiUserHasDepartment`.
@@ -131,7 +132,7 @@ eshikdan o‘taverardi. Terminal butunlay ishdan chiqqan bo‘lsa, xodimni panel
 | 403 | `SUPER_ADMIN` | Super-admin bilan kirilgan — tashqi tizim uchun alohida foydalanuvchi oching |
 | 404 | `NOT_FOUND` | Bu JSHSHIR li xodim yo‘q yoki boshqa bo‘limniki |
 | 422 | — | Tekshiruv xatosi, ro‘yxatda noto‘g‘ri `limit`/`page` ham (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
-| 429 | `TOO_MANY_ATTEMPTS` | Ko‘p xato parol ([parking-api.md](parking-api.md)) |
+| 429 | `TOO_MANY_ATTEMPTS` | Ko‘p xato parol ([api-auth.md](api-auth.md)) |
 | 502 | `TERMINAL_ERROR` | O‘chirishda terminal xatosi, xodim bazada qoldi |
 | 503 | `NOT_CONFIGURED` | `INTEGRATION_API_SCHEDULE_ID` yo‘q yoki foydalanuvchi bo‘limiga mos emas |
 

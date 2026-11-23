@@ -122,6 +122,12 @@ The fourth is the **integration API**, `GET|POST /api/integration/employees` and
 - Delete removes the employee from every linked device through `EmployeeSyncService::removeFromLinkedDevices()`, which drops `AssignedDevicesScope` but only for the employee's own `device_employee` links. `removeFromDevices()` serves panel picks and stays scoped, and `RemoveEmployeeDevicesRequest` validates with `VisibleDevice`: unscoping it once let a forged id delete from a foreign terminal. If any device fails, the employee stays in the database and the API returns 502: nothing is queued, because the server has no queue worker and a deleted person would keep passing the gate.
 - The schedule comes from `INTEGRATION_API_SCHEDULE_ID` (`config/integration_api.php`; 503 if missing or not general / the user's department), and the face arrives as base64 (`App\Rules\Base64Image`).
 
+Both panel-user APIs (parking and integration) also accept a **Sanctum token** ([docs/api-auth.md](docs/api-auth.md)).
+- `POST /api/auth/token` (email + password) issues a token valid for `API_TOKEN_TTL_MINUTES` (default 24 h), and only to a user holding at least one `menu_permissions.api` permission. `DELETE /api/auth/token` revokes the token it is called with.
+- `AuthenticateApiUser` takes `Authorization: Bearer` first and falls back to Basic. `App\Services\ApiUserLogin` holds the password check, the shared limiter (token issue and Basic count against the same buckets) and the token lookup (expiry, owner, `last_used_at`, `Auth::guard('web')->setUser()`). The permission is still checked on every request.
+- `User::booted()` deletes a user's tokens when the password changes or the user is deleted. `sanctum:prune-expired --hours=24` runs daily.
+- The `auth:sanctum` guard is not used.
+
 Sync, transfer, device Clear and "remove from device" run **synchronously in the request** (`set_time_limit(0)`) and report counts back in the flash. The Sinxronizatsiya page calls `POST /admin/sync/transfer-one` once per employee × device pair from a progress modal — the one place JSX uses raw `fetch`. Only `EmployeeService::delete()` and face removal in `update()` go through the queue (`RemoveHikvisionUsersJob`, `RemoveHikvisionFacesJob`); the other jobs in `app/Jobs/Hikvision/` and the `queue*` helpers on `EmployeeSyncService` are currently unused.
 
 Events arrive through **three independent channels**, all converging on `ReportService`:
