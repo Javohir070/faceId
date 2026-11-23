@@ -2,20 +2,54 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Department;
+use App\Models\Device;
+use App\Models\Employee;
+use App\Models\Face;
+use App\Models\Group;
+use App\Models\Schedule;
+use App\Models\User;
+use App\Services\Hikvision\EmployeeSyncService;
 use App\Services\RoleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Testing\TestResponse;
+use Mockery\MockInterface;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
  * Integratsiya API (docs/integration-api.md): tashqi tizim panel foydalanuvchisi
  * nomidan o'z bo'limiga xodim qo'shadi, tahrirlaydi va o'chiradi.
+ *
+ * Terminal chaqiriqlari doim mock qilinadi — haqiqiy terminalga hech narsa yozilmaydi.
  */
 class IntegrationEmployeeApiTest extends TestCase
 {
     use RefreshDatabase;
 
     private const RUXSAT = 'Integratsiya API';
+
+    private const PAROL = 'integratsiya-parol';
+
+    private const URL = '/api/integration/employees';
+
+    private const FACE = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+    private Department $bolim;
+
+    private Schedule $jadval;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->bolim = Department::factory()->create();
+        $this->jadval = Schedule::factory()->create(['department_id' => null]);
+        config(['integration_api.schedule_id' => $this->jadval->id]);
+    }
 
     public function test_integratsiya_ruxsati_migratsiyada_yaratiladi(): void
     {
@@ -31,5 +65,317 @@ class IntegrationEmployeeApiTest extends TestCase
 
         $this->assertNotNull($qator);
         $this->assertTrue($qator['api']);
+    }
+
+    public function test_parking_ruxsati_integratsiyaga_kirita_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser(ruxsatlar: ['Parking API']);
+
+        $this->qosh($user)
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_xodim_qoshiladi_va_foydalanuvchi_terminallariga_yoziladi(): void
+    {
+        $user = $this->apiUser();
+        $oziniki = Device::factory()->create(['user_id' => $user->id, 'name' => 'Kirish 1']);
+        $biriktirilgan = Device::factory()->create(['name' => 'Chiqish 1']);
+        $user->assignedDevices()->attach($biriktirilgan->id);
+        $begona = Device::factory()->create();
+        $yozilgan = $this->terminalNatijasi('success', 'OK');
+
+        $javob = $this->qosh($user, ['middle_name' => 'Muxtarovich', 'position' => 'Muhandis'])
+            ->assertCreated()
+            ->assertJsonPath('ok', true);
+
+        $xodim = Employee::withoutGlobalScopes()->where('card', '32610883420049')->firstOrFail();
+
+        $this->assertSame('Aminov Sabur Muxtarovich', $xodim->name);
+        $this->assertSame($this->bolim->id, $xodim->department_id);
+        $this->assertSame($this->jadval->id, $xodim->schedule_id);
+        $this->assertSame(1, $xodim->gender);
+        $this->assertSame('2026-12-01 00:00:00', $xodim->valid_from_dt->format('Y-m-d H:i:s'));
+        $this->assertSame('2027-12-01 23:59:59', $xodim->valid_to_dt->format('Y-m-d H:i:s'));
+        $this->assertSame(self::FACE, Face::query()->where('employee_id', $xodim->id)->value('face'));
+
+        $this->assertSame([$oziniki->id, $biriktirilgan->id], $yozilgan->deviceIds);
+        $this->assertNotContains($begona->id, $yozilgan->deviceIds);
+
+        $this->assertSame([
+            'id' => $xodim->id,
+            'jshshir' => '32610883420049',
+            'fish' => 'Aminov Sabur Muxtarovich',
+            'last_name' => 'Aminov',
+            'first_name' => 'Sabur',
+            'middle_name' => 'Muxtarovich',
+            'gender' => 1,
+            'position' => 'Muhandis',
+            'department_id' => $this->bolim->id,
+            'group_id' => null,
+            'valid_from' => '2026-12-01 00:00:00',
+            'valid_to' => '2027-12-01 23:59:59',
+        ], $javob->json('employee'));
+
+        $this->assertSame([
+            ['id' => $oziniki->id, 'name' => 'Kirish 1', 'status' => 'success', 'message' => 'OK'],
+            ['id' => $biriktirilgan->id, 'name' => 'Chiqish 1', 'status' => 'success', 'message' => 'OK'],
+        ], $javob->json('terminals'));
+    }
+
+    public function test_guruh_bilan_qoshiladi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $guruh = Group::factory()->create(['department_id' => $this->bolim->id]);
+
+        $this->qosh($this->apiUser(), ['group_id' => $guruh->id])
+            ->assertCreated()
+            ->assertJsonPath('employee.group_id', $guruh->id);
+    }
+
+    /** Terminal xatosi xodimni bekor qilmaydi — tizim PUT bilan qayta yuboradi. */
+    public function test_terminal_xatosi_xodimni_bekor_qilmaydi(): void
+    {
+        $user = $this->apiUser();
+        Device::factory()->create(['user_id' => $user->id]);
+        $this->terminalNatijasi('failed', 'Terminal bilan aloqa uzildi');
+
+        $this->qosh($user)
+            ->assertCreated()
+            ->assertJsonPath('terminals.0.status', 'failed')
+            ->assertJsonPath('terminals.0.message', 'Terminal bilan aloqa uzildi');
+
+        $this->assertTrue(Employee::withoutGlobalScopes()->where('card', '32610883420049')->exists());
+    }
+
+    public function test_oflayn_terminal_xabari_ozbekcha(): void
+    {
+        $user = $this->apiUser();
+        Device::factory()->create(['user_id' => $user->id]);
+        $this->terminalNatijasi('skipped', 'device disconnected');
+
+        $this->qosh($user)
+            ->assertCreated()
+            ->assertJsonPath('terminals.0.status', 'skipped')
+            ->assertJsonPath('terminals.0.message', 'Terminal oflayn');
+    }
+
+    public function test_terminali_yoq_foydalanuvchi(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->qosh($this->apiUser())
+            ->assertCreated()
+            ->assertJsonPath('terminals', []);
+    }
+
+    public function test_bolimsiz_foydalanuvchi_403(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->qosh($this->apiUser(bolimId: null))
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'NO_DEPARTMENT');
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_jadval_sozlanmagan_503(): void
+    {
+        $this->terminalYozilmasin();
+        config(['integration_api.schedule_id' => null]);
+
+        $this->qosh($this->apiUser())
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'NOT_CONFIGURED');
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_boshqa_bolim_jadvali_503(): void
+    {
+        $this->terminalYozilmasin();
+        $begona = Schedule::factory()->create(['department_id' => Department::factory()->create()->id]);
+        config(['integration_api.schedule_id' => $begona->id]);
+
+        $this->qosh($this->apiUser())
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'NOT_CONFIGURED');
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_majburiy_maydonlar_422(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+
+        foreach (['last_name', 'first_name', 'jshshir', 'gender', 'valid_from', 'valid_to', 'face'] as $maydon) {
+            $payload = $this->payload();
+            unset($payload[$maydon]);
+
+            $this->postJson(self::URL, $payload, $this->basic($user))
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors($maydon);
+        }
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_jshshir_14_raqam_bolishi_kerak(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->qosh($this->apiUser(), ['jshshir' => '1234'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('jshshir');
+    }
+
+    /** JSHSHIR butun bazada yagona — boshqa bo'limdagi xodimda bo'lsa ham. */
+    public function test_mavjud_jshshir_422(): void
+    {
+        $this->terminalYozilmasin();
+        Employee::factory()->create(['card' => '32610883420049', 'department_id' => Department::factory()->create()->id]);
+
+        $this->qosh($this->apiUser())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('jshshir');
+    }
+
+    public function test_boshqa_bolim_guruhi_422(): void
+    {
+        $this->terminalYozilmasin();
+        $guruh = Group::factory()->create(['department_id' => Department::factory()->create()->id]);
+
+        $this->qosh($this->apiUser(), ['group_id' => $guruh->id])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('group_id');
+    }
+
+    public function test_valid_to_valid_fromdan_oldin_bolmaydi(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->qosh($this->apiUser(), ['valid_from' => '2027-01-01', 'valid_to' => '2026-01-01'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('valid_to');
+    }
+
+    public function test_buzuq_rasm_422(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+        $katta = base64_encode(base64_decode(self::FACE).str_repeat("\0", 1024 * 1024));
+
+        foreach (['bu-base64-emas!!', base64_encode('oddiy matn, rasm emas'), $katta] as $rasm) {
+            $this->qosh($user, ['face' => $rasm])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('face');
+        }
+
+        $this->assertSame(0, Employee::withoutGlobalScopes()->count());
+    }
+
+    public function test_data_url_prefiksi_qabul_qilinadi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+
+        $this->qosh($this->apiUser(), ['face' => 'data:image/png;base64,'.self::FACE])->assertCreated();
+
+        $xodim = Employee::withoutGlobalScopes()->where('card', '32610883420049')->firstOrFail();
+        $this->assertSame(self::FACE, Face::query()->where('employee_id', $xodim->id)->value('face'));
+    }
+
+    public function test_audit_logga_jshshirsiz_yoziladi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        Log::spy();
+        $user = $this->apiUser();
+
+        $this->qosh($user)->assertCreated();
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $xabar, array $kontekst = []): bool => str_contains($xabar, 'Integratsiya API')
+                && ($kontekst['user_id'] ?? null) === $user->id
+                && ! str_contains(json_encode($kontekst), '32610883420049'))
+            ->once();
+    }
+
+    private function apiUser(?int $bolimId = -1, array $ruxsatlar = [self::RUXSAT]): User
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $user = User::factory()->create([
+            'department_id' => $bolimId === -1 ? $this->bolim->id : $bolimId,
+            'password' => self::PAROL,
+        ]);
+        $user->assignRole(Role::findOrCreate('user', 'web'));
+        $user->givePermissionTo($ruxsatlar);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        return $user->fresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function payload(array $overrides = []): array
+    {
+        return [
+            'last_name' => 'Aminov',
+            'first_name' => 'Sabur',
+            'jshshir' => '32610883420049',
+            'gender' => 1,
+            'valid_from' => '2026-12-01 00:00:00',
+            'valid_to' => '2027-12-01 23:59:59',
+            'face' => self::FACE,
+            ...$overrides,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function qosh(User $user, array $overrides = []): TestResponse
+    {
+        return $this->postJson(self::URL, $this->payload($overrides), $this->basic($user));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function basic(User $user): array
+    {
+        return ['Authorization' => 'Basic '.base64_encode($user->email.':'.self::PAROL)];
+    }
+
+    /** `transferOne` shu natijani qaytaradi; qaysi terminallarga yozilgani `deviceIds` da yig'iladi. */
+    private function terminalNatijasi(string $status, string $message): object
+    {
+        $yozilgan = new class
+        {
+            /** @var list<int> */
+            public array $deviceIds = [];
+        };
+
+        $this->partialMock(EmployeeSyncService::class, fn (MockInterface $mock) => $mock
+            ->shouldReceive('transferOne')
+            ->andReturnUsing(function (Device $device) use ($yozilgan, $status, $message): array {
+                $yozilgan->deviceIds[] = $device->id;
+
+                return ['device_id' => $device->id, 'device_name' => (string) $device->name, 'status' => $status, 'message' => $message];
+            }));
+
+        return $yozilgan;
+    }
+
+    private function terminalYozilmasin(): void
+    {
+        $this->partialMock(EmployeeSyncService::class, fn (MockInterface $mock) => $mock->shouldNotReceive('transferOne'));
     }
 }

@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\IntegrationEmployeeController;
 use App\Http\Controllers\Api\ParkingController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\LegacyApiController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Middleware\EnsureApiUserHasDepartment;
 use App\Http\Middleware\RestrictLegacyApiIps;
 use Illuminate\Support\Facades\Route;
 
@@ -44,3 +46,17 @@ Route::middleware('directory.api')->prefix('v1')->name('api.v1.')->group(functio
 Route::middleware('api.user:parking')->prefix('parking')->name('api.parking.')->group(function (): void {
     Route::get('/employees', [ParkingController::class, 'employees'])->name('employees');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Integratsiya — tashqi tizimlar xodim qo‘shadi, tahrirlaydi, o‘chiradi
+|--------------------------------------------------------------------------
+| Panel foydalanuvchisi (HTTP Basic) va `Integratsiya API` ruxsati; xodim foydalanuvchining bo‘limiga
+| tushadi va uning terminallariga darhol yoziladi. Batafsil: docs/integration-api.md.
+*/
+Route::middleware(['api.user:integration', EnsureApiUserHasDepartment::class])
+    ->prefix('integration')
+    ->name('api.integration.')
+    ->group(function (): void {
+        Route::post('/employees', [IntegrationEmployeeController::class, 'store'])->name('employees.store');
+    });
