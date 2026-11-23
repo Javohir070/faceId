@@ -7,9 +7,11 @@ use App\Models\Department;
 use App\Models\Device;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\Hikvision\HikvisionUserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
+use Mockery\MockInterface;
 use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
 
@@ -115,6 +117,28 @@ class DeviceUserAccessTest extends TestCase
             ->postJson(route('admin.sync.transfer-one'), ['employee_id' => $employee->id, 'device_id' => $hidden->id])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('device_id');
+    }
+
+    /**
+     * "Qurilmalardan olib tashlash": soxta so'rov bilan foydalanuvchiga biriktirilmagan terminal id’si yuborilsa,
+     * o'sha terminaldan hech narsa o'chirilmasligi kerak — terminallar boshqa tizimlar bilan umumiy.
+     */
+    public function test_scoped_user_cannot_remove_employee_from_hidden_device(): void
+    {
+        $department = Department::factory()->create();
+        $user = $this->createDepartmentUserWithPermissions($department->id);
+        $hidden = Device::factory()->create();
+        $employee = Employee::factory()->create(['department_id' => $department->id]);
+        $employee->devices()->attach($hidden->id, ['synced_at' => now()]);
+
+        $this->partialMock(HikvisionUserService::class, fn (MockInterface $mock) => $mock->shouldNotReceive('deleteUser'));
+
+        $this->actingAs($user)
+            ->from(route('admin.employees.edit', $employee))
+            ->post(route('admin.employees.remove-devices', $employee), ['device_ids' => [$hidden->id]])
+            ->assertSessionHasErrors('device_ids.0');
+
+        $this->assertDatabaseHas('device_employee', ['device_id' => $hidden->id, 'employee_id' => $employee->id]);
     }
 
     public function test_deleting_employee_removes_it_from_all_synced_devices_even_hidden_ones(): void

@@ -27,8 +27,8 @@ biriktiring.
 2. **Admin → Sozlamalar → Rollar → Qo‘shish.** Masalan, `integratsiya` rolini oching va “Tashqi API” guruhidan
    faqat **Integratsiya API** ni belgilang. “Hammasini belgilash” uni belgilamaydi.
 3. **Admin → Sozlamalar → Foydalanuvchilar → Qo‘shish.** Tizim uchun foydalanuvchi yarating: uzun tasodifiy parol,
-   xodimlar tushadigan **bo‘lim** va `integratsiya` roli. Bo‘limsiz foydalanuvchi (masalan super-admin) API ni
-   ishlata olmaydi.
+   xodimlar tushadigan **bo‘lim** va `integratsiya` roli. Bo‘limsiz foydalanuvchi ham, super-admin ham (bo‘limi
+   bo‘lsa ham) API ni ishlata olmaydi — 403: super-admin uchun bo‘lim va terminal cheklovlari ishlamaydi.
 4. Shu ro‘yxatdagi bog‘lash belgisi orqali foydalanuvchiga **terminallarni** biriktiring — xodim aynan shularga
    yoziladi. Foydalanuvchi qo‘shgan terminallar ham hisoblanadi.
 
@@ -45,7 +45,7 @@ avtomatik faqat super-admin’ga beriladi.
 | `gender` | ha | `1` erkak, `2` ayol |
 | `position` | yo‘q | Lavozim |
 | `group_id` | yo‘q | Faqat foydalanuvchi bo‘limidagi guruh |
-| `valid_from`, `valid_to` | ha | Sana va vaqt (`2026-12-01 00:00:00`). Faqat sana berilsa — 00:00:00 |
+| `valid_from`, `valid_to` | ha | Sana va vaqt (`2026-12-01 00:00:00`) — tizim vaqti (Toshkent). Faqat sana berilsa — 00:00:00. Zona bilan kelsa (`2026-11-30T19:00:00Z`, `+03:00`) tizim vaqtiga o‘giriladi |
 | `face` | ha | Yuz rasmi, base64 JPEG yoki PNG, 1 MB gacha. `data:image/jpeg;base64,` prefiksi bo‘lishi mumkin |
 
 Javob **201**:
@@ -60,7 +60,12 @@ Javob **201**:
                {"id": 4, "name": "Chiqish", "status": "skipped", "message": "Terminal oflayn"}]}
 ```
 
-- `terminals[].status`: `success`, `failed` yoki `skipped` (terminal oflayn, login/parol sozlanmagan).
+- `terminals[].status`:
+  - `success` — yozildi;
+  - `skipped` — terminal oflayn yoki xodimda yuz rasmi yo‘q (panel orqali qo‘shilgan xodimni `PUT` qilganda);
+  - `failed` — terminal xatosi yoki terminalning login/paroli panelda sozlanmagan.
+- Terminalda shu JSHSHIR bilan boshqa tizim yozgan foydalanuvchi bo‘lsa, u ustidan yoziladi (o‘chirishda — o‘chadi):
+  terminallar umumiy, JSHSHIR esa terminalda xodim raqami.
 - Terminal xatosi xodimni bekor qilmaydi: xodim bazada qoladi. Qayta yuborish uchun xuddi shu xodimga `PUT` yuboring
   (masalan bo‘sh `{}`).
 - Foydalanuvchiga terminal biriktirilmagan bo‘lsa `terminals: []`.
@@ -101,6 +106,7 @@ eshikdan o‘taverardi. Terminal butunlay ishdan chiqqan bo‘lsa, xodimni panel
 | 401 | `UNAUTHORIZED` | Basic sarlavha yo‘q yoki email/parol noto‘g‘ri |
 | 403 | `FORBIDDEN` | Rolida `Integratsiya API` ruxsati yo‘q |
 | 403 | `NO_DEPARTMENT` | Foydalanuvchiga bo‘lim biriktirilmagan |
+| 403 | `SUPER_ADMIN` | Super-admin bilan kirilgan — tashqi tizim uchun alohida foydalanuvchi oching |
 | 404 | `NOT_FOUND` | Bu JSHSHIR li xodim yo‘q yoki boshqa bo‘limniki |
 | 422 | — | Tekshiruv xatosi (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
 | 429 | `TOO_MANY_ATTEMPTS` | Ko‘p xato parol ([parking-api.md](parking-api.md)) |
@@ -108,7 +114,8 @@ eshikdan o‘taverardi. Terminal butunlay ishdan chiqqan bo‘lsa, xodimni panel
 | 503 | `NOT_CONFIGURED` | `INTEGRATION_API_SCHEDULE_ID` yo‘q yoki foydalanuvchi bo‘limiga mos emas |
 
 Har bir qo‘shish, tahrir va o‘chirish `storage/logs/laravel.log` ga `info` bo‘lib yoziladi: `user_id` va
-`employee_id`. JSHSHIR, rasm va parol logga yozilmaydi.
+`employee_id`. Bu audit qatorlarida JSHSHIR, rasm va parol yo‘q. Lekin terminal bilan ishlash qatorlari
+(`Hikvision: ...`) panel sinxronizatsiyasidagi kabi terminal xodim raqamini (`employee_no`, ya’ni JSHSHIR) yozadi.
 
 ## Sinash
 

@@ -14,16 +14,23 @@ class EnsureApiUserHasDepartment
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->department_id === null) {
-            return response()->json([
-                'ok' => false,
-                'error' => [
-                    'code' => 'NO_DEPARTMENT',
-                    'message' => 'Bu foydalanuvchiga bo‘lim biriktirilmagan. Admin → Foydalanuvchilar da bo‘lim tanlang.',
-                ],
-            ], 403);
+        $user = $request->user();
+
+        // Super-admin uchun bo'lim va terminal cheklovlari (global scope’lar) o'chadi: bo'limi bo'lsa ham xodim
+        // hamma terminallarga yozilib, boshqa bo'lim xodimlari o'zgarardi.
+        if ($user !== null && ! $user->isDepartmentScoped()) {
+            return $this->rad('SUPER_ADMIN', 'Integratsiya API super-admin bilan ishlamaydi. Tashqi tizim uchun alohida foydalanuvchi oching.');
+        }
+
+        if ($user?->department_id === null) {
+            return $this->rad('NO_DEPARTMENT', 'Bu foydalanuvchiga bo‘lim biriktirilmagan. Admin → Foydalanuvchilar da bo‘lim tanlang.');
         }
 
         return $next($request);
+    }
+
+    private function rad(string $kod, string $xabar): Response
+    {
+        return response()->json(['ok' => false, 'error' => ['code' => $kod, 'message' => $xabar]], 403);
     }
 }

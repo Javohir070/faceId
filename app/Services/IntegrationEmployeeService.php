@@ -137,7 +137,7 @@ class IntegrationEmployeeService
             ->orderBy('devices.id')
             ->get()
             ->map(function (Device $device) use ($employee): array {
-                $natija = $this->sync->removeFromDevices($employee, [$device->id]);
+                $natija = $this->sync->removeFromLinkedDevices($employee, [$device->id]);
                 $ochdi = $natija['success'] === 1;
 
                 return [
@@ -212,9 +212,15 @@ class IntegrationEmployeeService
         ];
     }
 
+    /**
+     * Zonasiz sana tizim vaqti (`app.timezone`) deb olinadi; `Z` yoki `+03:00` bilan kelgani tizim vaqtiga
+     * o'giriladi — aks holda kirish muddati soatlab siljirdi.
+     */
     private function sana(mixed $qiymat): string
     {
-        return Carbon::parse((string) $qiymat)->format('Y-m-d H:i:s');
+        $zona = (string) config('app.timezone');
+
+        return Carbon::parse((string) $qiymat, $zona)->setTimezone($zona)->format('Y-m-d H:i:s');
     }
 
     /** Base64 rasmni EmployeeService kutadigan fayl ko'rinishiga keltiradi (Base64Image tekshirgan). */

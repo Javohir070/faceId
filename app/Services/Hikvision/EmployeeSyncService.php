@@ -317,16 +317,44 @@ class EmployeeSyncService
     }
 
     /**
-     * Id’lar chaqiruvchida tekshirilgan (panelda VisibleDevice, integratsiya API da xodim yozilgan terminallar).
-     * AssignedDevicesScope ataylab olib tashlanadi: API foydalanuvchisi nomidan o‘chirishda unga biriktirilmagan
-     * terminal jim tushib qolsa, xodim o‘sha terminalda qolib, eshikdan o‘taverardi.
+     * Foydalanuvchi tanlagan terminallardan olib tashlash. AssignedDevicesScope saqlanadi: kirgan foydalanuvchiga
+     * biriktirilmagan terminal id’si (soxta so‘rov) jim tushib qoladi — terminallar boshqa tizimlar bilan umumiy.
      *
      * @param  list<int>  $deviceIds
      * @return array{success:int, failed:int, errors:list<array{ip:string, message:string}>}
      */
     public function removeFromDevices(Employee $employee, array $deviceIds): array
     {
-        $devices = Device::withoutGlobalScope(AssignedDevicesScope::class)->whereIn('id', $deviceIds)->get();
+        return $this->removeFromDeviceModels($employee, Device::query()->whereIn('id', $deviceIds)->get());
+    }
+
+    /**
+     * Xodim yozilgan terminallardan tizim darajasida olib tashlash (Integratsiya API da xodimni o‘chirish).
+     * Id’lar chaqiruvchida faqat xodimning `device_employee` bog‘lanishlaridan olinadi; AssignedDevicesScope ataylab
+     * olib tashlanadi — API foydalanuvchisiga biriktirilmagan terminal tushib qolsa, xodim o‘sha terminalda qolib,
+     * eshikdan o‘taverardi. Panel tanlovidan kelgan id’lar uchun ishlatmang.
+     *
+     * @param  list<int>  $deviceIds
+     * @return array{success:int, failed:int, errors:list<array{ip:string, message:string}>}
+     */
+    public function removeFromLinkedDevices(Employee $employee, array $deviceIds): array
+    {
+        $linked = $employee->devices()->withoutGlobalScopes()->pluck('devices.id')->all();
+
+        return $this->removeFromDeviceModels(
+            $employee,
+            Device::withoutGlobalScope(AssignedDevicesScope::class)
+                ->whereIn('id', array_values(array_intersect($deviceIds, $linked)))
+                ->get(),
+        );
+    }
+
+    /**
+     * @param  Collection<int, Device>  $devices
+     * @return array{success:int, failed:int, errors:list<array{ip:string, message:string}>}
+     */
+    private function removeFromDeviceModels(Employee $employee, Collection $devices): array
+    {
         $success = 0;
         $failed = 0;
         $errors = [];

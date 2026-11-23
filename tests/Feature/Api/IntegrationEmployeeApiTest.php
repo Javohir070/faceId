@@ -185,6 +185,42 @@ class IntegrationEmployeeApiTest extends TestCase
         $this->assertSame(0, Employee::withoutGlobalScopes()->count());
     }
 
+    /**
+     * Super-admin uchun bo'lim va terminal cheklovlari o'chadi — bo'limi bo'lsa ham API ni ishlata olmaydi,
+     * aks holda xodim hamma terminallarga yozilardi va boshqa bo'lim xodimlari o'zgarardi.
+     */
+    public function test_bolimli_super_admin_ham_ishlata_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $this->terminaldanOchirish(fn (): bool => throw new \LogicException('chaqirilmasligi kerak'));
+        Device::factory()->create();
+        $begona = $this->mavjudXodim(Department::factory()->create());
+        $begona->update(['card' => '11111111111111']);
+        $admin = $this->apiUser();
+        $admin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->qosh($admin)->assertForbidden()->assertJsonPath('error.code', 'SUPER_ADMIN');
+        $this->tahrirla($admin, '11111111111111', ['last_name' => 'Buzildi'])->assertForbidden();
+        $this->ochir($admin, '11111111111111')->assertForbidden();
+
+        $this->assertFalse(Employee::withoutGlobalScopes()->where('card', '32610883420049')->exists());
+        $this->assertModelExists($begona);
+        $this->assertSame('Aminov', $begona->fresh()->last_name);
+    }
+
+    /** Vaqt zonasi bilan kelgan sana tizim vaqtiga o'giriladi — aks holda kirish muddati soatlab siljiydi. */
+    public function test_vaqt_zonasi_bilan_kelgan_sana_tizim_vaqtiga_ogiriladi(): void
+    {
+        config(['app.timezone' => 'Asia/Tashkent']);
+        $this->terminalNatijasi('success', 'OK');
+
+        $this->qosh($this->apiUser(), ['valid_from' => '2026-11-30T19:00:00Z', 'valid_to' => '2027-12-01T23:59:59+05:00'])
+            ->assertCreated()
+            ->assertJsonPath('employee.valid_from', '2026-12-01 00:00:00')
+            ->assertJsonPath('employee.valid_to', '2027-12-01 23:59:59');
+    }
+
     public function test_jadval_sozlanmagan_503(): void
     {
         $this->terminalYozilmasin();
