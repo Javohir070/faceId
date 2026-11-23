@@ -58,6 +58,9 @@ Schedule::command('db:backup')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Tashqi API tokenlari (docs/api-auth.md) 24 soat amal qiladi; muddati bir kundan ko'proq o'tganlari o'chiriladi.
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
+
 // alertStream — uzluksiz jarayon; oddiy holda alohida terminalda ishga tushiriladi:
 // php artisan devices:stream-events
 //

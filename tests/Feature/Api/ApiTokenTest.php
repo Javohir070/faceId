@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\InteractsWithPermissions;
 use Tests\TestCase;
 
 /**
@@ -21,6 +23,7 @@ use Tests\TestCase;
  */
 class ApiTokenTest extends TestCase
 {
+    use InteractsWithPermissions;
     use RefreshDatabase;
 
     private const PAROL = 'tashqi-parol';
@@ -244,6 +247,67 @@ class ApiTokenTest extends TestCase
     {
         $this->deleteJson(self::URL)->assertUnauthorized()->assertJsonPath('error.code', 'UNAUTHORIZED');
         $this->deleteJson(self::URL, [], $this->bearer('1|yoq'))->assertUnauthorized();
+    }
+
+    /** Parol almashtirilsa (masalan sizib chiqqani uchun) eski tokenlar darhol ishlamay qoladi. */
+    public function test_parol_ozgarsa_tokenlar_ochadi(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $token = $this->tokenFor($user);
+        $this->tokenFor($user);
+
+        $user->update(['password' => 'yangi-parol-2026']);
+
+        $this->assertSame(0, PersonalAccessToken::query()->count());
+        $this->getJson('/api/parking/employees', $this->bearer($token))->assertUnauthorized();
+    }
+
+    public function test_admin_paneldan_parol_almashtirilsa_tokenlar_ochadi(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $token = $this->tokenFor($user);
+
+        $this->actingAs($this->createUserWithPermissions())
+            ->put(route('admin.users.update', $user), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'password' => 'YangiParol-2026!',
+                'password_confirmation' => 'YangiParol-2026!',
+                'department_id' => $user->department_id,
+                'roles' => ['user'],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(PersonalAccessToken::findToken($token));
+    }
+
+    public function test_boshqa_maydon_ozgarsa_tokenlar_qoladi(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $this->tokenFor($user);
+
+        $user->update(['name' => 'Parking tizimi foydalanuvchisi']);
+
+        $this->assertSame(1, PersonalAccessToken::query()->count());
+    }
+
+    public function test_foydalanuvchi_ochsa_tokenlar_ochadi(): void
+    {
+        $user = $this->apiUser(['Parking API']);
+        $this->tokenFor($user);
+
+        $user->delete();
+
+        $this->assertSame(0, PersonalAccessToken::query()->count());
+    }
+
+    public function test_eskirgan_tokenlar_har_kuni_tozalanadi(): void
+    {
+        $vazifa = collect(app(Schedule::class)->events())
+            ->first(fn ($event): bool => str_contains((string) $event->command, 'sanctum:prune-expired'));
+
+        $this->assertNotNull($vazifa);
+        $this->assertSame('0 0 * * *', $vazifa->expression);
     }
 
     private function tokenFor(User $user): string

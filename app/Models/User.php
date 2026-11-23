@@ -63,6 +63,21 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Tashqi API tokenlari (docs/api-auth.md) parol almashtirilsa yoki foydalanuvchi o'chirilsa darhol bekor bo'ladi —
+     * admin paneli, profil va parolni tiklash yo'llarining hammasi shu yerdan o'tadi.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (User $user): void {
+            if ($user->wasChanged('password')) {
+                $user->tokens()->delete();
+            }
+        });
+
+        static::deleting(fn (User $user) => $user->tokens()->delete());
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
