@@ -42,7 +42,7 @@ class ApiAuthDocumentationTest extends TestCase
             $this->assertSame($kutilgan, $yollar['/integration/employees'][$metod]['security'] ?? null, $metod);
         }
 
-        foreach (['put', 'delete'] as $metod) {
+        foreach (['get', 'put', 'delete'] as $metod) {
             $this->assertSame($kutilgan, $yollar['/integration/employees/{jshshir}'][$metod]['security'] ?? null, $metod);
         }
     }

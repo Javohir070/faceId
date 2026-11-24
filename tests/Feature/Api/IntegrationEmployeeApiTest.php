@@ -661,9 +661,119 @@ class IntegrationEmployeeApiTest extends TestCase
         $this->royxat($admin)->assertForbidden()->assertJsonPath('error.code', 'SUPER_ADMIN');
     }
 
+    /**
+     * JSHSHIR bo'yicha bitta xodim: ro'yxat maydonlari, bo'lim/guruh/jadval nomlari, holat, rasm (MIME baytlardan)
+     * va faqat API foydalanuvchisi ko'radigan terminallar.
+     */
+    public function test_jshshir_boyicha_xodim_malumotlari(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+        $this->bolim->update(['name' => 'Moliya bo‘limi']);
+        $this->jadval->update(['name' => 'Asosiy', 'enter_time' => '09:00', 'exit_time' => '18:00']);
+        $guruh = Group::factory()->create(['name' => 'Buxgalteriya', 'department_id' => $this->bolim->id]);
+        $xodim = $this->mavjudXodim();
+        $xodim->update(['group_id' => $guruh->id, 'position' => 'Hisobchi']);
+        Face::factory()->create(['employee_id' => $xodim->id, 'face' => self::FACE]);
+
+        $yozilgan = Device::factory()->create(['user_id' => $user->id, 'name' => 'Kirish 1']);
+        $xatoli = Device::factory()->create(['user_id' => $user->id, 'name' => 'Chiqish']);
+        $begona = Device::factory()->create(['name' => 'Boshqa tizim terminali']);
+        $xodim->devices()->attach($yozilgan->id, ['synced_at' => '2026-11-20 10:00:00', 'sync_error' => null]);
+        $xodim->devices()->attach($xatoli->id, ['synced_at' => null, 'sync_error' => 'Terminal oflayn']);
+        $xodim->devices()->attach($begona->id, ['synced_at' => '2026-11-20 10:00:00', 'sync_error' => null]);
+
+        $this->travelTo('2027-01-10 12:00:00');
+
+        $javob = $this->korsat($user, '32610883420049')->assertOk()->assertJsonPath('ok', true);
+
+        $this->assertSame([
+            'id' => $xodim->id,
+            'jshshir' => '32610883420049',
+            'fish' => 'Aminov Sabur Muxtarovich',
+            'last_name' => $xodim->last_name,
+            'first_name' => $xodim->first_name,
+            'middle_name' => $xodim->middle_name,
+            'gender' => $xodim->gender,
+            'position' => 'Hisobchi',
+            'department_id' => $this->bolim->id,
+            'group_id' => $guruh->id,
+            'valid_from' => '2026-12-01 00:00:00',
+            'valid_to' => '2027-12-01 23:59:59',
+            'department' => ['id' => $this->bolim->id, 'name' => 'Moliya bo‘limi'],
+            'group' => ['id' => $guruh->id, 'name' => 'Buxgalteriya'],
+            'schedule' => ['id' => $this->jadval->id, 'name' => 'Asosiy', 'enter_time' => '09:00', 'exit_time' => '18:00'],
+            'status' => 'active',
+            'has_face' => true,
+            'face' => 'data:image/png;base64,'.self::FACE,
+            'terminals' => [
+                ['id' => $yozilgan->id, 'name' => 'Kirish 1', 'synced' => true, 'synced_at' => '2026-11-20 10:00:00', 'sync_error' => null],
+                ['id' => $xatoli->id, 'name' => 'Chiqish', 'synced' => false, 'synced_at' => null, 'sync_error' => 'Terminal oflayn'],
+            ],
+        ], $javob->json('employee'));
+    }
+
+    /** Rasmsiz, guruhsiz, hali boshlanmagan xodim; jadval sozlamasi kerak emas. */
+    public function test_rasmsiz_xodim_malumotlari(): void
+    {
+        $this->terminalYozilmasin();
+        config(['integration_api.schedule_id' => null]);
+        $this->mavjudXodim();
+        $this->travelTo('2026-11-25 12:00:00');
+
+        $this->korsat($this->apiUser(), '32610883420049')
+            ->assertOk()
+            ->assertJsonPath('employee.group', null)
+            ->assertJsonPath('employee.status', 'upcoming')
+            ->assertJsonPath('employee.has_face', false)
+            ->assertJsonPath('employee.face', null)
+            ->assertJsonPath('employee.terminals', []);
+    }
+
+    /** Bazada `data:` prefiksi bilan saqlangan rasm o'zgarmay qaytadi. */
+    public function test_prefiksli_rasm_ozgarmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+        Face::factory()->create(['employee_id' => $xodim->id, 'face' => 'data:image/jpeg;base64,'.self::FACE]);
+
+        $this->korsat($this->apiUser(), '32610883420049')
+            ->assertOk()
+            ->assertJsonPath('employee.face', 'data:image/jpeg;base64,'.self::FACE);
+    }
+
+    public function test_boshqa_bolim_xodimi_va_yoq_jshshir_404(): void
+    {
+        $this->terminalYozilmasin();
+        $user = $this->apiUser();
+        $this->mavjudXodim(Department::factory()->create());
+
+        $this->korsat($user, '32610883420049')->assertNotFound()->assertJsonPath('error.code', 'NOT_FOUND');
+        $this->korsat($user, '99999999999999')->assertNotFound()->assertJsonPath('error.code', 'NOT_FOUND');
+    }
+
+    public function test_xodimni_bolimsiz_super_admin_va_ruxsatsiz_ola_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $this->mavjudXodim();
+
+        $this->korsat($this->apiUser(bolimId: null), '32610883420049')->assertForbidden()->assertJsonPath('error.code', 'NO_DEPARTMENT');
+        $this->korsat($this->apiUser(ruxsatlar: ['Parking API']), '32610883420049')->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $admin = $this->apiUser();
+        $admin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->korsat($admin, '32610883420049')->assertForbidden()->assertJsonPath('error.code', 'SUPER_ADMIN');
+    }
+
     private function royxat(User $user, string $query = ''): TestResponse
     {
         return $this->getJson(self::URL.$query, $this->basic($user));
+    }
+
+    private function korsat(User $user, string $jshshir): TestResponse
+    {
+        return $this->getJson(self::URL.'/'.$jshshir, $this->basic($user));
     }
 
     private function mavjudXodim(?Department $bolim = null): Employee

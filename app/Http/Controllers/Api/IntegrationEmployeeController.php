@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DestroyIntegrationEmployeeRequest;
+use App\Http\Requests\ShowIntegrationEmployeeRequest;
 use App\Http\Requests\StoreIntegrationEmployeeRequest;
 use App\Http\Requests\UpdateIntegrationEmployeeRequest;
 use App\Services\IntegrationEmployeeService;
@@ -46,6 +47,15 @@ class IntegrationEmployeeController extends Controller
             'limit' => $natija['limit'],
             'has_more' => $natija['has_more'],
             'employees' => $natija['items'],
+        ]);
+    }
+
+    /** JSHSHIR bo'yicha bitta xodim: nomlar, holat, yuz rasmi va foydalanuvchi terminallaridagi holati. */
+    public function show(ShowIntegrationEmployeeRequest $request): JsonResponse
+    {
+        return response()->json([
+            'ok' => true,
+            'employee' => $this->integration->details($request->employee()),
         ]);
     }
 

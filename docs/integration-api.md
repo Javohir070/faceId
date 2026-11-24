@@ -1,6 +1,6 @@
 # Integratsiya API (`/api/integration/employees`)
 
-Boshqa tizimlar shu API orqali o‘z bo‘limi **xodimlari ro‘yxatini oladi**, Biocontrol’ga **xodim qo‘shadi, tahrirlaydi va o‘chiradi**. Har bir tizim panel
+Boshqa tizimlar shu API orqali o‘z bo‘limi **xodimlari ro‘yxatini** va JSHSHIR bo‘yicha **bitta xodim ma’lumotlarini oladi**, Biocontrol’ga **xodim qo‘shadi, tahrirlaydi va o‘chiradi**. Har bir tizim panel
 **foydalanuvchisi** nomidan ishlaydi:
 
 - xodim o‘sha foydalanuvchining **bo‘limiga** tushadi;
@@ -92,6 +92,40 @@ API foydalanuvchisi **bo‘limining** xodimlari (boshqa bo‘limlar ko‘rinmayd
 
 Har xodim maydonlari `POST` javobidagi `employee` bilan bir xil. Hammasini olish uchun `has_more` `false` bo‘lguncha
 `page` ni oshiring. Muddati tugagan xodimlar ham ro‘yxatda (`valid_to` ga qarang).
+
+## GET /api/integration/employees/{jshshir} — bitta xodim
+
+JSHSHIR bo‘yicha xodimning tizimdagi ma’lumotlari. Xodim yo‘q yoki boshqa bo‘limniki bo‘lsa **404** `NOT_FOUND`.
+`INTEGRATION_API_SCHEDULE_ID` talab qilinmaydi, terminalga hech narsa yozilmaydi.
+
+```json
+{"ok": true,
+ "employee": {"id": 1501, "jshshir": "32610883420049", "fish": "Aminov Sabur Muxtarovich",
+              "last_name": "Aminov", "first_name": "Sabur", "middle_name": "Muxtarovich", "gender": 1,
+              "position": "Hisobchi", "department_id": 13, "group_id": 40,
+              "valid_from": "2026-12-01 00:00:00", "valid_to": "2027-12-01 23:59:59",
+              "department": {"id": 13, "name": "Moliya bo‘limi"},
+              "group": {"id": 40, "name": "Buxgalteriya"},
+              "schedule": {"id": 1, "name": "Asosiy", "enter_time": "09:00", "exit_time": "18:00"},
+              "status": "active",
+              "has_face": true,
+              "face": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+              "terminals": [{"id": 3, "name": "Kirish 1", "synced": true, "synced_at": "2026-11-20 10:00:00", "sync_error": null},
+                            {"id": 4, "name": "Chiqish", "synced": false, "synced_at": null, "sync_error": "Terminal oflayn"}]}}
+```
+
+- Birinchi maydonlar ro‘yxatdagi bilan bir xil. `department`, `group`, `schedule` — topilmasa `null`.
+- `status`:
+  - `active` — amal qilmoqda;
+  - `expiring` — muddati tugashiga yaqin (bir necha kun qoldi);
+  - `expired` — muddati tugagan;
+  - `upcoming` — `valid_from` hali kelmagan.
+- `face` — yuz rasmi, `data:image/jpeg;base64,...` yoki `data:image/png;base64,...`. Uni to‘g‘ridan `<img src>` ga qo‘yish
+  yoki `POST`/`PUT` ga qayta yuborish mumkin. Rasm yo‘q bo‘lsa `has_face: false`, `face: null`. Rasm faqat shu
+  so‘rovda beriladi, ro‘yxatda yo‘q.
+- `terminals` — xodim yozilgan terminallar, faqat API foydalanuvchisiga biriktirilganlari:
+  - `synced: true` — oxirgi yozish muvaffaqiyatli bo‘lgan (`synced_at` — qachon);
+  - `synced: false` — oxirgi urinish xato bergan (`sync_error`).
 
 ## PUT (yoki PATCH) /api/integration/employees/{jshshir} — tahrirlash
 

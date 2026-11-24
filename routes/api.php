@@ -62,6 +62,9 @@ Route::middleware(['api.user:integration', EnsureApiUserHasDepartment::class])
     ->group(function (): void {
         Route::get('/employees', [IntegrationEmployeeController::class, 'index'])->name('employees.index');
         Route::post('/employees', [IntegrationEmployeeController::class, 'store'])->name('employees.store');
+        Route::get('/employees/{jshshir}', [IntegrationEmployeeController::class, 'show'])
+            ->where('jshshir', '[0-9]+')
+            ->name('employees.show');
         Route::match(['put', 'patch'], '/employees/{jshshir}', [IntegrationEmployeeController::class, 'update'])
             ->where('jshshir', '[0-9]+')
             ->name('employees.update');

@@ -112,3 +112,27 @@ Jadval sozlamasi talab qilinmaydi.
 - Javob 200: `{"ok": true, "count", "total", "page", "limit", "has_more", "employees": [...]}`; har xodim — POST javobidagi
   `employee` bilan bir xil maydonlar. Tartib `id` bo‘yicha.
 - Sozlamalar parking API dan olingan (qidiruv + sahifalash) — Claude qarori, foydalanuvchi so‘ramagan maydonlar qo‘shilmadi.
+
+## Qo‘shimcha: JSHSHIR bo‘yicha bitta xodim (2026-11-24)
+
+Foydalanuvchi so‘rovi: “jshshir yuborsa tizimda bu foydalanuvchi bor ma’lumotlar chiqish kerak api”. Qarorlar
+(AskUserQuestion): integratsiya API ga; ro‘yxatdagi maydonlardan tashqari bo‘lim, guruh, jadval nomlari, terminallar,
+holat va rasmning o‘zi (base64).
+
+**GET /api/integration/employees/{jshshir}** — kirish va 403 lar boshqa amallardagidek. Xodim
+`FindsIntegrationEmployee` bilan topiladi: yo‘q yoki boshqa bo‘limniki — 404 `NOT_FOUND`. Jadval sozlamasi talab
+qilinmaydi, terminalga hech narsa yozilmaydi.
+
+Javob 200: `{"ok": true, "employee": {...}}`. `employee` — ro‘yxatdagi maydonlar va:
+
+- `department`, `group` — `{id, name}` yoki `null`;
+- `schedule` — `{id, name, enter_time, exit_time}` (`H:i`) yoki `null`;
+- `status` — `Employee::validityStatus()`: `active`, `expiring`, `expired`, `upcoming`;
+- `has_face` — bool; `face` — `data:image/<png|jpeg>;base64,...` yoki `null`. MIME baytlardan aniqlanadi (bazada
+  prefiks yo‘q, API orqali PNG ham keladi) — Claude qarori: `<img src>` ga to‘g‘ridan qo‘yiladi va `POST` ham shu
+  shaklni qabul qiladi;
+- `terminals` — xodim bog‘langan terminallardan faqat API foydalanuvchisi ko‘radiganlari (`AssignedDevicesScope`),
+  `id` bo‘yicha: `{id, name, synced, synced_at, sync_error}`. IP va login berilmaydi.
+
+Ro‘yxat va `POST`/`PUT` javoblari o‘zgarmaydi: rasm faqat shu so‘rovda (ro‘yxatda har xodimga rasm javobni
+ko‘p megabaytga yetkazadi). O‘qish audit logga yozilmaydi — ro‘yxat ham yozilmaydi (Claude qarori).

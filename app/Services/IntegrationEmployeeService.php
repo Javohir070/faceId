@@ -251,6 +251,67 @@ class IntegrationEmployeeService
     }
 
     /**
+     * Bitta xodim (GET /employees/{jshshir}): ro'yxat maydonlari, bo'lim/guruh/jadval nomlari, holat, yuz rasmi va
+     * terminallari. Terminallar — faqat API foydalanuvchisi ko'radiganlari (AssignedDevicesScope); IP va login yo'q.
+     *
+     * @return array<string, mixed>
+     */
+    public function details(Employee $employee): array
+    {
+        $employee->loadMissing(['department', 'group', 'schedule', 'face']);
+        $rasm = $employee->face?->face;
+
+        return [
+            ...$this->employeePayload($employee),
+            'department' => $employee->department ? ['id' => $employee->department->id, 'name' => $employee->department->name] : null,
+            'group' => $employee->group ? ['id' => $employee->group->id, 'name' => $employee->group->name] : null,
+            'schedule' => $employee->schedule ? [
+                'id' => $employee->schedule->id,
+                'name' => $employee->schedule->name,
+                'enter_time' => $employee->schedule->enter_time?->format('H:i'),
+                'exit_time' => $employee->schedule->exit_time?->format('H:i'),
+            ] : null,
+            'status' => $employee->validityStatus(),
+            'has_face' => $rasm !== null && $rasm !== '',
+            'face' => $this->rasmDataUri($rasm),
+            'terminals' => $employee->devices()
+                ->orderBy('devices.id')
+                ->get()
+                ->map(fn (Device $device): array => [
+                    'id' => $device->id,
+                    'name' => (string) $device->name,
+                    'synced' => $device->pivot->synced_at !== null,
+                    'synced_at' => $device->pivot->synced_at !== null
+                        ? Carbon::parse($device->pivot->synced_at)->format('Y-m-d H:i:s')
+                        : null,
+                    'sync_error' => $device->pivot->sync_error,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * Bazada rasm odatda prefikssiz base64 (API orqali PNG ham keladi), shuning uchun MIME baytlardan aniqlanadi.
+     * `data:` bilan saqlangani o'zgarmaydi.
+     */
+    private function rasmDataUri(?string $rasm): ?string
+    {
+        if ($rasm === null || $rasm === '') {
+            return null;
+        }
+
+        if (str_starts_with($rasm, 'data:')) {
+            return $rasm;
+        }
+
+        $baytlar = Base64Image::decode($rasm);
+        $mime = $baytlar !== null && Base64Image::mime($baytlar) === 'image/png' ? 'image/png' : 'image/jpeg';
+
+        return 'data:'.$mime.';base64,'.$rasm;
+    }
+
+    /**
      * Zonasiz sana tizim vaqti (`app.timezone`) deb olinadi; `Z` yoki `+03:00` bilan kelgani tizim vaqtiga
      * o'giriladi — aks holda kirish muddati soatlab siljirdi.
      */
