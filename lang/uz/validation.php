@@ -201,6 +201,7 @@ return [
         'is_online' => 'holat',
         'jshshir' => 'JSHSHIR',
         'last_name' => 'familiya',
+        'late_grace_minutes' => 'kechikishga ruxsat',
         'middle_name' => 'otasining ismi',
         'month' => 'oy',
         'name' => 'nom',

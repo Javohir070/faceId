@@ -195,7 +195,7 @@ class AttendanceGridService
 
     /**
      * @param  array{first_entry: ?int, last_exit: ?int, last_type: ?int}|null  $day  kunning yig‘ma o‘tishlari (timestamp)
-     * @param  array{enter: string, exit: string, night: bool, plan: int}  $schedule
+     * @param  array{enter: string, exit: string, night: bool, grace: int, plan: int}  $schedule
      * @param  string  $today  xodim uchun bugungi ish kuni (tungi smenada siljitilgan)
      * @return array{public: array<string, mixed>, completed: bool, arrival: ?int}
      */
@@ -220,7 +220,7 @@ class AttendanceGridService
 
         $status = match (true) {
             $hasNote => 'excused',
-            $firstEntry !== null => $this->calculator->lateSeconds($firstEntry, $schedule['enter'], $schedule['night']) > 0
+            $firstEntry !== null => $this->calculator->isLate($firstEntry, $schedule['enter'], $schedule['night'], $schedule['grace'])
                 ? 'late'
                 : 'on_time',
             ! $isToday => 'absent',
@@ -308,7 +308,7 @@ class AttendanceGridService
     }
 
     /**
-     * @return array{enter: string, exit: string, night: bool, plan: int}
+     * @return array{enter: string, exit: string, night: bool, grace: int, plan: int}
      */
     private function scheduleInfo(Employee $employee): array
     {
@@ -328,6 +328,7 @@ class AttendanceGridService
             'enter' => $enter ?: '00:00:00',
             'exit' => $exit ?: '23:59:59',
             'night' => $night,
+            'grace' => (int) $employee->schedule?->late_grace_minutes,
             'plan' => max(0, $duration - self::LUNCH_SECONDS),
         ];
     }

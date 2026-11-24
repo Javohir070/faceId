@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\MergesDefaultLateGrace;
 use App\Http\Requests\Concerns\MergesScopedDepartmentId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreScheduleRequest extends FormRequest
 {
+    use MergesDefaultLateGrace;
     use MergesScopedDepartmentId;
 
     public function authorize(): bool
@@ -21,6 +23,7 @@ class StoreScheduleRequest extends FormRequest
     {
         $this->merge(['department_id' => null]);
         $this->mergeScopedDepartmentId();
+        $this->mergeDefaultLateGrace();
     }
 
     /**
@@ -33,6 +36,7 @@ class StoreScheduleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'enter_time' => ['required', 'date_format:H:i'],
             'exit_time' => ['required', 'date_format:H:i', 'different:enter_time'],
+            'late_grace_minutes' => ['integer', 'between:0,120'],
         ];
     }
 
@@ -50,6 +54,8 @@ class StoreScheduleRequest extends FormRequest
             'exit_time.required' => 'Chiqish vaqtini kiriting.',
             'exit_time.date_format' => 'Chiqish vaqti SS:DD ko‘rinishida bo‘lsin (masalan 18:00).',
             'exit_time.different' => 'Chiqish vaqti kirish vaqtiga teng bo‘lmasin.',
+            'late_grace_minutes.integer' => 'Kechikishga ruxsat butun son bo‘lsin.',
+            'late_grace_minutes.between' => 'Kechikishga ruxsat 0 dan 120 daqiqagacha bo‘lsin.',
         ];
     }
 }

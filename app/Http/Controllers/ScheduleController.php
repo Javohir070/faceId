@@ -50,6 +50,7 @@ class ScheduleController extends Controller
             'name' => $schedule->name,
             'enter_time' => $schedule->enter_time?->format('H:i'),
             'exit_time' => $schedule->exit_time?->format('H:i'),
+            'late_grace_minutes' => $schedule->late_grace_minutes,
         ];
     }
 

@@ -32,6 +32,15 @@ class AttendanceCalculator
         return $diff > 0 ? $diff : 0;
     }
 
+    /**
+     * Jadvaldagi kechikishga ruxsat ichida kelgan xodim kechikkan emas. Ruxsat faqat chegara: undan keyin
+     * kelganning kechikishi baribir kirish vaqtidan hisoblanadi (lateSeconds()).
+     */
+    public function isLate(Carbon $firstEntry, string $enterTime, bool $nightShift, int $graceMinutes = 0): bool
+    {
+        return $this->lateSeconds($firstEntry, $enterTime, $nightShift) > max(0, $graceMinutes) * 60;
+    }
+
     public function earlySeconds(Carbon $lastExit, string $exitTime, bool $nightShift): int
     {
         $actual = $nightShift ? $this->shiftMoment($lastExit) : $lastExit->copy();

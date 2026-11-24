@@ -22,6 +22,14 @@ class Schedule extends Model
         'name',
         'enter_time',
         'exit_time',
+        'late_grace_minutes',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'late_grace_minutes' => 0,
     ];
 
     /**
@@ -33,6 +41,7 @@ class Schedule extends Model
             'department_id' => 'integer',
             'enter_time' => 'datetime:H:i',
             'exit_time' => 'datetime:H:i',
+            'late_grace_minutes' => 'integer',
         ];
     }
 

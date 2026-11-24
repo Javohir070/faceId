@@ -212,15 +212,13 @@ class ReportQueryService
                 (string) $schedule->enter_time?->format('H:i:s'),
                 (string) $schedule->exit_time?->format('H:i:s'),
             );
-            $late = $this->calculator->lateSeconds(
-                $first->occurred_at,
-                (string) $schedule->enter_time?->format('H:i:s'),
-                $night,
-            );
+            $enter = (string) $schedule->enter_time?->format('H:i:s');
 
-            if ($late <= 0) {
+            if (! $this->calculator->isLate($first->occurred_at, $enter, $night, (int) $schedule->late_grace_minutes)) {
                 continue;
             }
+
+            $late = $this->calculator->lateSeconds($first->occurred_at, $enter, $night);
 
             $date = $group['date'];
             $rows->push([

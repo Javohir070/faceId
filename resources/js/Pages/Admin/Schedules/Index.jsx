@@ -1,5 +1,5 @@
 import { LockOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
+import { Input, InputNumber } from 'antd';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { route } from '../../../routes';
 import PageHeader, { ResourceActions } from '../../../Components/PageHeader';
@@ -13,6 +13,22 @@ import TableShell from '../../../Components/TableShell';
 /** Chiqish kirishdan oldin bo‘lsa — tungi smena (AttendanceCalculator::isNightShift bilan bir xil). */
 function isNightShift(enter, exit) {
     return Boolean(enter && exit) && exit < enter;
+}
+
+/** "09:00" + 15 → "09:15" (yarim tundan o‘tsa qaytadan boshlanadi). */
+function addMinutes(time, minutes) {
+    const [hours, mins] = time.split(':').map(Number);
+    const total = (hours * 60 + mins + minutes) % 1440;
+
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function graceHint(enter, grace) {
+    if (!enter || !grace) {
+        return 'Kirish vaqtidan shuncha daqiqa ichida kelgan xodim kechikkan hisoblanmaydi.';
+    }
+
+    return `${addMinutes(enter, grace)} gacha kelgan xodim kechikkan hisoblanmaydi. Undan keyin kelsa, kechikish ${enter} dan hisoblanadi.`;
 }
 
 export default function Index({ schedules, drawer: initialDrawer = null }) {
@@ -59,7 +75,14 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                 <td className="font-medium">
                                     {schedule.department ?? <StatusTag tone="neutral">Umumiy</StatusTag>}
                                 </td>
-                                <td className="font-medium">{schedule.enter_time}</td>
+                                <td className="font-medium">
+                                    {schedule.enter_time}
+                                    {schedule.late_grace_minutes > 0 ? (
+                                        <span className="ml-2 text-xs font-semibold text-ink-muted">
+                                            +{schedule.late_grace_minutes} daq ruxsat
+                                        </span>
+                                    ) : null}
+                                </td>
                                 <td className="font-medium">
                                     {schedule.exit_time}
                                     {isNightShift(schedule.enter_time, schedule.exit_time) ? (
@@ -75,6 +98,7 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                                 name: schedule.name,
                                                 enter_time: schedule.enter_time,
                                                 exit_time: schedule.exit_time,
+                                                late_grace_minutes: schedule.late_grace_minutes,
                                             })}
                                             deleteHref={route('admin.schedules.destroy', schedule.id)}
                                         />
@@ -98,6 +122,7 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                     name: record?.name || '',
                     enter_time: record?.enter_time || '',
                     exit_time: record?.exit_time || '',
+                    late_grace_minutes: record?.late_grace_minutes ?? 0,
                 })}
                 storeUrl={route('admin.schedules.store')}
                 updateUrl={(record) => route('admin.schedules.update', record.id)}
@@ -135,6 +160,23 @@ export default function Index({ schedules, drawer: initialDrawer = null }) {
                                 />
                             </FormField>
                         </div>
+                        <FormField
+                            label="Kechikishga ruxsat (daqiqa)"
+                            error={errors.late_grace_minutes}
+                            hint={graceHint(data.enter_time, data.late_grace_minutes)}
+                        >
+                            <InputNumber
+                                className="w-full"
+                                size="large"
+                                min={0}
+                                max={120}
+                                precision={0}
+                                suffix="daqiqa"
+                                value={data.late_grace_minutes}
+                                status={errors.late_grace_minutes ? 'error' : undefined}
+                                onChange={(value) => setData('late_grace_minutes', value ?? 0)}
+                            />
+                        </FormField>
                         {isNightShift(data.enter_time, data.exit_time) ? (
                             <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-ink-muted">
                                 Tungi smena: xodim

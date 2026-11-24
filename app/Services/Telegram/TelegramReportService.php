@@ -184,7 +184,10 @@ class TelegramReportService
                 continue;
             }
 
-            $deadline = $start->copy()->setTimeFromTimeString($enterTime->format('H:i:s'));
+            // Jadvaldagi kechikishga ruxsat ichida kelgan xodim kechikkan emas.
+            $deadline = $start->copy()
+                ->setTimeFromTimeString($enterTime->format('H:i:s'))
+                ->addMinutes((int) $employee->schedule->late_grace_minutes);
             $first = $firstEntries->get($employee->id);
 
             if ($first === null) {
