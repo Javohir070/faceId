@@ -127,6 +127,7 @@ Both panel-user APIs (parking and integration) also accept a **Sanctum token** (
 - `AuthenticateApiUser` takes `Authorization: Bearer` first and falls back to Basic. `App\Services\ApiUserLogin` holds the password check, the shared limiter (token issue and Basic count against the same buckets) and the token lookup (expiry, owner, `last_used_at`, `Auth::guard('web')->setUser()`). The permission is still checked on every request.
 - `User::booted()` deletes a user's tokens when the password changes or the user is deleted. `sanctum:prune-expired --hours=24` runs daily.
 - The `auth:sanctum` guard is not used.
+- On `/docs/api`, `App\OpenApi\ApiUserAuthDocumentation` (a document and operation transformer) adds the `bearerAuth` and `basicAuth` schemes to every route with an `api.user:*` middleware, and `bearerAuth` to the token revoke route. That gives these routes a token/Basic input. Other APIs keep no security entry.
 
 Sync, transfer, device Clear and "remove from device" run **synchronously in the request** (`set_time_limit(0)`) and report counts back in the flash. The Sinxronizatsiya page calls `POST /admin/sync/transfer-one` once per employee × device pair from a progress modal — the one place JSX uses raw `fetch`. Only `EmployeeService::delete()` and face removal in `update()` go through the queue (`RemoveHikvisionUsersJob`, `RemoveHikvisionFacesJob`); the other jobs in `app/Jobs/Hikvision/` and the `queue*` helpers on `EmployeeSyncService` are currently unused.
 

@@ -74,6 +74,19 @@ Xato parol hisobi token olish va Basic uchun **umumiy**: biri orqali parol teris
 o‘tolmaydi. Token bilan so‘rovlarga cheklov qo‘llanmaydi (tokenni taxmin qilib bo‘lmaydi). Tokenning o‘zi va parol logga
 yozilmaydi.
 
+## /docs/api sahifasida sinash
+
+Parking va integratsiya amallarida o‘ngdagi **Auth** panelida kirish usulini tanlang:
+
+- **Bearer Auth** — `POST /api/auth/token` (**ApiToken** bo‘limi) dan olingan tokenni **Token** maydoniga kiriting,
+  `Bearer` so‘zisiz. `DELETE /api/auth/token` ham shu maydonni ishlatadi.
+- **Basic Auth** — email va parol.
+
+So‘ng **Send API Request**. Sahifa so‘rovni brauzeringizdan yuboradi; integratsiya amallari xodimni **haqiqiy
+terminallarga yozadi yoki o‘chiradi** — sinash uchun terminali biriktirilmagan foydalanuvchidan foydalaning.
+Kod: `App\OpenApi\ApiUserAuthDocumentation` (faqat `api.user:*` route’lari va token bekor qilish; legacy, ma’lumotnoma
+va webhook’larga tegmaydi). Sahifa `APP_ENV=local` da hammaga ochiq, boshqa muhitda `viewApiDocs` gate ruxsat bersagina.
+
 ## Xavfsizlik
 
 - Faqat HTTPS orqali yoki ichki tarmoqda: token ham, parol ham sarlavhada ochiq ketadi.

@@ -12,6 +12,7 @@ use App\Interfaces\PermissionRepositoryInterface;
 use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\ScheduleRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
+use App\OpenApi\ApiUserAuthDocumentation;
 use App\OpenApi\LegacyApiDocumentation;
 use App\Repositories\CategoryRepository;
 use App\Repositories\DepartmentRepository;
@@ -66,6 +67,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // /docs/api: eski API’ning so‘rov va javob namunalari (Scramble ularni koddan topa olmaydi).
-        Scramble::configure()->withOperationTransformers(LegacyApiDocumentation::class);
+        // Parking va integratsiya API lari uchun token yoki email + parol kiritish maydoni (docs/api-auth.md).
+        Scramble::configure()
+            ->withOperationTransformers([LegacyApiDocumentation::class, ApiUserAuthDocumentation::class])
+            ->withDocumentTransformers(ApiUserAuthDocumentation::class);
     }
 }
