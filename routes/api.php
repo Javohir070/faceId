@@ -68,6 +68,9 @@ Route::middleware(['api.user:integration', EnsureApiUserHasDepartment::class])
         Route::match(['put', 'patch'], '/employees/{jshshir}', [IntegrationEmployeeController::class, 'update'])
             ->where('jshshir', '[0-9]+')
             ->name('employees.update');
+        Route::post('/employees/{jshshir}/extend', [IntegrationEmployeeController::class, 'extend'])
+            ->where('jshshir', '[0-9]+')
+            ->name('employees.extend');
         Route::delete('/employees/{jshshir}', [IntegrationEmployeeController::class, 'destroy'])
             ->where('jshshir', '[0-9]+')
             ->name('employees.destroy');

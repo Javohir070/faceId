@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DestroyIntegrationEmployeeRequest;
+use App\Http\Requests\ExtendIntegrationEmployeeRequest;
 use App\Http\Requests\ShowIntegrationEmployeeRequest;
 use App\Http\Requests\StoreIntegrationEmployeeRequest;
 use App\Http\Requests\UpdateIntegrationEmployeeRequest;
+use App\Models\Employee;
 use App\Services\IntegrationEmployeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 /**
  * Tashqi tizimlar uchun xodim qo'shish, tahrirlash, o'chirish. Himoya — `api.user:integration`
@@ -24,11 +27,15 @@ class IntegrationEmployeeController extends Controller
         private readonly IntegrationEmployeeService $integration,
     ) {}
 
-    /** Foydalanuvchi bo'limi xodimlari. `search` — FISH yoki JSHSHIR ichida; sahifalanadi. */
+    /**
+     * Foydalanuvchi bo'limi xodimlari. `search` — FISH yoki JSHSHIR ichida; `status` — amal qilish muddati holati
+     * (`expired` — muddati tugaganlar, `expiring` — tugashiga yaqin, `active`, `upcoming`); sahifalanadi.
+     */
     public function index(Request $request): JsonResponse
     {
         $filtr = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', 'string', Rule::in(Employee::VALIDITIES)],
             'limit' => ['nullable', 'integer', 'min:1', 'max:'.IntegrationEmployeeService::LIMIT_MAX],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
@@ -37,6 +44,7 @@ class IntegrationEmployeeController extends Controller
             $filtr['search'] ?? null,
             (int) ($filtr['limit'] ?? IntegrationEmployeeService::LIMIT_DEFAULT),
             (int) ($filtr['page'] ?? 1),
+            $filtr['status'] ?? null,
         );
 
         return response()->json([
@@ -104,6 +112,29 @@ class IntegrationEmployeeController extends Controller
         return response()->json([
             'ok' => true,
             'employee' => $this->integration->employeePayload($natija['employee']),
+            'terminals' => $natija['terminals'],
+        ]);
+    }
+
+    /**
+     * Amal qilish muddatini uzaytirish (muddati tugagan yoki tugayotgan xodim): yangi muddat bazaga, so'ng
+     * foydalanuvchining terminallariga yoziladi. Javobda xodimning yangi holati (`status`).
+     */
+    public function extend(ExtendIntegrationEmployeeRequest $request): JsonResponse
+    {
+        $natija = $this->integration->extend($request->employee(), $request->validated());
+
+        Log::info('Integratsiya API: xodim muddati uzaytirildi', [
+            'user_id' => $request->user()->id,
+            'employee_id' => $natija['employee']->id,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'employee' => [
+                ...$this->integration->employeePayload($natija['employee']),
+                'status' => $natija['employee']->validityStatus(),
+            ],
             'terminals' => $natija['terminals'],
         ]);
     }

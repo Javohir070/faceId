@@ -13,6 +13,7 @@ use App\Services\Hikvision\EmployeeSyncService;
 use App\Services\Hikvision\HikvisionUserService;
 use App\Services\RoleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
@@ -662,6 +663,250 @@ class IntegrationEmployeeApiTest extends TestCase
     }
 
     /**
+     * `?status=` — paneldagi muddat filtri bilan bir xil (Employee::scopeValidity). `active` ga tugashiga
+     * yaqinlar ham kiradi; boshqa bo'limning tugagan xodimi ko'rinmaydi.
+     */
+    public function test_royxat_holat_boyicha_filtrlanadi(): void
+    {
+        // "Tugashiga yaqin" chegarasi .env ga bog'liq bo'lmasin.
+        config(['telegram.employee_expiry_warn_days' => 3]);
+        $this->terminalYozilmasin();
+        $this->travelTo('2027-01-10 12:00:00');
+        $user = $this->apiUser();
+        $tugagan = $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-01 23:59:59');
+        $yaqin = $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-12 23:59:59');
+        $faol = $this->muddatliXodim('2026-01-01 00:00:00', '2027-12-01 23:59:59');
+        $kelgusi = $this->muddatliXodim('2027-03-01 00:00:00', '2028-03-01 23:59:59');
+        $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-01 23:59:59', Department::factory()->create());
+
+        $idlar = fn (string $holat): array => array_column($this->royxat($user, '?status='.$holat)->assertOk()->json('employees'), 'id');
+
+        $this->assertSame([$tugagan->id], $idlar('expired'));
+        $this->assertSame([$yaqin->id], $idlar('expiring'));
+        $this->assertSame([$kelgusi->id], $idlar('upcoming'));
+        $this->assertSame([$yaqin->id, $faol->id], $idlar('active'));
+        $this->royxat($user, '?status=expired')->assertJsonPath('total', 1);
+    }
+
+    public function test_holat_qidiruv_va_sahifalash_bilan(): void
+    {
+        $this->terminalYozilmasin();
+        $this->travelTo('2027-01-10 12:00:00');
+        $user = $this->apiUser();
+        $birinchi = $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-01 23:59:59', name: 'Aliyev Bobur');
+        $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-05 23:59:59', name: 'Aliyeva Nodira');
+        $this->muddatliXodim('2026-01-01 00:00:00', '2027-01-05 23:59:59', name: 'Karimov Sardor');
+        $this->muddatliXodim('2026-01-01 00:00:00', '2027-12-01 23:59:59', name: 'Aliyev Faol');
+
+        $this->royxat($user, '?status=expired&search=Aliyev&limit=1')
+            ->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('total', 2)
+            ->assertJsonPath('has_more', true)
+            ->assertJsonPath('employees.0.id', $birinchi->id);
+    }
+
+    public function test_notogri_holat_422(): void
+    {
+        $this->terminalYozilmasin();
+
+        $this->royxat($this->apiUser(), '?status=deleted')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+    }
+
+    /**
+     * Muddati tugagan xodim uzaytiriladi: yangi muddat bazaga va faqat foydalanuvchi terminallariga yoziladi,
+     * javobda yangi holat. Telegram muddat ogohlantirishlari tozalanadi.
+     */
+    public function test_muddat_uzaytiriladi_va_terminallarga_yoziladi(): void
+    {
+        $user = $this->apiUser();
+        $terminal = Device::factory()->create(['user_id' => $user->id, 'name' => 'Kirish 1']);
+        $begona = Device::factory()->create();
+        $xodim = $this->mavjudXodim();
+        $xodim->forceFill(['expiry_warned_at' => '2027-11-28 09:00:00', 'expiry_notified_at' => '2027-12-02 09:00:00'])->save();
+        $yozilgan = $this->terminalNatijasi('success', 'OK');
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $javob = $this->uzaytir($user, $xodim->card, ['valid_to' => '2028-12-31 23:59:59'])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('employee.id', $xodim->id)
+            ->assertJsonPath('employee.jshshir', '32610883420049')
+            ->assertJsonPath('employee.valid_from', '2026-12-01 00:00:00')
+            ->assertJsonPath('employee.valid_to', '2028-12-31 23:59:59')
+            ->assertJsonPath('employee.status', 'active');
+
+        $this->assertSame([
+            ['id' => $terminal->id, 'name' => 'Kirish 1', 'status' => 'success', 'message' => 'OK'],
+        ], $javob->json('terminals'));
+        $this->assertSame([$terminal->id], $yozilgan->deviceIds);
+        $this->assertNotContains($begona->id, $yozilgan->deviceIds);
+
+        $xodim->refresh();
+        $this->assertSame('2028-12-31 23:59:59', $xodim->valid_to_dt->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-12-01 00:00:00', $xodim->valid_from_dt->format('Y-m-d H:i:s'));
+        $this->assertNull($xodim->expiry_warned_at);
+        $this->assertNull($xodim->expiry_notified_at);
+    }
+
+    public function test_uzaytirishda_valid_from_ham_ozgaradi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $this->uzaytir($this->apiUser(), $xodim->card, ['valid_from' => '2027-12-11', 'valid_to' => '2028-12-31'])
+            ->assertOk()
+            ->assertJsonPath('employee.valid_from', '2027-12-11 00:00:00')
+            ->assertJsonPath('employee.valid_to', '2028-12-31 00:00:00')
+            ->assertJsonPath('employee.status', 'upcoming');
+
+        $this->assertSame('2027-12-11 00:00:00', $xodim->fresh()->valid_from_dt->format('Y-m-d H:i:s'));
+    }
+
+    /** O'tgan sanaga “uzaytirish” — xodim muddati o'tganicha qolardi. */
+    public function test_otgan_sanaga_uzaytirib_bolmaydi_422(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+        $user = $this->apiUser();
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $this->uzaytir($user, $xodim->card, ['valid_to' => '2027-12-09 00:00:00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['valid_to' => 'hozirgi vaqtdan keyin']);
+
+        $this->uzaytir($user, $xodim->card, [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('valid_to');
+
+        $this->assertSame('2027-12-01 23:59:59', $xodim->fresh()->valid_to_dt->format('Y-m-d H:i:s'));
+    }
+
+    public function test_uzaytirishda_valid_to_bazadagi_valid_fromdan_oldin_422(): void
+    {
+        $this->terminalYozilmasin();
+        $this->travelTo('2027-12-10 12:00:00');
+        $xodim = $this->muddatliXodim('2028-06-01 00:00:00', '2029-06-01 23:59:59');
+
+        $this->uzaytir($this->apiUser(), $xodim->card, ['valid_to' => '2028-03-01 23:59:59'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('valid_to');
+
+        $this->assertSame('2029-06-01 23:59:59', $xodim->fresh()->valid_to_dt->format('Y-m-d H:i:s'));
+    }
+
+    /** Uzaytirish faqat muddatni o'zgartiradi: ism va rasm yuborilsa ham e'tiborga olinmaydi. */
+    public function test_uzaytirishda_boshqa_maydonlar_ozgarmaydi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $this->uzaytir($this->apiUser(), $xodim->card, [
+            'valid_to' => '2028-12-31 23:59:59',
+            'last_name' => 'Buzildi',
+            'face' => self::FACE,
+        ])->assertOk()->assertJsonPath('employee.fish', 'Aminov Sabur Muxtarovich');
+
+        $this->assertSame('Aminov Sabur Muxtarovich', $xodim->fresh()->name);
+        $this->assertFalse(Face::query()->where('employee_id', $xodim->id)->exists());
+    }
+
+    public function test_uzaytirishda_zona_bilan_kelgan_muddat_tizim_vaqtiga_ogiriladi(): void
+    {
+        config(['app.timezone' => 'Asia/Tashkent']);
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $this->uzaytir($this->apiUser(), $xodim->card, ['valid_to' => '2028-01-01T19:00:00Z'])
+            ->assertOk()
+            ->assertJsonPath('employee.valid_to', '2028-01-02 00:00:00');
+    }
+
+    /** Rasmsiz xodim terminalga yozilmaydi (haqiqiy transferOne, tarmoqqa chiqmaydi), lekin muddati yangilanadi. */
+    public function test_rasmsiz_xodim_uzaytiriladi_terminal_skipped(): void
+    {
+        Http::preventStrayRequests();
+        $user = $this->apiUser();
+        $terminal = Device::factory()->create(['user_id' => $user->id, 'is_online' => true]);
+        $xodim = $this->mavjudXodim();
+        $this->travelTo('2027-12-10 12:00:00');
+
+        $this->uzaytir($user, $xodim->card, ['valid_to' => '2028-12-31 23:59:59'])
+            ->assertOk()
+            ->assertJsonPath('terminals.0.id', $terminal->id)
+            ->assertJsonPath('terminals.0.status', 'skipped')
+            ->assertJsonPath('terminals.0.message', 'Yuz rasmi yo‘q');
+
+        $this->assertSame('2028-12-31 23:59:59', $xodim->fresh()->valid_to_dt->format('Y-m-d H:i:s'));
+    }
+
+    /** Topilmasa yoki boshqa bo'limniki bo'lsa 404 — yuborilgan ma'lumot noto'g'ri bo'lsa ham. */
+    public function test_boshqa_bolim_xodimini_uzaytirib_bolmaydi_404(): void
+    {
+        $this->terminalYozilmasin();
+        $begona = $this->mavjudXodim(Department::factory()->create());
+        $user = $this->apiUser();
+
+        $this->uzaytir($user, $begona->card, ['valid_to' => '2099-12-31 23:59:59'])
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+        $this->uzaytir($user, '99999999999999', ['valid_to' => 'buzuq'])
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOT_FOUND');
+
+        $this->assertSame('2027-12-01 23:59:59', $begona->fresh()->valid_to_dt->format('Y-m-d H:i:s'));
+    }
+
+    public function test_uzaytirishni_bolimsiz_super_admin_va_ruxsatsiz_qila_olmaydi(): void
+    {
+        $this->terminalYozilmasin();
+        $xodim = $this->mavjudXodim();
+        $payload = ['valid_to' => '2099-12-31 23:59:59'];
+
+        $this->uzaytir($this->apiUser(bolimId: null), $xodim->card, $payload)->assertForbidden()->assertJsonPath('error.code', 'NO_DEPARTMENT');
+        $this->uzaytir($this->apiUser(ruxsatlar: ['Parking API']), $xodim->card, $payload)->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+
+        $admin = $this->apiUser();
+        $admin->assignRole(Role::findOrCreate('super-admin', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->uzaytir($admin, $xodim->card, $payload)->assertForbidden()->assertJsonPath('error.code', 'SUPER_ADMIN');
+
+        $this->assertSame('2027-12-01 23:59:59', $xodim->fresh()->valid_to_dt->format('Y-m-d H:i:s'));
+    }
+
+    /** Uzaytirish uchun jadval sozlamasi kerak emas. */
+    public function test_uzaytirish_jadval_sozlanmasa_ham_ishlaydi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        config(['integration_api.schedule_id' => null]);
+        $xodim = $this->mavjudXodim();
+
+        $this->uzaytir($this->apiUser(), $xodim->card, ['valid_to' => '2099-12-31 23:59:59'])->assertOk();
+    }
+
+    public function test_uzaytirish_audit_logga_jshshirsiz_yoziladi(): void
+    {
+        $this->terminalNatijasi('success', 'OK');
+        $xodim = $this->mavjudXodim();
+        $user = $this->apiUser();
+        Log::spy();
+
+        $this->uzaytir($user, $xodim->card, ['valid_to' => '2099-12-31 23:59:59'])->assertOk();
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $xabar, array $kontekst = []): bool => $xabar === 'Integratsiya API: xodim muddati uzaytirildi'
+                && ($kontekst['user_id'] ?? null) === $user->id
+                && ($kontekst['employee_id'] ?? null) === $xodim->id
+                && ! str_contains(json_encode($kontekst), '32610883420049'))
+            ->once();
+    }
+
+    /**
      * JSHSHIR bo'yicha bitta xodim: ro'yxat maydonlari, bo'lim/guruh/jadval nomlari, holat, rasm (MIME baytlardan)
      * va faqat API foydalanuvchisi ko'radigan terminallar.
      */
@@ -785,6 +1030,25 @@ class IntegrationEmployeeApiTest extends TestCase
             'schedule_id' => $this->jadval->id,
             'valid_from_dt' => '2026-12-01 00:00:00',
             'valid_to_dt' => '2027-12-01 23:59:59',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function uzaytir(User $user, string $jshshir, array $payload): TestResponse
+    {
+        return $this->postJson(self::URL.'/'.$jshshir.'/extend', $payload, $this->basic($user));
+    }
+
+    private function muddatliXodim(string $dan, string $gacha, ?Department $bolim = null, ?string $name = null): Employee
+    {
+        return Employee::factory()->create([
+            ...($name !== null ? ['name' => $name] : []),
+            'department_id' => ($bolim ?? $this->bolim)->id,
+            'schedule_id' => $this->jadval->id,
+            'valid_from_dt' => $dan,
+            'valid_to_dt' => $gacha,
         ]);
     }
 

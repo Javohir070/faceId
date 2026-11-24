@@ -1,6 +1,6 @@
 # Integratsiya API (`/api/integration/employees`)
 
-Boshqa tizimlar shu API orqali o‘z bo‘limi **xodimlari ro‘yxatini** va JSHSHIR bo‘yicha **bitta xodim ma’lumotlarini oladi**, Biocontrol’ga **xodim qo‘shadi, tahrirlaydi va o‘chiradi**. Har bir tizim panel
+Boshqa tizimlar shu API orqali o‘z bo‘limi **xodimlari ro‘yxatini** (muddati tugaganlarini alohida ham) va JSHSHIR bo‘yicha **bitta xodim ma’lumotlarini oladi**, Biocontrol’ga **xodim qo‘shadi, tahrirlaydi, muddatini uzaytiradi va o‘chiradi**. Har bir tizim panel
 **foydalanuvchisi** nomidan ishlaydi:
 
 - xodim o‘sha foydalanuvchining **bo‘limiga** tushadi;
@@ -79,6 +79,7 @@ API foydalanuvchisi **bo‘limining** xodimlari (boshqa bo‘limlar ko‘rinmayd
 | Parametr | Majburiy | Izoh |
 |---|---|---|
 | `search` | yo‘q | FISH yoki JSHSHIR ichidan qidiradi (`Aminov`, `32610883`). 100 belgigacha |
+| `status` | yo‘q | Amal qilish muddati holati: `expired`, `expiring`, `active`, `upcoming` (pastda). Boshqa qiymat — 422 |
 | `limit` | yo‘q | Sukut 200, eng ko‘pi 1000 |
 | `page` | yo‘q | Sukut 1 |
 
@@ -91,7 +92,22 @@ API foydalanuvchisi **bo‘limining** xodimlari (boshqa bo‘limlar ko‘rinmayd
 ```
 
 Har xodim maydonlari `POST` javobidagi `employee` bilan bir xil. Hammasini olish uchun `has_more` `false` bo‘lguncha
-`page` ni oshiring. Muddati tugagan xodimlar ham ro‘yxatda (`valid_to` ga qarang).
+`page` ni oshiring. `status` siz ro‘yxatda hamma xodimlar, muddati tugaganlar ham bor.
+
+`status` — paneldagi Xodimlar sahifasidagi muddat filtri bilan bir xil:
+
+- `expired` — muddati tugagan (`valid_to` hozirdan oldin). Ularni [`extend`](#post-apiintegrationemployeesjshshirextend--muddatni-uzaytirish)
+  bilan uzaytiring;
+- `expiring` — amal qilmoqda, lekin muddati yaqin kunlarda tugaydi (sukut 3 kun, serverdagi
+  `TELEGRAM_EMPLOYEE_EXPIRY_WARN_DAYS`). Oldindan uzaytirish uchun qulay;
+- `active` — hozir amal qilmoqda (tugashiga yaqinlar ham kiradi);
+- `upcoming` — `valid_from` hali kelmagan.
+
+`search`, `limit`, `page` filtr bilan birga ishlaydi; `total` faqat filtrga mos xodimlarni sanaydi.
+
+```bash
+curl -u "integratsiya@example.uz:<parol>" "https://<server>/api/integration/employees?status=expired&page=1"
+```
 
 ## GET /api/integration/employees/{jshshir} — bitta xodim
 
@@ -136,6 +152,59 @@ bo‘lsa 422 qaytadi.
 Xodim saqlangach, foydalanuvchining terminallariga **qayta yoziladi**. Javob **200**, shakli `POST` bilan bir xil.
 Boshqa terminallarda (panel orqali yozilganlarida) eski ma’lumot qoladi — ularni panelda Sinxronizatsiya qiling.
 
+## POST /api/integration/employees/{jshshir}/extend — muddatni uzaytirish
+
+Muddati tugagan (yoki tugayotgan) xodimning amal qilish muddatini uzaytiradi: yangi muddat bazaga yoziladi va xodim
+foydalanuvchining terminallariga **darhol qayta yoziladi** — shundan keyin u shu terminallardan `valid_from` dan
+boshlab yana o‘tadi. Xodim yo‘q yoki boshqa bo‘limniki bo‘lsa **404** `NOT_FOUND`. `INTEGRATION_API_SCHEDULE_ID`
+talab qilinmaydi.
+
+Faqat API foydalanuvchisiga biriktirilgan terminallar yangilanadi. Xodim panel orqali boshqa terminallarga ham
+yozilgan bo‘lsa, ularda **eski muddat qoladi** va xodim u yerdan o‘tolmaydi — ularni panelda Sinxronizatsiya qiling
+(javobdagi `terminals` ularni ko‘rsatmaydi).
+
+| Maydon | Majburiy | Izoh |
+|---|---|---|
+| `valid_to` | ha | Yangi tugash sanasi va vaqti, **hozirdan keyin** bo‘lishi shart (aks holda 422). Format `POST` dagidek. Faqat sana yuborilsa 00:00:00 bo‘ladi — kun oxirigacha uchun vaqtni ham yuboring: `2027-12-31 23:59:59` |
+| `valid_from` | yo‘q | Yangi boshlanish. Berilmasa bazadagisi qoladi |
+
+- `valid_to` yuborilgan yoki bazadagi `valid_from` dan oldin bo‘lsa — 422.
+- Faqat muddat o‘zgaradi: ism, rasm va boshqa maydonlar yuborilsa ham e’tiborga olinmaydi (ular uchun `PUT`/`PATCH`).
+- Yangi `valid_to` eskisidan keyin bo‘lishi shart emas: kelajakdagi istalgan sanaga to‘g‘rilash mumkin.
+
+```bash
+curl -u "integratsiya@example.uz:<parol>" -H "Content-Type: application/json" \
+  -d '{"valid_to":"2027-12-31 23:59:59"}' \
+  https://<server>/api/integration/employees/32610883420049/extend
+```
+
+Javob **200** — `employee` ro‘yxatdagi maydonlar va yangi holat `status` bilan (`GET …/{jshshir}` dagi kabi: `active`,
+`expiring`, `upcoming`); `terminals` `POST` dagidek:
+
+```json
+{"ok": true,
+ "employee": {"id": 1501, "jshshir": "32610883420049", "fish": "Aminov Sabur Muxtarovich",
+              "last_name": "Aminov", "first_name": "Sabur", "middle_name": "Muxtarovich", "gender": 1,
+              "position": null, "department_id": 13, "group_id": null,
+              "valid_from": "2026-12-01 00:00:00", "valid_to": "2027-12-31 23:59:59",
+              "status": "active"},
+ "terminals": [{"id": 3, "name": "Kirish 1", "status": "success", "message": "OK"}]}
+```
+
+- Terminal xatosi uzaytirishni bekor qilmaydi: bazada yangi muddat qoladi, terminal eski muddat bilan xodimni
+  o‘tkazmaydi. Terminal ishlay boshlagach, `extend` ni xuddi shu ma’lumot bilan qayta chaqiring.
+- Xodimda yuz rasmi bo‘lmasa terminalga yozilmaydi: `"status": "skipped", "message": "Yuz rasmi yo‘q"`. Rasmni
+  `PUT` bilan yuboring — u xodimni terminallarga yangi muddat bilan birga yozadi.
+- Muddat kelajakka o‘tgach, Telegram’dagi “muddati tugadi” ogohlantirishlari yangidan boshlanadi.
+
+**Muddati tugaganlarni uzaytirish:** `GET /api/integration/employees?status=expired` bilan ro‘yxatni oling (`has_more`
+`false` bo‘lguncha `page` ni oshiring), keyin uzaytiriladigan har bir xodim uchun `POST …/{jshshir}/extend`.
+Tugashidan oldin uzaytirish uchun `status=expiring` dan foydalaning.
+
+Diqqat: **avval hamma sahifalarni yig‘ing, keyin uzaytiring.** Uzaytirilgan xodim `status=expired` ro‘yxatidan chiqadi
+va keyingi sahifa siljiydi: har sahifadan keyin uzaytirib borsangiz, ba’zi xodimlar o‘tkazib yuboriladi va muddati
+o‘tganicha qoladi.
+
 ## DELETE /api/integration/employees/{jshshir} — o‘chirish
 
 Xodim u yozilgan **hamma** terminallardan (faqat foydalanuvchiniki emas) shu so‘rovning o‘zida o‘chiriladi, keyin
@@ -165,12 +234,12 @@ eshikdan o‘taverardi. Terminal butunlay ishdan chiqqan bo‘lsa, xodimni panel
 | 403 | `NO_DEPARTMENT` | Foydalanuvchiga bo‘lim biriktirilmagan |
 | 403 | `SUPER_ADMIN` | Super-admin bilan kirilgan — tashqi tizim uchun alohida foydalanuvchi oching |
 | 404 | `NOT_FOUND` | Bu JSHSHIR li xodim yo‘q yoki boshqa bo‘limniki |
-| 422 | — | Tekshiruv xatosi, ro‘yxatda noto‘g‘ri `limit`/`page` ham (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
+| 422 | — | Tekshiruv xatosi: ro‘yxatda noto‘g‘ri `limit`/`page`/`status`, uzaytirishda o‘tgan `valid_to` ham (Laravel’ning `{"message", "errors"}` shakli, o‘zbekcha) |
 | 429 | `TOO_MANY_ATTEMPTS` | Ko‘p xato parol ([api-auth.md](api-auth.md)) |
 | 502 | `TERMINAL_ERROR` | O‘chirishda terminal xatosi, xodim bazada qoldi |
 | 503 | `NOT_CONFIGURED` | `INTEGRATION_API_SCHEDULE_ID` yo‘q yoki foydalanuvchi bo‘limiga mos emas |
 
-Har bir qo‘shish, tahrir va o‘chirish `storage/logs/laravel.log` ga `info` bo‘lib yoziladi: `user_id` va
+Har bir qo‘shish, tahrir, uzaytirish va o‘chirish `storage/logs/laravel.log` ga `info` bo‘lib yoziladi: `user_id` va
 `employee_id`. Bu audit qatorlarida JSHSHIR, rasm va parol yo‘q. Lekin terminal bilan ishlash qatorlari
 (`Hikvision: ...`) panel sinxronizatsiyasidagi kabi terminal xodim raqamini (`employee_no`, ya’ni JSHSHIR) yozadi.
 

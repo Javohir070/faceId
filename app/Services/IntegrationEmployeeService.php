@@ -35,11 +35,12 @@ class IntegrationEmployeeService
 
     /**
      * Foydalanuvchi bo'limi xodimlari (BelongsToDepartmentScope o'z holicha), `id` bo'yicha, sahifalab.
-     * `search` — FISH yoki JSHSHIR ichida.
+     * `search` — FISH yoki JSHSHIR ichida; `status` — muddat holati, paneldagi filtr bilan bir xil
+     * (Employee::scopeValidity, `Employee::VALIDITIES`).
      *
      * @return array{total: int, page: int, limit: int, has_more: bool, items: list<array<string, mixed>>}
      */
-    public function list(?string $search = null, int $limit = self::LIMIT_DEFAULT, int $page = 1): array
+    public function list(?string $search = null, int $limit = self::LIMIT_DEFAULT, int $page = 1, ?string $status = null): array
     {
         $limit = max(1, min($limit, self::LIMIT_MAX));
         $page = max(1, $page);
@@ -50,6 +51,7 @@ class IntegrationEmployeeService
                 fn (Builder $w) => $w->where('name', 'like', '%'.$search.'%')
                     ->orWhere('card', 'like', '%'.$search.'%'),
             ))
+            ->when($status !== null, fn (Builder $q) => $q->validity($status))
             ->orderBy('id');
 
         $total = (clone $query)->toBase()->getCountForPagination();
@@ -155,6 +157,18 @@ class IntegrationEmployeeService
         }
 
         return ['employee' => $employee, 'terminals' => $this->pushToTerminals($employee)];
+    }
+
+    /**
+     * Amal qilish muddatini uzaytirish: `update()` ga faqat `valid_from` / `valid_to` beriladi, qolgan maydonlar
+     * (ism, rasm, …) yuborilgan bo'lsa ham o'zgarmaydi. Keyin xodim terminallarga qayta yoziladi.
+     *
+     * @param  array<string, mixed>  $data  ExtendIntegrationEmployeeRequest::validated()
+     * @return array{employee: Employee, terminals: list<array{id: int, name: string, status: string, message: string}>}
+     */
+    public function extend(Employee $employee, array $data): array
+    {
+        return $this->update($employee, array_intersect_key($data, array_flip(['valid_from', 'valid_to'])));
     }
 
     /**

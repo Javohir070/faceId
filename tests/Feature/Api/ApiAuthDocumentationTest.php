@@ -45,6 +45,21 @@ class ApiAuthDocumentationTest extends TestCase
         foreach (['get', 'put', 'delete'] as $metod) {
             $this->assertSame($kutilgan, $yollar['/integration/employees/{jshshir}'][$metod]['security'] ?? null, $metod);
         }
+
+        $this->assertSame($kutilgan, $yollar['/integration/employees/{jshshir}/extend']['post']['security'] ?? null, 'extend');
+    }
+
+    /** Integratsiya ro'yxatida `status` filtri — to'rtala muddat holati bilan. */
+    public function test_royxatda_holat_parametri(): void
+    {
+        $parametr = collect($this->hujjat()['paths']['/integration/employees']['get']['parameters'] ?? [])
+            ->firstWhere('name', 'status');
+
+        $this->assertNotNull($parametr);
+        $this->assertSame('query', $parametr['in']);
+        // Ixtiyoriy parametr bo'lgani uchun Scramble ro'yxatga `null` ni ham qo'shadi.
+        $holatlar = array_values(array_filter($parametr['schema']['enum'] ?? [], fn ($qiymat): bool => $qiymat !== null));
+        $this->assertEqualsCanonicalizing(['active', 'expiring', 'expired', 'upcoming'], $holatlar);
     }
 
     /** Token olish ochiq; bekor qilish faqat token bilan. */
